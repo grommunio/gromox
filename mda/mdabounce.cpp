@@ -58,13 +58,13 @@ int mlex_bounce_init(const char *cfg_path,
 bool mlex_bouncer_make(const char *from, const char *rcpt_to,
     MAIL *pmail_original, const char *bounce_type, MAIL *qmail) try
 {
-	char date_buff[128];
+	char mixed_buf[128];
 	sql_meta_result mres;
 	const char *charset = nullptr;
 
 	if (mysql_adaptor_meta(from, WANTPRIV_METAONLY, mres) == 0)
 		charset = lang_to_charset(mres.lang.c_str());
-	make_rfc_date(date_buff, std::size(date_buff), 0);
+	make_rfc_date(mixed_buf, std::size(mixed_buf), 0);
 	auto mcharset = bounce_gen_charset(*pmail_original);
 	if (znoval(charset))
 		charset = mcharset.c_str();
@@ -78,7 +78,7 @@ bool mlex_bouncer_make(const char *from, const char *rcpt_to,
 		return false;
 	auto cl_0 = HX::make_scope_exit([&]() { HXformat_free(fa); });
 	unsigned int immed = HXFORMAT_IMMED;
-	if (HXformat_add(fa, "time", date_buff, HXTYPE_STRING | immed) < 0 ||
+	if (HXformat_add(fa, "time", mixed_buf, HXTYPE_STRING | immed) < 0 ||
 	    HXformat_add(fa, "from", from, HXTYPE_STRING) < 0 ||
 	    HXformat_add(fa, "rcpt", rcpt_to, HXTYPE_STRING) < 0 ||
 	    HXformat_add(fa, "rcpts", rcpt_to, HXTYPE_STRING) < 0 ||
@@ -92,8 +92,8 @@ bool mlex_bouncer_make(const char *from, const char *rcpt_to,
 		mlog(LV_ERR, "mlist_expand: failed to get mail length");
 		mail_len = 0;
 	}
-	HX_unit_size(date_buff, std::size(date_buff), mail_len, 1000, 0);
-	if (HXformat_add(fa, "length", date_buff, HXTYPE_STRING) < 0)
+	HX_unit_size(mixed_buf, std::size(mixed_buf), mail_len, 1000, 0);
+	if (HXformat_add(fa, "length", mixed_buf, HXTYPE_STRING) < 0)
 		return false;
 
 	hxmc_t *replaced = nullptr;
@@ -138,7 +138,7 @@ bool mlex_bouncer_make(const char *from, const char *rcpt_to,
 	vmime::header dsn;
 	auto mta = "dns;"s + get_host_ID();
 	dsn.getField("Reporting-MTA")->setValue(mta);
-	dsn.getField("Arrival-Date")->setValue(date_buff);
+	dsn.getField("Arrival-Date")->setValue(mixed_buf);
 	dsn.generate(vadap);
 	vstr += "\r\n";
 
