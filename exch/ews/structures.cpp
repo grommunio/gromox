@@ -2634,6 +2634,15 @@ void tCalendarItem::setDatetimeFields(sShape& shape)
 
 ///////////////////////////////////////////////////////////////////////////////
 
+static bool date_ok(const SYSTEMTIME &t)
+{
+	return t.year == 0 && t.month >= 1 && t.month <= 12 &&
+	       t.dayofweek >= 0 && t.dayofweek <= 6 &&
+	       t.day >= 1 && t.day <= 5 &&
+	       t.hour >= 0 && t.hour <= 23 &&
+	       t.minute >= 0 && t.minute <= 59;
+}
+
 tServerTimeZone::tServerTimeZone(TZDEF &&t, bool f) : tz(std::move(t)), full(f)
 {}
 
@@ -2646,13 +2655,6 @@ bool tTimeZoneDefinition::usable(const std::vector<TZRULE> &rules)
 {
 	static constexpr size_t max_rules = 64;
 	static constexpr int32_t max_bias = 24 * 60;
-	auto date_ok = [](const SYSTEMTIME &t) {
-		return t.year == 0 && t.month >= 1 && t.month <= 12 &&
-		       t.dayofweek >= 0 && t.dayofweek <= 6 &&
-		       t.day >= 1 && t.day <= 5 &&
-		       t.hour >= 0 && t.hour <= 23 &&
-		       t.minute >= 0 && t.minute <= 59;
-	};
 	auto bias_ok = [](int32_t b) {
 		return b >= -max_bias && b <= max_bias;
 	};
