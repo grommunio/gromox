@@ -2822,8 +2822,10 @@ std::pair<std::string, std::string>
 rules_mailbox(const EWSContext &ctx, const std::optional<std::string> &smtp)
 {
 	std::string user = smtp && !smtp->empty() ? *smtp : ctx.auth_info().username;
-	auto dir = ctx.get_maildir(user);
-	if (!(ctx.permissions(dir, rules_inbox) & frightsOwner))
+	sFolderSpec inbox(user, rules_inbox);
+	inbox.location = sFolderSpec::PRIVATE;
+	auto dir = ctx.getDir(inbox);
+	if (!(ctx.permissions(dir, inbox.folderId) & frightsOwner))
 		throw EWSError::AccessDenied(E3607);
 	return {std::move(dir), std::move(user)};
 }
