@@ -827,20 +827,22 @@ void tz_recurring_transition(XMLElement *group, const std::string &to,
 	tr->InsertNewChildElement("t:Occurrence")->SetText(st.day >= 5 ? -1 : st.day);
 }
 
-}
-
-void tServerTimeZone::serialize(XMLElement *xml) const
+/**
+ * @brief      Write the periods and transitions of a zone
+ *
+ * Types.xsd TimeZoneDefinitionType
+ */
+void tz_definition(XMLElement *xml, const std::string &keyname,
+    const std::vector<TZRULE> &rules)
 {
-	xml->SetAttribute("Id", tz.keyname.c_str());
-	xml->SetAttribute("Name", tz.keyname.c_str());
-	if (!full || tz.rules.empty())
+	if (rules.empty())
 		return;
-	auto prefix = "trule:Microsoft/Registry/" + tz.keyname + "/";
+	auto prefix = "trule:Microsoft/Registry/" + keyname + "/";
 	auto periods = xml->InsertNewChildElement("t:Periods");
 	auto groups = xml->InsertNewChildElement("t:TransitionsGroups");
 	auto transitions = xml->InsertNewChildElement("t:Transitions");
-	for (size_t i = 0; i < tz.rules.size(); ++i) {
-		const auto &rule = tz.rules[i];
+	for (size_t i = 0; i < rules.size(); ++i) {
+		const auto &rule = rules[i];
 		bool dst = rule.standarddate.month != 0 && rule.daylightdate.month != 0;
 		auto stdId = prefix + std::to_string(rule.year) + "-Standard";
 		auto dstId = prefix + std::to_string(rule.year) + "-Daylight";
@@ -872,6 +874,16 @@ void tServerTimeZone::serialize(XMLElement *xml) const
 			tr->InsertNewChildElement("t:DateTime")->SetText(
 				fmt::format("{:04}-01-01T00:00:00", rule.year).c_str());
 	}
+}
+
+}
+
+void tServerTimeZone::serialize(XMLElement *xml) const
+{
+	xml->SetAttribute("Id", tz.keyname.c_str());
+	xml->SetAttribute("Name", tz.keyname.c_str());
+	if (full)
+		tz_definition(xml, tz.keyname, tz.rules);
 }
 
 tCalendarItem::tCalendarItem(const tinyxml2::XMLElement *xml) :
