@@ -2775,8 +2775,13 @@ bool RulesEnv::folder_ref(const MOVECOPY_ACTION &mc, Rules::FolderRef &ref, bool
 		tdir = ctx.getDir(spec);
 		fid = spec.folderId;
 	}
-	if (tdir == dir)
-		trash = rop_util_get_gc_value(fid) == PRIVATE_FID_DELETED_ITEMS;
+	/*
+	 * Exchange cannot move into another mailbox, and Outlook for Mac
+	 * offers to delete such rules. Report them as not supported.
+	 */
+	if (tdir != dir)
+		return false;
+	trash = rop_util_get_gc_value(fid) == PRIVATE_FID_DELETED_ITEMS;
 	/* Outlook for Mac crashes on a rule folder without ChangeKey */
 	auto ck = ctx.getFolderProp<BINARY>(tdir, fid, PR_CHANGE_KEY);
 	if (ck == nullptr)
