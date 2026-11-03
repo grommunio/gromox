@@ -2751,29 +2751,43 @@ const char *RulesEnv::resolve_address(Rules::Address &a)
 
 bool RulesEnv::folder_ref(const MOVECOPY_ACTION &mc, Rules::FolderRef &ref, bool &trash) try
 {
-	TAGGED_PROPVAL eid{};
+	std::string tdir;
+	uint64_t fid = 0;
+	sBase64Binary eid;
 	if (mc.same_store) {
 		auto sv = static_cast<const SVREID *>(mc.pfolder_eid);
 		if (sv == nullptr || sv->pbin != nullptr)
 			return false;
-		trash = rop_util_get_gc_value(sv->folder_id) == PRIVATE_FID_DELETED_ITEMS;
-		eid = ctx.getFolderEntryId(dir, sv->folder_id);
-		ref.id = base64_encode(tFolderId(sBase64Binary(eid), tBaseItemId::ID_FOLDER).serializeId());
-		/* Outlook for Mac crashes on a rule folder without ChangeKey */
-		auto ck = ctx.getFolderProp<BINARY>(dir, sv->folder_id, PR_CHANGE_KEY);
-		if (ck != nullptr)
-			ref.change_key = base64_encode({ck->pc, ck->cb});
-		return true;
+		tdir = dir;
+		fid = sv->folder_id;
+		eid = sBase64Binary(ctx.getFolderEntryId(dir, fid));
+	} else {
+		auto se = mc.pstore_eid;
+		auto bin = static_cast<const BINARY *>(mc.pfolder_eid);
+		if (se == nullptr || bin == nullptr || se->pserver_name == nullptr ||
+		    se->wrapped_provider_uid != g_muidStorePrivate)
+			return false;
+		sFolderEntryId feid(bin->pv, bin->cb);
+		if (!feid.isPrivate())
+			return false;
+		eid = sBase64Binary(bin);
+		auto spec = ctx.resolveFolder(tFolderId(eid, tBaseItemId::ID_FOLDER));
+		tdir = ctx.getDir(spec);
+		fid = spec.folderId;
 	}
-	auto se = mc.pstore_eid;
-	auto bin = static_cast<const BINARY *>(mc.pfolder_eid);
-	if (se == nullptr || bin == nullptr || se->pserver_name == nullptr ||
-	    se->wrapped_provider_uid != g_muidStorePrivate)
+	/*
+	 * Exchange cannot move into another mailbox, and Outlook for Mac
+	 * offers to delete such rules. Report them as not supported.
+	 */
+	if (tdir != dir)
 		return false;
-	sFolderEntryId feid(bin->pv, bin->cb);
-	if (!feid.isPrivate())
+	trash = rop_util_get_gc_value(fid) == PRIVATE_FID_DELETED_ITEMS;
+	/* Outlook for Mac crashes on a rule folder without ChangeKey */
+	auto ck = ctx.getFolderProp<BINARY>(tdir, fid, PR_CHANGE_KEY);
+	if (ck == nullptr)
 		return false;
-	ref.id = base64_encode(tFolderId(sBase64Binary(bin), tBaseItemId::ID_FOLDER).serializeId());
+	ref.id = base64_encode(tFolderId(std::move(eid), tBaseItemId::ID_FOLDER).serializeId());
+	ref.change_key = base64_encode({ck->pc, ck->cb});
 	return true;
 } catch (const std::exception &) {
 	return false;
