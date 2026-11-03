@@ -77,8 +77,9 @@ errno_t mysql_plugin::meta(const char *username, unsigned int wantpriv,
 		/* ...based on username lookup */
 		"(SELECT u.password, dt.propval_str AS dtypx, u.address_status, "
 		"u.privilege_bits, u.maildir, u.lang, u.externid, "
-		"op1.value, op2.value, op3.value, op4.value, op5.value, op6.value, "
-		"u.username, u.timezone, u.id, d.id, d.org_id FROM users AS u "
+		"u.username, u.timezone, u.id, d.id, d.org_id, "
+		"op1.value, op2.value, op3.value, op4.value, op5.value, op6.value "
+		"FROM users AS u "
 		JOIN_WITH_DISPLAYTYPE
 		" LEFT JOIN domains AS d ON u.domain_id=d.id"
 		" LEFT JOIN orgs ON d.org_id=orgs.id"
@@ -94,8 +95,9 @@ errno_t mysql_plugin::meta(const char *username, unsigned int wantpriv,
 		/* ...by altname lookup */
 		"(SELECT u.password, dt.propval_str AS dtypx, u.address_status, "
 		"u.privilege_bits, u.maildir, u.lang, u.externid, "
-		"op1.value, op2.value, op3.value, op4.value, op5.value, op6.value, "
-		"u.username, u.timezone, u.id, d.id, d.org_id FROM users AS u "
+		"u.username, u.timezone, u.id, d.id, d.org_id, "
+		"op1.value, op2.value, op3.value, op4.value, op5.value, op6.value "
+		"FROM users AS u "
 		JOIN_WITH_DISPLAYTYPE
 		" LEFT JOIN domains AS d ON u.domain_id=d.id"
 		" LEFT JOIN orgs ON d.org_id=orgs.id"
@@ -112,8 +114,9 @@ errno_t mysql_plugin::meta(const char *username, unsigned int wantpriv,
 		/* ..by alias lookup */
 		"(SELECT u.password, dt.propval_str AS dtypx, u.address_status, "
 		"u.privilege_bits, u.maildir, u.lang, u.externid, "
-		"op1.value, op2.value, op3.value, op4.value, op5.value, op6.value, "
-		"u.username, u.timezone, u.id, d.id, d.org_id FROM users AS u "
+		"u.username, u.timezone, u.id, d.id, d.org_id, "
+		"op1.value, op2.value, op3.value, op4.value, op5.value, op6.value "
+		"FROM users AS u "
 		JOIN_WITH_DISPLAYTYPE
 		" LEFT JOIN domains AS d ON u.domain_id=d.id"
 		" LEFT JOIN orgs ON d.org_id=orgs.id"
@@ -182,17 +185,17 @@ errno_t mysql_plugin::meta(const char *username, unsigned int wantpriv,
 	mres.lang       = lc.generate();
 	mres.enc_passwd = myrow[0];
 	mres.have_xid   = myrow[6] != nullptr;
-	mres.ldap_uri    = znul(myrow[7]);
-	mres.ldap_binddn = znul(myrow[8]);
-	mres.ldap_bindpw = znul(myrow[9]);
-	mres.ldap_basedn = znul(myrow[10]);
-	mres.ldap_mail_attr = znul(myrow[11]);
-	mres.ldap_start_tls = parse_bool(znul(myrow[12]));
-	mres.username       = znul(myrow[13]);
-	mres.timezone       = znul(myrow[14]);
-	mres.user_id        = strtoul(znul(myrow[15]), nullptr, 0);
-	mres.domain_id      = strtoul(znul(myrow[16]), nullptr, 0);
-	mres.org_id         = strtoul(znul(myrow[17]), nullptr, 0);
+	mres.username       = znul(myrow[7]);
+	mres.timezone       = znul(myrow[8]);
+	mres.user_id        = strtoul(znul(myrow[9]), nullptr, 0);
+	mres.domain_id      = strtoul(znul(myrow[10]), nullptr, 0);
+	mres.org_id         = strtoul(znul(myrow[11]), nullptr, 0);
+	mres.ldap_uri       = znul(myrow[12]);
+	mres.ldap_binddn    = znul(myrow[13]);
+	mres.ldap_bindpw    = znul(myrow[14]);
+	mres.ldap_basedn    = znul(myrow[15]);
+	mres.ldap_mail_attr = znul(myrow[16]);
+	mres.ldap_start_tls = parse_bool(znul(myrow[17]));
 	return 0;
 } catch (const std::bad_alloc &e) {
 	mlog(LV_ERR, "E-2007: ENOMEM");
