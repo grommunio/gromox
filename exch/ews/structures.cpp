@@ -2643,6 +2643,11 @@ static bool date_ok(const SYSTEMTIME &t)
 	       t.minute >= 0 && t.minute <= 59;
 }
 
+static bool bias_ok(int32_t b, int32_t max_bias)
+{
+	return b >= -max_bias && b <= max_bias;
+}
+
 tServerTimeZone::tServerTimeZone(TZDEF &&t, bool f) : tz(std::move(t)), full(f)
 {}
 
@@ -2655,9 +2660,6 @@ bool tTimeZoneDefinition::usable(const std::vector<TZRULE> &rules)
 {
 	static constexpr size_t max_rules = 64;
 	static constexpr int32_t max_bias = 24 * 60;
-	auto bias_ok = [](int32_t b) {
-		return b >= -max_bias && b <= max_bias;
-	};
 	if (rules.empty() || rules.size() > max_rules)
 		return false;
 	for (size_t i = 0; i < rules.size(); ++i) {
@@ -2665,8 +2667,8 @@ bool tTimeZoneDefinition::usable(const std::vector<TZRULE> &rules)
 		if (i > 0 && (r.year <= rules[i-1].year ||
 		    r.year < 1 || r.year > 9999))
 			return false;
-		if (!bias_ok(r.bias) || !bias_ok(r.standardbias) ||
-		    !bias_ok(r.daylightbias))
+		if (!bias_ok(r.bias, max_bias) || !bias_ok(r.standardbias, max_bias) ||
+		    !bias_ok(r.daylightbias, max_bias))
 			return false;
 		if (r.standarddate.month != 0 && r.daylightdate.month != 0 &&
 		    (!date_ok(r.standarddate) || !date_ok(r.daylightdate)))
