@@ -2779,7 +2779,7 @@ bool RulesEnv::folder_ref(const MOVECOPY_ACTION &mc, Rules::FolderRef &ref, bool
 	 * Exchange cannot move into another mailbox, and Outlook for Mac
 	 * offers to delete such rules. Report them as not supported.
 	 */
-	if (tdir != dir)
+	if (tdir != dir || !sFolderEntryId(eid.data(), eid.size()).isPrivate())
 		return false;
 	trash = rop_util_get_gc_value(fid) == PRIVATE_FID_DELETED_ITEMS;
 	/* Outlook for Mac crashes on a rule folder without ChangeKey */
