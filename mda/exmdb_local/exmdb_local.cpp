@@ -41,7 +41,7 @@ using namespace gromox;
 DECLARE_HOOK_API(exmdb_local, );
 using namespace exmdb_local;
 
-static bool g_lda_twostep, g_lda_mrautoproc, g_lda_relay_unknown;
+static bool g_lda_mrautoproc, g_lda_relay_unknown;
 static char g_org_name[256];
 static thread_local alloc_context g_alloc_ctx;
 static thread_local const char *g_storedir;
@@ -397,9 +397,7 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 	pmsg->proplist.erase(PidTagChangeNumber);
 	uint64_t folder_id, message_id = 0;
 	uint32_t r32 = 0;
-	unsigned int flags = DELIVERY_DO_RULES_SV | DELIVERY_DO_NOTIF_SV;
-	if (g_lda_twostep)
-		flags = DELIVERY_DO_RULES_CL | DELIVERY_DO_NOTIF_CL;
+	unsigned int flags = DELIVERY_DO_RULES_CL | DELIVERY_DO_NOTIF_CL;
 	if (deliver_to_junk)
 		flags |= DELIVERY_FORCE_JUNK;
 	if (!exmdb_client_remote::deliver_message(home_dir,
@@ -487,14 +485,12 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 		return delivery_status::temp_fail;
 	}
 
-	if (g_lda_twostep) {
-		if (g_lda_mrautoproc)
-			flags |= DELIVERY_DO_MRAUTOPROC;
-		auto ec_err = exmdb_local_rules_execute(home_dir, pcontext->ctrl.from,
-		            address, folder_id, message_id, flags);
-		if (ec_err != ecSuccess)
-			mlog(LV_ERR, "TWOSTEP ruleproc unsuccessful: %s", mapi_strerror(ec_err));
-	}
+	if (g_lda_mrautoproc)
+		flags |= DELIVERY_DO_MRAUTOPROC;
+	auto ec_err = exmdb_local_rules_execute(home_dir, pcontext->ctrl.from,
+	              address, folder_id, message_id, flags);
+	if (ec_err != ecSuccess)
+		mlog(LV_ERR, "TWOSTEP ruleproc unsuccessful: %s", mapi_strerror(ec_err));
 	if (b_bounce_delivered)
 		return delivery_status::bounce_sent;
 	return delivery_status::ok;
@@ -528,7 +524,6 @@ void exmdb_local_log_info(const CONTROL_INFO &ctrl,
 
 static constexpr cfg_directive exmdb_local_cfg_defaults[] = {
 	{"lda_mrautoproc", "1", CFG_BOOL},
-	{"lda_twostep_ruleproc", "1", CFG_BOOL},
 	CFG_TABLE_END,
 };
 
@@ -619,7 +614,6 @@ bool HOOK_exmdb_local(enum plugin_op reason, const struct dlfuncs &ppdata)
 		HX_unit_seconds(temp_buff, std::size(temp_buff), response_interval, 0);
 		mlog(LV_INFO, "exmdb_local: auto response interval is %s", temp_buff);
 
-		g_lda_twostep = pfile->get_ll("lda_twostep_ruleproc");
 		g_lda_mrautoproc = pfile->get_ll("lda_mrautoproc");
 
 		bounce_audit_init(response_capacity, response_interval);
