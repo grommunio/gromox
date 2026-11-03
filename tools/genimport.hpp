@@ -73,7 +73,6 @@ struct tgt_folder {
 using gi_folder_map_t = std::unordered_map<uint64_t, tgt_folder>;
 
 enum {
-	DELIVERY_TWOSTEP = 0x8000U,
 	DELIVERY_MRAUTOPROC = 0x10000U,
 };
 
