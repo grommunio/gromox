@@ -2190,15 +2190,18 @@ struct tTask : public tItem {
 /**
  * @brief      TimeZoneDefinitionType
  *
- * Partial: only the Id attribute is used for now.
+ * Only the Id attribute is read from requests. Responses carry the
+ * periods and transitions when the rules are known.
  */
 struct tTimeZoneDefinition {
 	explicit tTimeZoneDefinition(const tinyxml2::XMLElement *);
 	explicit inline tTimeZoneDefinition(std::string_view id) : Id(id) {}
 
 	void serialize(tinyxml2::XMLElement *) const;
+	static bool usable(const std::vector<TZRULE> &);
 
 	std::string Id;
+	std::vector<TZRULE> rules;
 };
 
 
@@ -2231,6 +2234,7 @@ struct sCalendarMeetingRequestCommon {
 	void update(const sShape &);
 
 	void timezoneId(std::string_view, bool=true, bool=true);
+	void timezoneRules(const TZDEF *, const TZDEF *);
 	void firstLastOccurrence(const TAGGED_PROPVAL &, const APPOINTMENT_RECUR_PAT &, const BINARY *, const uint64_t *);
 	void loadConflicts(const char *, const char *, const char *, const BINARY *, time_t, time_t);
 	const std::string &timezoneId() const;

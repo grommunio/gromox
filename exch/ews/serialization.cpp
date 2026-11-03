@@ -789,16 +789,6 @@ void tNotification::serialize(tinyxml2::XMLElement *xml) const
 		XMLDUMPT(event);
 }
 
-tTimeZoneDefinition::tTimeZoneDefinition(const tinyxml2::XMLElement *xml) :
-	XMLINITA(Id)
-{}
-
-void tTimeZoneDefinition::serialize(tinyxml2::XMLElement *xml) const
-{
-	XMLDUMPA(Id);
-	xml->SetAttribute("Name", Id.c_str());
-}
-
 namespace {
 
 std::string tz_duration(int32_t minutes)
@@ -830,12 +820,13 @@ void tz_recurring_transition(XMLElement *group, const std::string &to,
 /**
  * @brief      Write the periods and transitions of a zone
  *
- * Types.xsd TimeZoneDefinitionType
+ * Types.xsd TimeZoneDefinitionType. The EWS Managed API rejects a
+ * definition that lacks any of the three lists.
  */
 void tz_definition(XMLElement *xml, const std::string &keyname,
     const std::vector<TZRULE> &rules)
 {
-	if (rules.empty())
+	if (!tTimeZoneDefinition::usable(rules))
 		return;
 	auto prefix = "trule:Microsoft/Registry/" + keyname + "/";
 	auto periods = xml->InsertNewChildElement("t:Periods");
@@ -884,6 +875,17 @@ void tServerTimeZone::serialize(XMLElement *xml) const
 	xml->SetAttribute("Name", tz.keyname.c_str());
 	if (full)
 		tz_definition(xml, tz.keyname, tz.rules);
+}
+
+tTimeZoneDefinition::tTimeZoneDefinition(const tinyxml2::XMLElement *xml) :
+	XMLINITA(Id)
+{}
+
+void tTimeZoneDefinition::serialize(tinyxml2::XMLElement *xml) const
+{
+	XMLDUMPA(Id);
+	xml->SetAttribute("Name", Id.c_str());
+	tz_definition(xml, Id, rules);
 }
 
 tCalendarItem::tCalendarItem(const tinyxml2::XMLElement *xml) :
