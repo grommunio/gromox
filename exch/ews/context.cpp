@@ -7468,14 +7468,14 @@ static std::string smart_body(const tBody &nb, const MESSAGE_CONTENT &ref,
 	if (html && hbin != nullptr && hbin->pc != nullptr)
 		orig = cpid != nullptr && *cpid != CP_UTF8 &&
 		       (cset = cpid_to_cset(static_cast<cpid_t>(*cpid))) != nullptr ?
-		       iconvtext({hbin->pc, hbin->cb}, cset, "UTF-8") :
-		       std::string(hbin->pc, hbin->cb);
+		       iconvtext(*hbin, cset, "UTF-8") :
+		       std::string_view(*hbin);
 	else if (html && text != nullptr)
 		plain_to_html(text, orig);
 	else if (text != nullptr)
 		orig = text;
 	else if (hbin != nullptr && hbin->pc != nullptr &&
-	    html_to_plain({hbin->pc, hbin->cb}, cpid != nullptr ?
+	    html_to_plain(*hbin, cpid != nullptr ?
 	    static_cast<cpid_t>(*cpid) : CP_UTF8, orig) < 0)
 		orig.clear();
 

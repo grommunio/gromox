@@ -109,7 +109,7 @@ bool exch_bouncer_make(buff_t gudn, meta_t meta,
 
 	auto bv = pbrief->proplist.get<const BINARY>(PR_CONVERSATION_INDEX);
 	if (bv != nullptr)
-		hdr->getField("Thread-Index")->setValue(base64_encode({bv->pc, bv->cb}));
+		hdr->getField("Thread-Index")->setValue(base64_encode(*bv));
 	hdr->From()->setValue(expeditor);
 	auto str = pbrief->proplist.get<const char>(PR_SENT_REPRESENTING_NAME);
 	if (str != nullptr && *str != '\0')
@@ -145,7 +145,7 @@ bool exch_bouncer_make(buff_t gudn, meta_t meta,
 		dsn.getField("Original-Message-ID")->setValue(str);
 	bv = pbrief->proplist.get<BINARY>(PR_PARENT_KEY);
 	if (bv != nullptr)
-		dsn.getField("X-MSExch-Correlation-Key")->setValue(base64_encode({bv->pc, bv->cb}));
+		dsn.getField("X-MSExch-Correlation-Key")->setValue(base64_encode(*bv));
 	dsn.getField("X-Display-Name")->setValue(expeditor);
 
 	std::ostringstream oss;

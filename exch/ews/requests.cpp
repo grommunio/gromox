@@ -2787,7 +2787,7 @@ bool RulesEnv::folder_ref(const MOVECOPY_ACTION &mc, Rules::FolderRef &ref, bool
 	if (ck == nullptr)
 		return false;
 	ref.id = base64_encode(tFolderId(std::move(eid), tBaseItemId::ID_FOLDER).serializeId());
-	ref.change_key = base64_encode({ck->pc, ck->cb});
+	ref.change_key = base64_encode(*ck);
 	return true;
 } catch (const std::exception &) {
 	return false;
