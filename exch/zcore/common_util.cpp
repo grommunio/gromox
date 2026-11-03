@@ -1376,7 +1376,8 @@ void common_util_notify_receipt(const char *username, int type,
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
 }
 
-static MOVECOPY_ACTION *cu_cvt_from_zmovecopy(const ZMOVECOPY_ACTION &src)
+static MOVECOPY_ACTION *cu_cvt_from_zmovecopy(const store_object &store,
+    const ZMOVECOPY_ACTION &src)
 {
 	int db_id;
 	int user_id;
@@ -1403,8 +1404,7 @@ static MOVECOPY_ACTION *cu_cvt_from_zmovecopy(const ZMOVECOPY_ACTION &src)
 	}
 	if (!common_util_essdn_to_uid(pstore_entryid->pmailbox_dn, &user_id))
 		return NULL;	
-	auto pinfo = zs_get_info();
-	if (user_id != pinfo->user_id) {
+	if (!store.b_private || user_id != store.account_id) {
 		dst->same_store = 0;
 		dst->pstore_eid = pstore_entryid;
 		dst->pfolder_eid = deconst(&src.folder_eid);
@@ -1440,7 +1440,8 @@ static REPLY_ACTION *cu_cvt_from_zreply(const ZREPLY_ACTION &src)
 	return dst;
 }
 
-BOOL common_util_convert_from_zrule(TPROPVAL_ARRAY *ppropvals)
+BOOL common_util_convert_from_zrule(const store_object &store,
+    TPROPVAL_ARRAY *ppropvals)
 {
 	auto pactions = ppropvals->get<RULE_ACTIONS>(PR_RULE_ACTIONS);
 	if (pactions == nullptr)
@@ -1449,7 +1450,8 @@ BOOL common_util_convert_from_zrule(TPROPVAL_ARRAY *ppropvals)
 		switch (act.type) {
 		case OP_MOVE:
 		case OP_COPY:
-			act.pdata = cu_cvt_from_zmovecopy(*static_cast<const ZMOVECOPY_ACTION *>(act.pdata));
+			act.pdata = cu_cvt_from_zmovecopy(store,
+			            *static_cast<const ZMOVECOPY_ACTION *>(act.pdata));
 			if (act.pdata == nullptr)
 				return FALSE;
 			break;
