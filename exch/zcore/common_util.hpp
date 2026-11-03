@@ -111,7 +111,7 @@ extern BINARY *common_util_guid_to_binary(FLATUID);
 BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	const BINARY *pchange_key);
 extern void common_util_notify_receipt(const char *username, int type, message_content *brief);
-BOOL common_util_convert_from_zrule(TPROPVAL_ARRAY *ppropvals);
+BOOL common_util_convert_from_zrule(const store_object &, TPROPVAL_ARRAY *);
 BOOL common_util_load_file(const char *path, BINARY *pbin);
 extern bool cu_convert_to_zrule_data(store_object &, TPROPVAL_ARRAY *);
 extern ec_error_t cu_remote_copy_message(store_object &s0, uint64_t message_id, store_object &s1, uint64_t folder_id1);

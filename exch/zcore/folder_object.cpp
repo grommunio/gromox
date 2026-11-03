@@ -698,7 +698,7 @@ ec_error_t folder_object::updaterules(uint32_t flags, RULE_LIST *plist) try
 	    !exmdb_client->empty_folder_rule(pfolder->pstore->get_dir(), pfolder->folder_id))
 		return ecRpcFailed;
 	for (auto &rule : *plist)
-		if (!common_util_convert_from_zrule(&rule.propvals))
+		if (!common_util_convert_from_zrule(*pfolder->pstore, &rule.propvals))
 			return ecError;
 	if (!exmdb_client->update_folder_rule(pfolder->pstore->get_dir(),
 	    pfolder->folder_id, plist->count, plist->prule, &b_exceed))
