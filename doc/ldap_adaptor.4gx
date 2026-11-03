@@ -20,6 +20,8 @@ ldap_mail_attr.
 .SH Configuration directives
 The configuration file, /etc/gromox/ldap_adaptor.cfg, serves not only the
 ldap_adaptor component, but is also read by the Grommunio Admin API.
+LDAP connection paramters can be defined per-organization through the MariaDB
+table `orgparam` and `default_orgparam`.
 .SS Gromox directives
 .TP
 \fBauth_connections\fP
