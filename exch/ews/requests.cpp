@@ -1269,7 +1269,8 @@ static void updateOccRef(const EWSContext &ctx, const tItemId &refId,
 static void updateRef(const EWSContext &ctx, const tItemId &refId,
     uint32_t resp, std::string &refDir, std::optional<sMessageEntryId> &refMid,
     bool send_message, std::optional<sOccurrenceId> &declinedOcc,
-    std::optional<std::pair<std::string, uint64_t>> *calItem = nullptr)
+    std::optional<std::pair<std::string, uint64_t>> *calItem = nullptr,
+    uint32_t *calDate = nullptr)
 {
 	if (refId.type == tItemId::ID_OCCURRENCE)
 		return updateOccRef(ctx, refId, resp, send_message, declinedOcc);
@@ -1367,7 +1368,7 @@ static void updateRef(const EWSContext &ctx, const tItemId &refId,
 		throw EWSError::ItemSave(E3409);
 	if (resp == respAccepted || resp == respTentative) {
 		auto cal = ctx.createCalendarItemFromMeetingRequest(refId, resp,
-		           principal ? &*principal : nullptr);
+		           principal ? &*principal : nullptr, calDate);
 		if (cal && calItem != nullptr)
 			calItem->emplace(principal ? ctx.get_maildir(*principal) : rdir, *cal);
 	}
@@ -1573,16 +1574,17 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 		std::string refDir;
 		std::optional<sOccurrenceId> declinedOcc;
 		std::optional<std::pair<std::string, uint64_t>> calItem;
+		uint32_t calDate = 0;
 		if (auto acc = std::get_if<tAcceptItem>(&item)) {
 			if (acc->ReferenceItemId)
 				updateRef(ctx, *acc->ReferenceItemId,
 				          respAccepted, refDir, refMid,
-				          send_message, declinedOcc, &calItem);
+				          send_message, declinedOcc, &calItem, &calDate);
 		} else if (auto tent = std::get_if<tTentativelyAcceptItem>(&item)) {
 			if (tent->ReferenceItemId)
 				updateRef(ctx, *tent->ReferenceItemId,
 				          respTentative, refDir, refMid,
-				          send_message, declinedOcc, &calItem);
+				          send_message, declinedOcc, &calItem, &calDate);
 		} else if (auto dec = std::get_if<tDeclineItem>(&item)) {
 			if (dec->ReferenceItemId)
 				updateRef(ctx, *dec->ReferenceItemId,
@@ -1618,8 +1620,16 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 			calShape.add(NtAppointmentRecur, PT_BINARY, sShape::FL_FIELD)
 			        .add(NtRecurring, PT_BOOLEAN, sShape::FL_FIELD)
 			        .add(NtExceptionReplaceTime, PT_SYSTIME, sShape::FL_FIELD);
-			msg.Items.emplace_back(ctx.loadItem(calItem->first,
-				calFid, calItem->second, calShape));
+			/* For one occurrence, Exchange returns that occurrence */
+			if (calDate != 0) {
+				/* The occurrence times need the series start and zone */
+				calShape.add(PR_START_DATE, sShape::FL_FIELD)
+				        .add(NtAppointmentTimeZoneDefinitionRecur, PT_BINARY);
+				msg.Items.emplace_back(ctx.loadOccurrence(calItem->first,
+					calFid, calItem->second, calDate, calShape));
+			} else
+				msg.Items.emplace_back(ctx.loadItem(calItem->first,
+					calFid, calItem->second, calShape));
 		}
 		/* Exchange moves an answered request to Deleted Items */
 		if (refMid)
@@ -2523,27 +2533,635 @@ void process(mGetFolderRequest &&request, XMLElement *response, const EWSContext
 	data.serialize(response);
 }
 
+namespace {
+
+constexpr eid_t rules_inbox(1, PRIVATE_FID_INBOX);
+const PROPERTY_NAME NtFlagRequest = {MNID_ID, PSETID_Common, PidLidFlagRequest};
+const PROPERTY_NAME NtRuleTemplate = {MNID_STRING, PSETID_Gromox, 0, deconst("ews_rule_template")};
+
+/**
+ * @brief      Rows of the Inbox rules table that EWS manages
+ *
+ * Same selection as grommunio-web: PR_RULE_PROVIDER starting with
+ * "RuleOrganizer". Delegate, out-of-office and import rules are left out.
+ */
+struct rule_row {
+	uint64_t id = 0;
+	uint32_t seq = 0, state = 0;
+	TPROPVAL_ARRAY *props = nullptr;
+};
+
+/**
+ * @brief      Mailbox services for the rule mapper
+ */
+class RulesEnv final : public Rules::Env {
+	public:
+	RulesEnv(const EWSContext &c, const std::string &d, const std::string &u) :
+		ctx(c), exmdb(c.plugin().exmdb), dir(d), user(u)
+	{}
+
+	void *alloc(size_t z) override { return EWSContext::alloc(z); }
+
+	uint16_t keywords_propid(bool create) override { return named(NtCategories, create); }
+	uint16_t flagrequest_propid(bool create) override { return named(NtFlagRequest, create); }
+
+	const char *resolve_folder(const Rules::FolderRef &, MOVECOPY_ACTION &) override;
+	const char *deleted_items(MOVECOPY_ACTION &) override;
+	const char *resolve_template(const Rules::ItemRef &, REPLY_ACTION &) override;
+	const char *resolve_address(Rules::Address &) override;
+	bool folder_ref(const MOVECOPY_ACTION &, Rules::FolderRef &, bool &) override;
+	bool template_ref(const REPLY_ACTION &, Rules::ItemRef &) override;
+	bool essdn_to_smtp(const char *, std::string &) override;
+	void rollback();
+
+	std::vector<eid_t> created_templates;
+
+	private:
+	uint16_t named(const PROPERTY_NAME &name, bool create)
+	{
+		try {
+			return ctx.getNamedPropId(dir, name, create);
+		} catch (const std::exception &) {
+			return 0;
+		}
+	}
+
+	const EWSContext &ctx;
+	const EWSPlugin::_exmdb &exmdb;
+	std::string dir, user;
+};
+
+const char *RulesEnv::resolve_folder(const Rules::FolderRef &f, MOVECOPY_ACTION &mc) try
+{
+	sFolderSpec spec;
+	if (f.distinguished) {
+		spec = sFolderSpec(tDistinguishedFolderId(f.id));
+		spec.target = f.mailbox.empty() ? user : f.mailbox;
+	} else {
+		auto raw = base64_decode(f.id);
+		if (raw.empty() || raw.back() != tBaseItemId::ID_FOLDER)
+			return "InvalidFolderId";
+		raw.pop_back();
+		spec = ctx.resolveFolder(tFolderId(sBase64Binary(std::move(raw)), tBaseItemId::ID_FOLDER));
+	}
+	/* Rules cannot target public folders */
+	if (spec.location != sFolderSpec::PRIVATE)
+		return "InvalidFolderId";
+	auto tdir = ctx.getDir(spec);
+	BOOL exist = false;
+	if (!exmdb.is_folder_present(tdir.c_str(), spec.folderId, &exist) || !exist)
+		return "FolderDoesNotExist";
+	if (tdir == dir) {
+		auto sv = EWSContext::construct<SVREID>();
+		sv->folder_id = eid_t(spec.folderId);
+		mc.same_store = 1;
+		mc.pfolder_eid = sv;
+		return nullptr;
+	}
+	/* Another mailbox, ruleproc checks the owner's rights on delivery */
+	std::string essdn;
+	if (cvt_username_to_essdn(spec.target->c_str(), ctx.plugin().x500_org_name.c_str(),
+	    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids, essdn) != ecSuccess)
+		return "InvalidFolderId";
+	auto se = EWSContext::construct<STORE_ENTRYID>();
+	se->wrapped_provider_uid = g_muidStorePrivate;
+	se->wrapped_type = OPENSTORE_HOME_LOGON | OPENSTORE_TAKE_OWNERSHIP;
+	se->pserver_name = EWSContext::cpystr(*spec.target);
+	se->pmailbox_dn = EWSContext::cpystr(essdn);
+	auto eid = ctx.getFolderEntryId(tdir, spec.folderId);
+	mc.same_store = 0;
+	mc.pstore_eid = se;
+	mc.pfolder_eid = eid.pvalue;
+	return nullptr;
+} catch (const std::exception &) {
+	return "InvalidFolderId";
+}
+
+const char *RulesEnv::deleted_items(MOVECOPY_ACTION &mc)
+{
+	auto sv = EWSContext::construct<SVREID>();
+	sv->folder_id = eid_t(1, PRIVATE_FID_DELETED_ITEMS);
+	mc.same_store = 1;
+	mc.pfolder_eid = sv;
+	return nullptr;
+}
+
+/**
+ * @brief      Find or create the reply template of a ServerReplyWithMessage
+ *
+ * An existing Inbox reply template is used as is. Any other message of the
+ * mailbox is copied into a new one, MS-OXORULE v23.0 §3.1.4.2.5, and marked
+ * so it can be removed once no rule refers to it.
+ */
+const char *RulesEnv::resolve_template(const Rules::ItemRef &ref, REPLY_ACTION &ra) try
+{
+	auto raw = base64_decode(ref.id);
+	if (raw.empty() || raw.back() != tBaseItemId::ID_ITEM)
+		return "InvalidValue";
+	raw.pop_back();
+	sMessageEntryId meid(raw.data(), raw.size());
+	if (!meid.isPrivate() || meid.accountId() != ctx.getAccountId(user, false))
+		return "InvalidValue";
+	/* A delegate must not copy items it cannot read into a template */
+	ctx.validate(dir, meid);
+	if (!(ctx.permissions(dir, meid.folderId()) & frightsReadAny))
+		return "InvalidValue";
+	MESSAGE_CONTENT *content = nullptr;
+	if (!exmdb.read_message(dir.c_str(), nullptr, CP_ACP, meid.messageId(),
+	    &content) || content == nullptr)
+		return "InvalidValue";
+	auto &pl = content->proplist;
+	auto fai = pl.get<const uint8_t>(PR_ASSOCIATED);
+	auto cls = pl.get<const char>(PR_MESSAGE_CLASS);
+	auto tid = pl.get<const BINARY>(PR_REPLY_TEMPLATE_ID);
+	if (fai != nullptr && *fai != 0 && cls != nullptr &&
+	    strncasecmp(cls, "IPM.Note.Rules.ReplyTemplate.", 29) == 0 &&
+	    meid.folderId() == rules_inbox && tid != nullptr && tid->cb == sizeof(GUID)) {
+		ra.template_folder_id = rules_inbox;
+		ra.template_message_id = meid.messageId();
+		ra.template_guid = rop_util_binary_to_guid(tid);
+		return nullptr;
+	}
+
+	message_content_ptr copy(content->dup());
+	if (copy == nullptr)
+		return "UnexpectedError";
+	auto &props = copy->proplist;
+	static constexpr proptag_t rm[] = {
+		PidTagMid, PidTagChangeNumber, PR_CHANGE_KEY,
+		PR_PREDECESSOR_CHANGE_LIST, PR_ENTRYID, PR_SOURCE_KEY,
+		PR_PARENT_SOURCE_KEY, PR_PARENT_ENTRYID,
+	};
+	for (auto t : rm)
+		props.erase(t);
+	auto marker = named(NtRuleTemplate, true);
+	if (marker == 0)
+		return "UnexpectedError";
+	auto guid = GUID::random_new();
+	char gbuf[16];
+	EXT_PUSH ep;
+	if (!ep.init(gbuf, sizeof(gbuf), 0) || ep.p_guid(guid) != pack_result::ok)
+		return "UnexpectedError";
+	BINARY gbin{sizeof(gbuf), {gbuf}};
+	uint8_t one = 1;
+	if (props.set(PR_MESSAGE_CLASS, "IPM.Note.Rules.ReplyTemplate.Microsoft") != ecSuccess ||
+	    props.set(PR_ASSOCIATED, &one) != ecSuccess ||
+	    props.set(PR_REPLY_TEMPLATE_ID, &gbin) != ecSuccess ||
+	    props.set(PROP_TAG(PT_BOOLEAN, marker), &one) != ecSuccess)
+		return "UnexpectedError";
+	uint64_t outmid = 0, outcn = 0;
+	ec_error_t err = ecSuccess;
+	if (!exmdb.write_message(dir.c_str(), CP_ACP, rules_inbox, copy.get(),
+	    {}, &outmid, &outcn, &err) || err != ecSuccess)
+		return "UnexpectedError";
+	created_templates.push_back(eid_t(outmid));
+	ra.template_folder_id = rules_inbox;
+	ra.template_message_id = eid_t(outmid);
+	ra.template_guid = guid;
+	return nullptr;
+} catch (const std::exception &) {
+	return "InvalidValue";
+}
+
+/**
+ * @brief      Delete templates made for a request that did not go through
+ */
+void RulesEnv::rollback()
+{
+	if (created_templates.empty())
+		return;
+	EID_ARRAY ids{static_cast<uint32_t>(created_templates.size()), created_templates.data()};
+	BOOL partial = false;
+	exmdb.delete_messages(dir.c_str(), CP_ACP, nullptr, rules_inbox, &ids, true, &partial);
+	created_templates.clear();
+}
+
+const char *RulesEnv::resolve_address(Rules::Address &a)
+{
+	if (strcasecmp(a.routing.c_str(), "EX") == 0) {
+		try {
+			a.email = ctx.essdn_to_username(a.email);
+		} catch (const std::exception &) {
+			return "InvalidAddress";
+		}
+	}
+	a.routing = "SMTP";
+	if (a.email.find('@') == a.email.npos)
+		return "InvalidAddress";
+	return nullptr;
+}
+
+bool RulesEnv::folder_ref(const MOVECOPY_ACTION &mc, Rules::FolderRef &ref, bool &trash) try
+{
+	TAGGED_PROPVAL eid{};
+	if (mc.same_store) {
+		auto sv = static_cast<const SVREID *>(mc.pfolder_eid);
+		if (sv == nullptr || sv->pbin != nullptr)
+			return false;
+		trash = rop_util_get_gc_value(sv->folder_id) == PRIVATE_FID_DELETED_ITEMS;
+		eid = ctx.getFolderEntryId(dir, sv->folder_id);
+		ref.id = base64_encode(tFolderId(sBase64Binary(eid), tBaseItemId::ID_FOLDER).serializeId());
+		/* Outlook for Mac crashes on a rule folder without ChangeKey */
+		auto ck = ctx.getFolderProp<BINARY>(dir, sv->folder_id, PR_CHANGE_KEY);
+		if (ck != nullptr)
+			ref.change_key = base64_encode({ck->pc, ck->cb});
+		return true;
+	}
+	auto se = mc.pstore_eid;
+	auto bin = static_cast<const BINARY *>(mc.pfolder_eid);
+	if (se == nullptr || bin == nullptr || se->pserver_name == nullptr ||
+	    se->wrapped_provider_uid != g_muidStorePrivate)
+		return false;
+	sFolderEntryId feid(bin->pv, bin->cb);
+	if (!feid.isPrivate())
+		return false;
+	ref.id = base64_encode(tFolderId(sBase64Binary(bin), tBaseItemId::ID_FOLDER).serializeId());
+	return true;
+} catch (const std::exception &) {
+	return false;
+}
+
+bool RulesEnv::template_ref(const REPLY_ACTION &ra, Rules::ItemRef &ref) try
+{
+	auto eid = ctx.getItemEntryId(dir, ra.template_message_id);
+	ref.id = base64_encode(tItemId(sBase64Binary(eid), tBaseItemId::ID_ITEM).serializeId());
+	return true;
+} catch (const std::exception &) {
+	return false;
+}
+
+bool RulesEnv::essdn_to_smtp(const char *essdn, std::string &smtp) try
+{
+	smtp = ctx.essdn_to_username(essdn);
+	return true;
+} catch (const std::exception &) {
+	return false;
+}
+
+/**
+ * @brief      Resolve the mailbox of a rules request
+ *
+ * Rules of another mailbox need owner rights on its Inbox, as
+ * ropModifyRules does.
+ *
+ * @return     Home directory and user name
+ */
+std::pair<std::string, std::string>
+rules_mailbox(const EWSContext &ctx, const std::optional<std::string> &smtp)
+{
+	std::string user = smtp && !smtp->empty() ? *smtp : ctx.auth_info().username;
+	auto dir = ctx.get_maildir(user);
+	if (!(ctx.permissions(dir, rules_inbox) & frightsOwner))
+		throw EWSError::AccessDenied(E3607);
+	return {std::move(dir), std::move(user)};
+}
+
+/**
+ * @brief      Message ids of the Outlook rule blob FAIs in the Inbox
+ */
+std::vector<eid_t> find_rule_blobs(const EWSContext &ctx, const std::string &dir)
+{
+	auto &exmdb = ctx.plugin().exmdb;
+	static constexpr RESTRICTION_EXIST rst_a = {PR_MESSAGE_CLASS};
+	static constexpr RESTRICTION_CONTENT rst_b = {FL_IGNORECASE, PR_MESSAGE_CLASS, {PT_UNICODE, deconst("IPM.RuleOrganizer")}};
+	static constexpr RESTRICTION rst_c[2] = {{RES_EXIST, {deconst(&rst_a)}}, {RES_CONTENT, {deconst(&rst_b)}}};
+	static constexpr RESTRICTION_AND_OR rst_d = {std::size(rst_c), deconst(rst_c)};
+	static constexpr RESTRICTION rst_e = {RES_AND, {deconst(&rst_d)}};
+	uint32_t table_id = 0, count = 0;
+	if (!exmdb.load_content_table(dir.c_str(), CP_ACP, rules_inbox, nullptr,
+	    TABLE_FLAG_ASSOCIATED, &rst_e, nullptr, &table_id, &count))
+		throw EWSError::InternalServerError(E3608);
+	auto cl = HX::make_scope_exit([&]() { exmdb.unload_table(dir.c_str(), table_id); });
+	std::vector<eid_t> mids;
+	if (count == 0)
+		return mids;
+	static constexpr proptag_t tags[] = {PidTagMid};
+	TARRAY_SET set{};
+	if (!exmdb.query_table(dir.c_str(), nullptr, CP_ACP, table_id, {tags, std::size(tags)}, 0, count, &set))
+		throw EWSError::InternalServerError(E3608);
+	for (const auto &row : set)
+		if (auto mid = row.get<const uint64_t>(PidTagMid))
+			mids.push_back(eid_t(*mid));
+	return mids;
+}
+
+/**
+ * @brief      Load the visible rules of the Inbox, in execution order
+ */
+std::vector<rule_row> load_rules(const EWSContext &ctx, const std::string &dir, bool all = false)
+{
+	auto &exmdb = ctx.plugin().exmdb;
+	uint32_t table_id = 0, count = 0;
+	if (!exmdb.load_rule_table(dir.c_str(), rules_inbox, 0, nullptr, &table_id, &count))
+		throw EWSError::InternalServerError(E3606);
+	auto cl = HX::make_scope_exit([&]() { exmdb.unload_table(dir.c_str(), table_id); });
+	std::vector<rule_row> rows;
+	if (count == 0)
+		return rows;
+	static constexpr proptag_t tags[] = {
+		PR_RULE_ID, PR_RULE_SEQUENCE, PR_RULE_STATE, PR_RULE_NAME,
+		PR_RULE_PROVIDER, PR_RULE_LEVEL, PR_RULE_CONDITION, PR_RULE_ACTIONS,
+	};
+	TARRAY_SET set{};
+	if (!exmdb.query_table(dir.c_str(), nullptr, CP_ACP, table_id, {tags, std::size(tags)}, 0, count, &set))
+		throw EWSError::InternalServerError(E3606);
+	for (auto &row : set) {
+		auto id = row.get<const uint64_t>(PR_RULE_ID);
+		if (id == nullptr || (!all && !Rules::is_visible(row)))
+			continue;
+		auto seq = row.get<const uint32_t>(PR_RULE_SEQUENCE);
+		auto st = row.get<const uint32_t>(PR_RULE_STATE);
+		rows.push_back({*id, seq != nullptr ? *seq : 0, st != nullptr ? *st : 0, &row});
+	}
+	std::stable_sort(rows.begin(), rows.end(), [](const rule_row &a, const rule_row &b) {
+		return a.seq != b.seq ? a.seq < b.seq : rop_util_get_gc_value(a.id) < rop_util_get_gc_value(b.id);
+	});
+	return rows;
+}
+
+}
+
 /**
  * @brief      Process GetInboxRulesRequest
  *
- * Provides the functionality of GetInboxRules
- *
- * In its current state it does nothing more than sending no rules response.
- *
- * @todo       This function lacks most of its functionality and is practically worthless.
+ * Returns the Inbox rules managed through the rules organizer, in execution
+ * order. Rules that EWS cannot express come back with IsNotSupported.
  *
  * @param      request   Request data
  * @param      response  XMLElement to store response in
  * @param      ctx       Request context
  */
-void process(mGetInboxRulesRequest&&, XMLElement *response, const EWSContext&)
+void process(mGetInboxRulesRequest &&request, XMLElement *response, const EWSContext &ctx)
 {
 	response->SetName("m:GetInboxRulesResponse");
 
 	mGetInboxRulesResponse data;
-	data.OutlookRuleBlobExists = false;
+	try {
+		auto [dir, user] = rules_mailbox(ctx, request.MailboxSmtpAddress);
+		/* MS-OXWSRULES v9.0 §3.1.4.1.3.2: always present */
+		data.OutlookRuleBlobExists = !find_rule_blobs(ctx, dir).empty();
+		RulesEnv env(ctx, dir, user);
+		int32_t prio = 0;
+		for (const auto &row : load_rules(ctx, dir)) {
+			auto rule = Rules::from_mapi(*row.props, env);
+			rule.priority = ++prio;
+			data.InboxRules.push_back(std::move(rule));
+		}
+		data.success();
+	} catch (const EWSError &err) {
+		data = mGetInboxRulesResponse();
+		static_cast<mResponseMessageType &>(data) = mResponseMessageType(err);
+	}
+	data.serialize(response);
+}
 
-	data.success();
+namespace {
+
+/**
+ * @brief      Rule list entry during UpdateInboxRules
+ */
+struct rule_slot {
+	const rule_row *old = nullptr; /* nullptr: created */
+	const Rules::Rule *rule = nullptr; /* nullptr: unchanged */
+	RESTRICTION *cond = nullptr;
+	RULE_ACTIONS *acts = nullptr;
+	uint32_t state = 0;
+};
+
+/**
+ * @brief      Organizer2 provider data, outlook_rule_spec.rst "FAI message: RuleV2"
+ */
+BINARY *provider_data()
+{
+	auto bin = EWSContext::construct<BINARY>();
+	bin->cb = 16;
+	bin->pv = EWSContext::alloc(16);
+	double apptime = static_cast<double>(time(nullptr)) / 86400 + 25569;
+	EXT_PUSH ep;
+	if (!ep.init(bin->pv, 16, 0) || ep.p_uint32(1) != pack_result::ok ||
+	    ep.p_uint32(1) != pack_result::ok || ep.p_double(apptime) != pack_result::ok)
+		throw EWSError::NotEnoughMemory(E3129);
+	return bin;
+}
+
+/**
+ * @brief      Delete reply templates that EWS made and no rule uses anymore
+ */
+void purge_templates(const EWSContext &ctx, const std::string &dir)
+{
+	auto &exmdb = ctx.plugin().exmdb;
+	propid_t marker = 0;
+	try {
+		marker = ctx.getNamedPropId(dir, NtRuleTemplate, false);
+	} catch (const std::exception &) {
+		return;
+	}
+	if (marker == 0)
+		return;
+	RESTRICTION_EXIST ex{PROP_TAG(PT_BOOLEAN, marker)};
+	RESTRICTION res{RES_EXIST, {&ex}};
+	uint32_t table_id = 0, count = 0;
+	if (!exmdb.load_content_table(dir.c_str(), CP_ACP, rules_inbox, nullptr,
+	    TABLE_FLAG_ASSOCIATED, &res, nullptr, &table_id, &count))
+		return;
+	auto cl = HX::make_scope_exit([&]() { exmdb.unload_table(dir.c_str(), table_id); });
+	if (count == 0)
+		return;
+	static constexpr proptag_t tags[] = {PidTagMid};
+	TARRAY_SET set{};
+	if (!exmdb.query_table(dir.c_str(), nullptr, CP_ACP, table_id, {tags, std::size(tags)}, 0, count, &set))
+		return;
+	std::unordered_set<uint64_t> used;
+	for (const auto &row : load_rules(ctx, dir, true)) {
+		auto acts = row.props->get<const RULE_ACTIONS>(PR_RULE_ACTIONS);
+		if (acts == nullptr)
+			continue;
+		for (const auto &a : *acts)
+			if ((a.type == OP_REPLY || a.type == OP_OOF_REPLY) && a.pdata != nullptr)
+				used.insert(static_cast<const REPLY_ACTION *>(a.pdata)->template_message_id);
+	}
+	std::vector<eid_t> orphans;
+	for (const auto &row : set)
+		if (auto mid = row.get<const uint64_t>(PidTagMid); mid != nullptr && !used.contains(*mid))
+			orphans.push_back(eid_t(*mid));
+	if (orphans.empty())
+		return;
+	EID_ARRAY ids{static_cast<uint32_t>(orphans.size()), orphans.data()};
+	BOOL partial = false;
+	exmdb.delete_messages(dir.c_str(), CP_ACP, nullptr, rules_inbox, &ids, true, &partial);
+}
+
+}
+
+/**
+ * @brief      Process UpdateInboxRulesRequest
+ *
+ * All operations are validated first. Any error leaves the rules untouched
+ * and reports every failed operation, MS-OXWSRULES v9.0 §3.1.4.2. The
+ * remaining changes are written in one update_folder_rule batch.
+ *
+ * Priorities are positions among the rules GetInboxRules returns. The
+ * sequence numbers those rules had are reused, so delegate and
+ * out-of-office rules keep their place in the execution order.
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mUpdateInboxRulesRequest &&request, XMLElement *response, const EWSContext &ctx)
+{
+	response->SetName("m:UpdateInboxRulesResponse");
+
+	mUpdateInboxRulesResponse data;
+	std::optional<RulesEnv> env;
+	try {
+		auto &exmdb = ctx.plugin().exmdb;
+		auto [dir, user] = rules_mailbox(ctx, request.MailboxSmtpAddress);
+		bool remove_blob = request.RemoveOutlookRuleBlob.value_or(false);
+		auto blobs = find_rule_blobs(ctx, dir);
+		if (!blobs.empty() && !remove_blob)
+			throw EWSError::OutlookRuleBlobExists(E3609);
+		auto rows = load_rules(ctx, dir);
+		env.emplace(ctx, dir, user);
+
+		std::vector<rule_slot> list;
+		for (const auto &row : rows)
+			list.push_back({&row, nullptr, nullptr, nullptr, row.state});
+		auto find = [&](const std::string &id) {
+			auto v = Rules::decode_rule_id(id);
+			return v ? std::find_if(list.begin(), list.end(), [&](const rule_slot &s) {
+				return s.old != nullptr && s.old->id == *v;
+			}) : list.end();
+		};
+		std::unordered_set<std::string> touched;
+		std::vector<Rules::OperationError> errors;
+		for (size_t i = 0; i < request.Operations.size(); ++i) {
+			auto &op = request.Operations[i];
+			std::string id = op.kind == Rules::Operation::DELETE ? op.rule_id :
+			                 op.rule.id.value_or(std::string{});
+			std::vector<Rules::ValidationError> ve;
+			auto it = list.end();
+			if (op.kind == Rules::Operation::DELETE ||
+			    (op.kind == Rules::Operation::SET && op.rule.id)) {
+				it = find(id);
+				if (!id.empty() && !touched.insert(id).second)
+					ve.push_back({"RuleId", "DuplicatedOperationOnTheSameRule",
+						"Only one operation per rule is allowed.", id});
+				else if (it == list.end())
+					ve.push_back({"RuleId", "RuleNotFound", "The rule was not found.", id});
+			}
+			if (op.kind == Rules::Operation::DELETE) {
+				if (ve.empty())
+					list.erase(it);
+				else
+					errors.push_back({static_cast<int32_t>(i), std::move(ve)});
+				continue;
+			}
+			Rules::strip_wildcards(op.rule);
+			auto rv = Rules::validate(op.rule, op.kind);
+			ve.insert(ve.end(), rv.begin(), rv.end());
+			if (ve.empty() && it != list.end() && op.kind == Rules::Operation::SET &&
+			    Rules::from_mapi(*it->old->props, *env).not_supported.value_or(false))
+				ve.push_back({"IsNotSupported", "UnsupportedRule",
+					"The rule cannot be changed through EWS.", id});
+			rule_slot slot;
+			if (ve.empty() && Rules::to_mapi(op.rule, *env, slot.cond, slot.acts, ve)) {
+				uint32_t state = 0;
+				if (op.kind == Rules::Operation::SET) {
+					slot.old = it->old;
+					state = it->state & ~(ST_ENABLED | ST_EXIT_LEVEL);
+					if (!op.rule.in_error.value_or(true))
+						state &= ~(ST_ERROR | ST_PARSE_ERROR);
+					list.erase(it);
+				}
+				auto &stop = op.rule.actions.v[Rules::A_StopProcessingRules];
+				if (op.rule.enabled)
+					state |= ST_ENABLED;
+				if (stop && stop->flag)
+					state |= ST_EXIT_LEVEL;
+				slot.rule = &op.rule;
+				slot.state = state;
+				auto pos = std::min(static_cast<size_t>(op.rule.priority - 1), list.size());
+				list.insert(list.begin() + pos, slot);
+			}
+			if (!ve.empty())
+				errors.push_back({static_cast<int32_t>(i), std::move(ve)});
+		}
+		if (!errors.empty()) {
+			env->rollback();
+			data.error("ErrorInboxRulesValidationError",
+				"Validation error occurred during rule operation execution.");
+			data.RuleOperationErrors = std::move(errors);
+			data.serialize(response);
+			return;
+		}
+
+		if (remove_blob && !blobs.empty()) {
+			EID_ARRAY ids{static_cast<uint32_t>(blobs.size()), blobs.data()};
+			BOOL partial = false;
+			if (!exmdb.delete_messages(dir.c_str(), CP_ACP, nullptr,
+			    rules_inbox, &ids, true, &partial))
+				throw EWSError::InternalServerError(E3610);
+		}
+
+		std::vector<uint32_t> old_seqs;
+		for (const auto &row : rows)
+			old_seqs.push_back(row.seq);
+		auto seqs = Rules::assign_sequences(std::move(old_seqs), list.size());
+		std::vector<RULE_DATA> batch;
+		auto mkrow = [&](uint8_t flags, std::vector<TAGGED_PROPVAL> &&pv) {
+			auto arr = EWSContext::alloc<TAGGED_PROPVAL>(pv.size());
+			std::copy(pv.begin(), pv.end(), arr);
+			batch.push_back({flags, {static_cast<uint16_t>(pv.size()), arr}});
+		};
+		for (const auto &row : rows)
+			if (std::none_of(list.begin(), list.end(), [&](const rule_slot &s) { return s.old == &row; }))
+				mkrow(ROW_REMOVE, {{PR_RULE_ID, deconst(&row.id)}});
+		static constexpr uint32_t zero = 0;
+		for (size_t i = 0; i < list.size(); ++i) {
+			auto &s = list[i];
+			auto seq = &seqs[i];
+			if (s.old != nullptr && s.rule == nullptr) {
+				if (s.old->seq != *seq)
+					mkrow(ROW_MODIFY, {{PR_RULE_ID, deconst(&s.old->id)},
+						{PR_RULE_SEQUENCE, seq}});
+				continue;
+			}
+			std::vector<TAGGED_PROPVAL> pv = {
+				{PR_RULE_NAME, deconst(s.rule->name.c_str())},
+				{PR_RULE_SEQUENCE, seq},
+				{PR_RULE_STATE, &s.state},
+				{PR_RULE_CONDITION, s.cond},
+				{PR_RULE_ACTIONS, s.acts},
+			};
+			if (s.old != nullptr) {
+				pv.push_back({PR_RULE_ID, deconst(&s.old->id)});
+				mkrow(ROW_MODIFY, std::move(pv));
+				continue;
+			}
+			pv.push_back({PR_RULE_PROVIDER, deconst("RuleOrganizer")});
+			pv.push_back({PR_RULE_LEVEL, deconst(&zero)});
+			pv.push_back({PR_RULE_PROVIDER_DATA, provider_data()});
+			mkrow(ROW_ADD, std::move(pv));
+		}
+		/* Removals first so they make room for the additions */
+		std::stable_partition(batch.begin(), batch.end(),
+			[](const RULE_DATA &r) { return r.flags == ROW_REMOVE; });
+		BOOL exceed = false;
+		if (!batch.empty() && !exmdb.update_folder_rule(dir.c_str(), rules_inbox,
+		    static_cast<uint16_t>(batch.size()), batch.data(), &exceed))
+			throw EWSError::InternalServerError(E3611);
+		if (exceed)
+			throw EWSError::RulesOverQuota(E3612);
+		env->created_templates.clear();
+		purge_templates(ctx, dir);
+		data.success();
+	} catch (const EWSError &err) {
+		if (env)
+			env->rollback();
+		data = mUpdateInboxRulesResponse();
+		static_cast<mResponseMessageType &>(data) = mResponseMessageType(err);
+	}
 	data.serialize(response);
 }
 
@@ -3536,6 +4154,12 @@ void process(mSetUserOofSettingsRequest &&request, XMLElement *response, const E
 	if (OofSettings.ExternalReply && OofSettings.ExternalReply->Message)
 		ext_msg = *OofSettings.ExternalReply->Message;
 	pvs.push_back(TAGGED_PROPVAL{PR_EC_EXTERNAL_REPLY, deconst(ext_msg.c_str())});
+	/*
+	 * Exchange has no OOF reply subject, its replies are titled
+	 * "Automatic reply: <subject>". Drop one a non-EWS client stored.
+	 */
+	pvs.push_back(TAGGED_PROPVAL{PR_EC_OUTOFOFFICE_SUBJECT, deconst("")});
+	pvs.push_back(TAGGED_PROPVAL{PR_EC_EXTERNAL_SUBJECT, deconst("")});
 	TPROPVAL_ARRAY vals = {static_cast<uint16_t>(pvs.size()), pvs.data()};
 	PROBLEM_ARRAY problems{};
 	if (!ctx.plugin().exmdb.autoreply_setprop(maildir.c_str(), CP_UTF8,

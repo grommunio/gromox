@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <cstring>
 #include <string>
+#include <utility>
+#include <strings.h>
 #include <libHX/string.h>
 #include <vmime/addressList.hpp>
 #include <vmime/dateTime.hpp>
@@ -23,6 +25,24 @@ DECLARE_HOOK_API(exmdb_local, extern);
 using namespace exmdb_local;
 unsigned int autoreply_silence_window;
 std::string autoreply_subject_prefix;
+bool autoreply_subject_prefix_set;
+
+/* Exchange's prefix for OOF replies, chosen by the mailbox language */
+static constexpr char exc_oof_prefix_en[] = "Automatic reply: ";
+static constexpr std::pair<const char *, const char *> exc_oof_prefix[] = {
+	{"de", "Automatische Antwort: "},
+};
+
+static const char *oof_subject_prefix(const char *lang)
+{
+	if (autoreply_subject_prefix_set)
+		return autoreply_subject_prefix.c_str();
+	auto len = strcspn(lang, "_-.@");
+	for (const auto &[tag, prefix] : exc_oof_prefix)
+		if (strlen(tag) == len && strncasecmp(lang, tag, len) == 0)
+			return prefix;
+	return exc_oof_prefix_en;
+}
 
 static int is_same_org(const char *a, const char *b)
 {
@@ -38,10 +58,11 @@ static int is_same_org(const char *a, const char *b)
  * @user_home: Maildir for basically @rcpt
  * @from:      Sender for the autoresponse (Original Envelope-To)
  * @rcpt:      Recipient for the autoresponse (Original Envelope-From)
+ * @lang:      Mailbox language, picks the default subject prefix
  * @orig_subject: Subject of the message that triggered the autoresponse
  */
 void auto_response_reply(const char *user_home, const char *from,
-    const char *rcpt, std::string &&orig_subject) try
+    const char *rcpt, const char *lang, std::string &&orig_subject) try
 {
 	auto same_org = is_same_org(from, rcpt);
 	if (same_org < 0)
@@ -94,12 +115,13 @@ void auto_response_reply(const char *user_home, const char *from,
 	auto subject_text = znul(ar_props.get<const char>(same_org ? PR_EC_OUTOFOFFICE_SUBJECT : PR_EC_EXTERNAL_SUBJECT));
 	auto message_text = znul(ar_props.get<const char>(same_org ? PR_EC_OUTOFOFFICE_MSG : PR_EC_EXTERNAL_REPLY));
 	/*
-	 * EWS's SetUserOofSettings has no field for a reply subject. Clients
-	 * using EWS leave PR_EC_*_SUBJECT untouched. Derive one from the
-	 * incoming message rather than emitting an empty Subject header.
+	 * EWS's SetUserOofSettings has no field for a reply subject and
+	 * clears PR_EC_*_SUBJECT. Derive one from the incoming message
+	 * rather than emitting an empty Subject header.
 	 */
-	if (*subject_text == '\0' && !autoreply_subject_prefix.empty()) {
-		subject_buf = autoreply_subject_prefix;
+	auto prefix = oof_subject_prefix(lang);
+	if (*subject_text == '\0' && *prefix != '\0') {
+		subject_buf = prefix;
 		if (orig_subject.size() > 0) {
 			subject_buf += std::move(orig_subject);
 		} else {

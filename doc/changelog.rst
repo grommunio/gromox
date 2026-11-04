@@ -12,6 +12,10 @@ Behavior changes:
   server-side rules of delivered mail are run by the TwoStep processor. Set it
   to 0 to return to the old processor. exmdb_local(4gx) lists the remaining
   differences.
+* delivery: ``exmdb_local.cfg:lda_mrautoproc`` now defaults to 1, so meeting
+  requests, responses and cancellations are entered into calendars on
+  delivery. It only works together with ``lda_twostep_ruleproc=1``. Set
+  ``lda_mrautoproc=0`` to turn it off.
 
 Enhancements:
 
@@ -36,6 +40,30 @@ Enhancements:
   processor as a short text mail with sender, subject and the start of the
   body, instead of a copy of the whole message. Mobile numbers cannot be
   reached and get a deferred error message.
+* ruleproc: redirects (OP_FORWARD with FWD_PRESERVE_SENDER) of the TwoStep
+  processor now carry ``X-MS-Exchange-Organization-AutoForwarded: true``.
+* oxcmail: ``X-MS-Exchange-Organization-AutoForwarded: true`` now sets
+  PR_AUTO_FORWARDED on import, so rule conditions on automatic forwards can
+  match.
+* EWS: GetInboxRules now returns the Inbox rules and UpdateInboxRules is
+  implemented, so Outlook for Mac and eM Client can manage server rules.
+
+Changes:
+
+* exmdb_local: Out-of-office replies without a stored subject now use
+  Exchange's "Automatic reply: " prefix, or "Automatische Antwort: " for
+  German mailboxes, unless gromox.cfg:``autoreply_subject_prefix`` is set.
+* EWS: SetUserOofSettings now clears the Out of Office subjects stored by
+  grommunio-web, so replies are titled like in Exchange, e.g.
+  "Automatic reply: <subject>". Before, a subject once set in grommunio-web
+  stayed in use after the OOF settings were changed in Outlook or eM Client.
+* ruleproc: meeting autoprocessing now writes the subject prefixes of its
+  responses and of cancelled calendar items in the language of the mailbox,
+  e.g. "Angenommen: " and "Abgesagt: " for German mailboxes.
+* EWS: UpdateInboxRules now removes leading and trailing ``*`` from the
+  strings of the Contains*Strings conditions and exceptions. eM Client wraps
+  each of these strings in asterisks, which a substring match takes
+  literally, so its server rules never matched.
 
 Fixes:
 
@@ -82,15 +110,44 @@ Fixes:
   own.
 * ruleproc: rules without a condition no longer apply to every message in
   the TwoStep processor and are skipped, as in the old processor.
+* ruleproc: meeting autoprocessing no longer undoes what rules changed on a
+  meeting message, e.g. the importance or categories set by a rule.
 * delivery: the Arrival-Date of bounce reports showed the message size
   instead of the date.
+* ruleproc: tentative responses of meeting autoprocessing now carry the
+  subject prefix "Tentative: " instead of "Maybe: ".
 * ruleproc: Out of Office rules now still run in the TwoStep processor after
   a rule that stops processing or deletes the message.
+* oxcmail: importing X-Message-Flag stored the subject as the flag text
+  (PidLidFlagRequest) instead of the to-do title, so rule conditions on a
+  particular flag never matched.
+* ruleproc: the conditions "not sent to me", "sent only to me" and "where my
+  name is in the Cc box" now match in the TwoStep processor.
+* ruleproc: "sender contains these words" conditions now match local senders
+  by their e-mail address and ignore case in the TwoStep processor.
 * ruleproc: the TwoStep processor now runs at most
   ``exmdb_provider.cfg:max_ext_rule_number`` extended rules per folder, as the
   old processor does.
 * ruleproc: the TwoStep processor now treats rules flagged
   ST_ONLY_WHEN_OOF_EX, as Exchange 2007 writes them, as Out of Office rules.
+* ruleproc: with meeting autoprocessing, a meeting update that keeps the
+  start, end and recurrence, such as one that removes an attendee, no longer
+  resets the responses of an attendee who had already answered, nor the
+  attendee's reminders.
+* EWS: accepting a meeting request for one occurrence of a series now updates
+  that occurrence in the attendee's calendar and returns it, instead of
+  writing nothing.
+* ruleproc: meeting autoprocessing now enters an update for one occurrence of
+  a series into the attendee's series as an exception. Before, attendee
+  calendars kept the old time until a client acted, and clients that rely on
+  the server, such as Apple Calendar, never showed the update.
+* ruleproc: when meeting autoprocessing marks a cancelled series in an
+  attendee calendar, it now cancels the exceptions of the series too. Before,
+  a moved occurrence stayed active under its old subject.
+* exmdb: rule batches can no longer exceed max_rule_number, and renaming a
+  rule takes effect.
+* zcore: rule updates rejected for exceeding max_rule_number are now
+  reported as failures.
 
 
 Gromox 3.13 (2026-10-28)
