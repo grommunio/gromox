@@ -803,8 +803,7 @@ bool MIME::serialize(STREAM *pstream) const
 		/* \r\n for separate head and content */
 		pstream->write("\r\n\r\n", 4);
 	}
-	if (pmime->mime_type == mime_type::single ||
-	    pmime->mime_type == mime_type::single_obj) {
+	if (pmime->mime_type == mime_type::single) {
 		if (pmime->content_begin == nullptr)
 			/* if there's nothing, just append an empty line */
 			pstream->write("\r\n", 2);

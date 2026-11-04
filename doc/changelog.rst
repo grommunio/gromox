@@ -6,6 +6,37 @@ It's ready when it's ready.
 Development 3.13.16
 ===================
 
+Behavior changes:
+
+* delivery: ``exmdb_local.cfg:lda_twostep_ruleproc`` now defaults to 1, so
+  server-side rules of delivered mail are run by the TwoStep processor. Set it
+  to 0 to return to the old processor. exmdb_local(4gx) lists the remaining
+  differences.
+
+Enhancements:
+
+* ruleproc: the TwoStep processor now reports failed rules with deferred error
+  messages and disables rules whose target folder is gone or whose forward has
+  too many recipients.
+* ruleproc: the TwoStep processor now writes deferred action messages, so
+  Outlook client-only rules work.
+* ruleproc: the TwoStep processor now supports OP_REPLY and OP_OOF_REPLY
+  (reply templates, Out of Office assistant rules).
+* ruleproc: the TwoStep processor now supports OP_DELEGATE, so delegates
+  receive meeting messages.
+* ruleproc: meeting autoprocessing now marks a cancelled occurrence of a
+  recurring meeting as cancelled in attendee calendars, not only in resource
+  calendars.
+* ruleproc: Out of Office reply rules with ST_KEEP_OOF_HIST now answer each
+  sender only once per Out of Office period in the TwoStep processor. A
+  change of the Out of Office settings starts a new period.
+* ruleproc: the TwoStep processor now supports OP_BOUNCE. The sender gets a
+  non-delivery report and the message is not kept.
+* ruleproc: forwards flagged FWD_AS_SMS_ALERT are now sent by the TwoStep
+  processor as a short text mail with sender, subject and the start of the
+  body, instead of a copy of the whole message. Mobile numbers cannot be
+  reached and get a deferred error message.
+
 Fixes:
 
 * EWS: AcceptItem, TentativelyAcceptItem, DeclineItem, SuppressReadReceipt
@@ -26,6 +57,40 @@ Fixes:
 * EWS: changing the attendees of a meeting with UpdateItem no longer drops
   the responses of the attendees that stay, unless the start, end or
   recurrence changed too.
+* ruleproc: an unparsable extended rule no longer keeps all other rules of the
+  folder from running in the TwoStep processor.
+* ruleproc: extended rules on named properties now match in the TwoStep
+  processor.
+* ruleproc: OP_TAG in the TwoStep processor no longer sets the modification
+  time of the message to 1601 and now produces a valid change key.
+* ruleproc: a failing rule no longer stops the remaining rules and the
+  new-mail notification in the TwoStep processor.
+* ruleproc: OP_FORWARD in the TwoStep processor no longer loops between
+  mailboxes and forwards the message as received, keeping signatures intact.
+* ruleproc: gromox.cfg is now read from the config_file_path of the hosting
+  program instead of always /etc/gromox.
+* email_lib: embedded message/rfc822 parts are no longer serialized empty, so
+  rules that forward as attachment send the original message again.
+* ruleproc: with meeting autoprocessing, meeting messages that a delegate rule
+  hands to the delegates only now still update the principal's calendar, and
+  the delegates' copies are flagged as processed.
+* ruleproc: meeting autoprocessing now records a response that a delegate sent
+  on behalf of an attendee for that attendee, instead of looking for the
+  delegate among the attendees.
+* EWS: a delegate answering its copy of a meeting request now responds on
+  behalf of the principal and updates the principal's calendar instead of its
+  own.
+* ruleproc: rules without a condition no longer apply to every message in
+  the TwoStep processor and are skipped, as in the old processor.
+* delivery: the Arrival-Date of bounce reports showed the message size
+  instead of the date.
+* ruleproc: Out of Office rules now still run in the TwoStep processor after
+  a rule that stops processing or deletes the message.
+* ruleproc: the TwoStep processor now runs at most
+  ``exmdb_provider.cfg:max_ext_rule_number`` extended rules per folder, as the
+  old processor does.
+* ruleproc: the TwoStep processor now treats rules flagged
+  ST_ONLY_WHEN_OOF_EX, as Exchange 2007 writes them, as Out of Office rules.
 
 
 Gromox 3.13 (2026-10-28)

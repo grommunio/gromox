@@ -33,24 +33,23 @@
 #include <gromox/oxcmail.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
-#include "exmdb_local.hpp"
+#include "bounce_producer.hpp"
 
 using namespace std::string_literals;
 using namespace gromox;
-DECLARE_HOOK_API(exmdb_local, extern);
-using namespace exmdb_local;
 
 /*
  *	make a bounce mail
  *	@param
+ *		host_id				name of the reporting MTA
  *		bounce_type			type of bounce mail
  *		pmail [out]			bounce mail object
  */
-bool exml_bouncer_make(const char *from, const char *rcpt_to,
+bool exml_bouncer_make(const char *host_id, const char *from, const char *rcpt_to,
     MAIL *pmail_original, time_t original_time, const char *bounce_type,
     MAIL *qmail) try
 {
-	char date_buff[128];
+	char date_buff[128], size_buff[64];
 	sql_meta_result mres;
 	const char *charset = nullptr;
 
@@ -89,8 +88,8 @@ bool exml_bouncer_make(const char *from, const char *rcpt_to,
 		mlog(LV_ERR, "exmdb_local: failed to get mail length");
 		mail_len = 0;
 	}
-	HX_unit_size(date_buff, std::size(date_buff), mail_len, 1000, 0);
-	if (HXformat_add(fa, "length", date_buff, HXTYPE_STRING) < 0)
+	HX_unit_size(size_buff, std::size(size_buff), mail_len, 1000, 0);
+	if (HXformat_add(fa, "length", size_buff, HXTYPE_STRING) < 0)
 		return false;
 
 	hxmc_t *replaced = nullptr;
@@ -133,7 +132,7 @@ bool exml_bouncer_make(const char *from, const char *rcpt_to,
 	vmime::utility::outputStreamStringAdapter vadap(vstr);
 
 	vmime::header dsn;
-	auto mta = "dns;"s + get_host_ID();
+	auto mta = "dns;"s + host_id;
 	dsn.getField("Reporting-MTA")->setValue(mta);
 	dsn.getField("Arrival-Date")->setValue(date_buff);
 	dsn.generate(vadap);

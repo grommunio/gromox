@@ -145,6 +145,8 @@ template<typename T, typename U> constexpr auto strange_roundup(T x, U y) -> dec
 #endif
 
 #define ENVELOPE_FROM_NULL "no.envelope.from@invalid"
+/* autoreply_tsquery peer that reports the age of the Out of Office settings */
+#define OOF_STATE_CHANGE_PEER "oof-state-change@invalid"
 #define ENVELOPE_RCPT_NULL "no.envelope.rcpt@invalid"
 
 static inline constexpr bool is_nameprop_id(unsigned int i) { return i >= 0x8000 && i <= 0xFFFE; }

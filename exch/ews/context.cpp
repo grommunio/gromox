@@ -1152,14 +1152,128 @@ static bool goid_is_instance(const BINARY *goid_bin)
 }
 
 /**
+ * @brief      Principal that a delegate copy of a meeting message is for
+ *
+ * A delegate rule puts a copy of the message into the delegate's mailbox
+ * and names the principal in PR_RCVD_REPRESENTING_*.
+ *
+ * @param      props  Properties of the message
+ * @param      owner  Owner of the mailbox holding the message
+ *
+ * @return     The principal's username, or nothing if the message is no
+ *             delegate copy for someone other than @owner
+ */
+std::optional<std::string> EWSContext::delegatePrincipal(const TPROPVAL_ARRAY &props,
+    const std::string &owner) const try
+{
+	auto dlg = props.get<const uint8_t>(PR_DELEGATED_BY_RULE);
+	if (dlg == nullptr || *dlg == 0)
+		return std::nullopt;
+	auto type  = props.get<const char>(PR_RCVD_REPRESENTING_ADDRTYPE);
+	auto email = props.get<const char>(PR_RCVD_REPRESENTING_EMAIL_ADDRESS);
+	if (email == nullptr || *email == '\0')
+		return std::nullopt;
+	std::string who = type != nullptr && strcasecmp(type, "EX") == 0 ?
+	                  essdn_to_username(email) : email;
+	if (strcasecmp(who.c_str(), owner.c_str()) == 0 ||
+	    get_maildir(who) == get_maildir(owner))
+		return std::nullopt;
+	return who;
+} catch (const DispatchError &) {
+	/* Principal unknown here, so the copy is answered as before */
+	return std::nullopt;
+}
+
+/**
+ * @brief      Check that the caller may answer for @principal in its calendar
+ *
+ * @throw      EWSError::AccessDenied
+ */
+void EWSContext::checkPrincipalCalendar(const std::string &principal) const
+{
+	sFolderSpec cal;
+	cal.location = sFolderSpec::PRIVATE;
+	cal.target   = principal;
+	cal.folderId = eid_t(1, PRIVATE_FID_CALENDAR);
+	auto rights = permissions(getDir(cal), cal.folderId);
+	if (!(rights & frightsOwner) &&
+	    (rights & (frightsCreate | frightsEditAny)) != (frightsCreate | frightsEditAny))
+		throw EWSError::AccessDenied(E3590);
+}
+
+/**
+ * @brief      Translate the named properties of a message to another store
+ *
+ * Properties whose name is unknown in @src are dropped.
+ *
+ * @param      src  Store the IDs in @mc belong to
+ * @param      dst  Store to translate them to
+ * @param      mc   Message, with recipients and attachments
+ */
+void EWSContext::remapNamedProps(const std::string &src, const std::string &dst,
+    MESSAGE_CONTENT &mc) const
+{
+	if (src == dst)
+		return;
+	std::vector<TPROPVAL_ARRAY *> lists;
+	auto walk = [&](auto &&self, MESSAGE_CONTENT &m) -> void {
+		lists.push_back(&m.proplist);
+		if (m.children.prcpts != nullptr)
+			for (auto &row : *m.children.prcpts)
+				lists.push_back(&row);
+		if (m.children.pattachments != nullptr)
+			for (auto &at : *m.children.pattachments) {
+				lists.push_back(&at.proplist);
+				if (at.pembedded != nullptr)
+					self(self, *at.pembedded);
+			}
+	};
+	walk(walk, mc);
+	PROPID_ARRAY ids;
+	for (auto pl : lists)
+		for (unsigned int i = 0; i < pl->count; ++i)
+			if (is_nameprop_id(PROP_ID(pl->ppropval[i].proptag)))
+				ids.push_back(PROP_ID(pl->ppropval[i].proptag));
+	std::sort(ids.begin(), ids.end());
+	ids.erase(std::unique(ids.begin(), ids.end()), ids.end());
+	if (ids.empty())
+		return;
+	PROPNAME_ARRAY names{};
+	if (!m_plugin.exmdb.get_named_propnames(src.c_str(), ids, &names) ||
+	    names.count != ids.size())
+		throw EWSError::ItemSave(E3591);
+	auto nids = getNamedPropIds(dst, names, true);
+	if (nids.size() != ids.size())
+		throw EWSError::ItemSave(E3591);
+	for (auto pl : lists) {
+		std::vector<proptag_t> drop;
+		for (unsigned int i = 0; i < pl->count; ++i) {
+			auto &tag = pl->ppropval[i].proptag;
+			if (!is_nameprop_id(PROP_ID(tag)))
+				continue;
+			auto k = std::lower_bound(ids.begin(), ids.end(), PROP_ID(tag)) - ids.begin();
+			if (nids[k] == 0)
+				drop.push_back(tag);
+			else
+				tag = PROP_TAG(PROP_TYPE(tag), nids[k]);
+		}
+		for (auto t : drop)
+			pl->erase(t);
+	}
+}
+
+/**
  * @brief Create a calendar item after accepting a meeting request
  *
  * @param refId          Item id
  * @param response       Response type
+ * @param owner          Calendar to use if not that of the request's
+ *                       mailbox, e.g. the principal's for a delegate copy
  *
  * @return Message ID of the calendar item, none for a single occurrence
  */
-std::optional<uint64_t> EWSContext::createCalendarItemFromMeetingRequest(const tItemId &refId, uint32_t response) const
+std::optional<uint64_t> EWSContext::createCalendarItemFromMeetingRequest(const tItemId &refId,
+    uint32_t response, const std::string *owner) const
 {
 	// Duplicate the original request and persist it as a calendar appointment.
 	assertIdType(refId.type, tItemId::ID_ITEM);
@@ -1209,13 +1323,16 @@ std::optional<uint64_t> EWSContext::createCalendarItemFromMeetingRequest(const t
 
 	requestFolder.folderId = eid_t(1, PRIVATE_FID_CALENDAR);
 	requestFolder.location = sFolderSpec::PRIVATE;
-	if (!requestFolder.target)
+	if (owner != nullptr)
+		requestFolder.target = *owner;
+	else if (!requestFolder.target)
 		requestFolder.target = m_auth_info.username;
 	std::string calendarDir = getDir(requestFolder);
 
 	auto calRights = permissions(calendarDir, requestFolder.folderId);
 	if (!(calRights & (frightsOwner | frightsCreate)))
 		throw EWSError::AccessDenied(E3130);
+	remapNamedProps(dir, calendarDir, *calendarItem);
 
 	if (props.set(PR_MESSAGE_CLASS, "IPM.Appointment") != ecSuccess)
 		throw EWSError::ItemSave(E3326);
@@ -1270,7 +1387,16 @@ std::optional<uint64_t> EWSContext::createCalendarItemFromMeetingRequest(const t
 	    props.set(PROP_TAG(PT_BOOLEAN, pidSubType), construct<uint8_t>(0)) != ecSuccess)
 		throw EWSError::ItemSave(E3475);
 
-	std::optional<uint64_t> existingMid = findExistingByGoid(requestFolder, calendarDir, *content);
+	/* OXOCAL v22.1 §2.2.4.5: a delegate answering names itself */
+	if (strcasecmp(requestFolder.target->c_str(), m_auth_info.username) != 0) {
+		std::string dlgName;
+		auto pidReplyName = getNamedPropId(calendarDir, NtAppointmentReplyName, true);
+		if (mysql_adaptor_get_user_displayname(m_auth_info.username, dlgName) &&
+		    props.set(PROP_TAG(PT_UNICODE, pidReplyName), dlgName.c_str()) != ecSuccess)
+			throw EWSError::ItemSave(E3327);
+	}
+
+	std::optional<uint64_t> existingMid = findExistingByGoid(requestFolder, calendarDir, *calendarItem);
 	if (existingMid && !(calRights & (frightsOwner | frightsEditAny)))
 		throw EWSError::AccessDenied(E3601);
 	if (existingMid && props.set(PidTagMid, construct<uint64_t>(*existingMid)) != ecSuccess)
@@ -1288,11 +1414,14 @@ std::optional<uint64_t> EWSContext::createCalendarItemFromMeetingRequest(const t
  * @brief Find the Meeting object of a meeting request
  *
  * @param refId  Meeting request
+ * @param owner  Calendar to search if not that of the request's mailbox,
+ *               e.g. the principal's for a delegate copy
  *
- * @return Message ID in the calendar of the same store, none for a single
- *         occurrence or when there is no Meeting object
+ * @return Message ID in that calendar, none for a single occurrence or
+ *         when there is no Meeting object
  */
-std::optional<uint64_t> EWSContext::findMeetingObject(const tItemId &refId) const
+std::optional<uint64_t> EWSContext::findMeetingObject(const tItemId &refId,
+    const std::string *owner) const
 {
 	assertIdType(refId.type, tItemId::ID_ITEM);
 	sMessageEntryId requestId(refId.Id.data(), refId.Id.size());
@@ -1305,10 +1434,28 @@ std::optional<uint64_t> EWSContext::findMeetingObject(const tItemId &refId) cons
 	/* An occurrence matches the series master through the clean goid */
 	if (goid_is_instance(goids.get<const BINARY>(goidTag)))
 		return std::nullopt;
-	MESSAGE_CONTENT content{};
-	content.proplist = goids;
 	folder.folderId = eid_t(1, PRIVATE_FID_CALENDAR);
-	return findExistingByGoid(folder, dir, content);
+	if (owner == nullptr) {
+		MESSAGE_CONTENT content{};
+		content.proplist = goids;
+		return findExistingByGoid(folder, dir, content);
+	}
+	/* The named property IDs differ between the two stores */
+	folder.location = sFolderSpec::PRIVATE;
+	folder.target   = *owner;
+	std::string calDir = getDir(folder);
+	auto calTag = [&](const PROPERTY_NAME &name) {
+		return PROP_TAG(PT_BINARY, getNamedPropId(calDir, name, true));
+	};
+	TAGGED_PROPVAL vals[2];
+	uint16_t count = 0;
+	if (auto v = goids.get<BINARY>(goidTag); v != nullptr)
+		vals[count++] = {calTag(NtGlobalObjectId), v};
+	if (auto v = goids.get<BINARY>(cgoidTag); v != nullptr)
+		vals[count++] = {calTag(NtCleanGlobalObjectId), v};
+	MESSAGE_CONTENT content{};
+	content.proplist = {count, vals};
+	return findExistingByGoid(folder, calDir, content);
 }
 
 /**
@@ -5789,10 +5936,20 @@ bool EWSContext::sendMeetingResponse(const tItemId &responseRef,
 	auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
 	content->proplist.set(PR_CLIENT_SUBMIT_TIME, now);
 	content->proplist.set(PR_MESSAGE_DELIVERY_TIME, now);
-	/* The attendee is the owner of the request, the caller may be a delegate */
-	std::string attendee = refFolder.location == sFolderSpec::PRIVATE ?
+	/*
+	 * The attendee is the owner of the request, the caller may be a
+	 * delegate. A delegate answering its copy responds on behalf of the
+	 * principal.
+	 */
+	std::optional<std::string> principal;
+	if (refFolder.location == sFolderSpec::PRIVATE)
+		principal = delegatePrincipal(reqContent->proplist, *refFolder.target);
+	std::string attendee = principal ? *principal :
+	                       refFolder.location == sFolderSpec::PRIVATE ?
 	                       *refFolder.target : m_auth_info.username;
-	auto respUser = actsAsOwner(refDir) || onSendAsList(refDir) ?
+	if (principal)
+		validate_sendas_perms(attendee);
+	auto respUser = !principal && (actsAsOwner(refDir) || onSendAsList(refDir)) ?
 	                cpystr(attendee) :
 	                deconst(m_auth_info.username);
 	std::string respName, attName;
