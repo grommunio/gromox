@@ -406,13 +406,21 @@ ec_error_t message_object::write_message(const MESSAGE_CONTENT &content)
 	PROBLEM_ARRAY tmp_problems;
 	
 	auto msgctnt = content;
-	msgctnt.proplist.ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt->proplist.count);
+	msgctnt.proplist.ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt->proplist.count + 1);
 	if (msgctnt.proplist.ppropval == nullptr)
 		return ecServerOOM;
 	memcpy(msgctnt.proplist.ppropval, pmsgctnt->proplist.ppropval,
 				sizeof(TAGGED_PROPVAL)*pmsgctnt->proplist.count);
 	for (auto t : trimtags)
 		common_util_remove_propvals(&msgctnt.proplist, t);
+	/* oxcical/oxvcard output lacks it */
+	if (!msgctnt.proplist.has(PR_CREATION_TIME)) {
+		auto crtime = cu_alloc<uint64_t>();
+		if (crtime == nullptr)
+			return ecServerOOM;
+		*crtime = rop_util_current_nttime();
+		msgctnt.proplist.emplace_back(PR_CREATION_TIME, crtime);
+	}
 	if (!exmdb_client->clear_message_instance(pmessage->pstore->get_dir(),
 	    pmessage->instance_id))
 		return ecRpcFailed;
@@ -882,7 +890,9 @@ ec_error_t message_object::remove_properties(proptag_cspan pproptags) try
 	std::vector<uint16_t> poriginal_indices;
 	for (unsigned int i = 0; i < pproptags.size(); ++i) {
 		const auto tag = pproptags[i];
-		if (msgo_is_readonly_prop(pmessage, tag)) {
+		/* New messages may set PR_CREATION_TIME, but not lose it */
+		if (msgo_is_readonly_prop(pmessage, tag) ||
+		    tag == PR_CREATION_TIME) {
 			problems.pproblem[problems.count++].index = i;
 			continue;
 		}
