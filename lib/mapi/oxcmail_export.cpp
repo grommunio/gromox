@@ -507,6 +507,8 @@ static std::string omv_export_content_class_1(const char *cls)
 		return "voice";
 	else if (strncasecmp(cls, "IPM.Note.Custom.", 16) == 0)
 		return "urn:content-class:custom."s + cls;
+	else if (class_match_prefix(cls, "IPM.Sharing") == 0)
+		return "Sharing";
 	return {};
 }
 

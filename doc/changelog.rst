@@ -106,6 +106,8 @@ Fixes:
 * EWS: UpdateUserConfiguration kept the old change number of the
   configuration message, so cached Outlook never picked up categories added
   in eM Client or Outlook for Mac.
+* oxcmail: IPM.Sharing messages now carry a Content-Class header on export,
+  which eM Client needs to show a calendar sharing invitation.
 * EWS: GetUserConfiguration returned the UserConfiguration element in the
   types namespace and its folder id without a namespace. Clients built on
   the EWS Managed API such as eM Client rejected the response and could not
