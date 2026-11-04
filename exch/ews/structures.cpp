@@ -5179,10 +5179,14 @@ void tItem::update(const sShape& shape)
 		fromProp(prop, defaulted(ConversationId).Id);
 		ConversationId->type = tItemId::ID_GENERIC;
 	}
-	if ((prop = shape.get(PR_CREATION_TIME)))
-		fromProp(prop, DateTimeCreated);
-	else
-		fromProp(shape.get(PR_LOCAL_COMMIT_TIME), DateTimeCreated);
+	prop = shape.get(PR_CREATION_TIME);
+	if (prop == nullptr) {
+		auto want = shape.requested(PR_CREATION_TIME);
+		prop = shape.get(PR_LOCAL_COMMIT_TIME, want ? sShape::FL_ANY : sShape::FL_FIELD);
+		if (prop == nullptr && want)
+			prop = shape.get(PR_LAST_MODIFICATION_TIME, sShape::FL_ANY);
+	}
+	fromProp(prop, DateTimeCreated);
 	fromProp(shape.get(PR_DISPLAY_BCC), DisplayBcc);
 	fromProp(shape.get(PR_DISPLAY_CC), DisplayCc);
 	fromProp(shape.get(PR_DISPLAY_TO),DisplayTo);
@@ -5422,6 +5426,9 @@ void tItemResponseShape::tags(sShape& shape) const
 		for (const auto& named : namedTagsAllProperties)
 			shape.add(*named.first, named.second, sShape::FL_FIELD);
 	}
+	/* Fallback for a missing PR_CREATION_TIME, see tItem::update */
+	if (shape.requested(PR_CREATION_TIME))
+		shape.add(PR_LOCAL_COMMIT_TIME);
 	/*
 	 * The UTC fallback zone of all-day items needs these. Added last so
 	 * that a field request made above keeps its flags.
