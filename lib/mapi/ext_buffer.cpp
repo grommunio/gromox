@@ -1152,7 +1152,7 @@ pack_result EXT_PULL::g_proptag_a(PROPTAG_ARRAY *r)
 		return pack_result::ok;
 	}
 	CLAMP16(r->count);
-	r->pproptag = anew<uint32_t>(strange_roundup(r->count, SR_GROW_PROPTAG_ARRAY));
+	r->pproptag = anew<uint32_t>(gx_capacity(r->count, SR_GROW_PROPTAG_ARRAY));
 	if (r->pproptag == nullptr) {
 		r->count = 0;
 		return pack_result::alloc;
@@ -1190,7 +1190,7 @@ pack_result EXT_PULL::g_proptag_la(LPROPTAG_ARRAY *r)
 		return pack_result::ok;
 	}
 	CLAMP32(r->cvalues);
-	r->pproptag = anew<uint32_t>(strange_roundup(r->cvalues, SR_GROW_PROPTAG_ARRAY));
+	r->pproptag = anew<uint32_t>(gx_capacity(r->cvalues, SR_GROW_PROPTAG_ARRAY));
 	if (r->pproptag == nullptr) {
 		r->cvalues = 0;
 		return pack_result::alloc;
@@ -1249,7 +1249,7 @@ pack_result EXT_PULL::g_tpropval_a(TPROPVAL_ARRAY *r)
 		return pack_result::ok;
 	}
 	CLAMP16(r->count);
-	r->ppropval = anew<TAGGED_PROPVAL>(strange_roundup(r->count, SR_GROW_TAGGED_PROPVAL));
+	r->ppropval = anew<TAGGED_PROPVAL>(gx_capacity(r->count, SR_GROW_TAGGED_PROPVAL));
 	if (r->ppropval == nullptr) {
 		r->count = 0;
 		return pack_result::alloc;
@@ -1267,7 +1267,7 @@ pack_result EXT_PULL::g_tpropval_la(LTPROPVAL_ARRAY *r)
 		return pack_result::ok;
 	}
 	CLAMP32(r->count);
-	r->propval = anew<TAGGED_PROPVAL>(strange_roundup(r->count, SR_GROW_TAGGED_PROPVAL));
+	r->propval = anew<TAGGED_PROPVAL>(gx_capacity(r->count, SR_GROW_TAGGED_PROPVAL));
 	if (r->propval == nullptr) {
 		r->count = 0;
 		return pack_result::alloc;
@@ -1285,7 +1285,7 @@ pack_result EXT_PULL::g_tarray_set(TARRAY_SET *r)
 		return pack_result::ok;
 	}
 	CLAMP32(r->count);
-	r->pparray = anew<TPROPVAL_ARRAY *>(strange_roundup(r->count, SR_GROW_TPROPVAL_ARRAY));
+	r->pparray = anew<TPROPVAL_ARRAY *>(gx_capacity(r->count, SR_GROW_TPROPVAL_ARRAY));
 	if (r->pparray == nullptr) {
 		r->count = 0;
 		return pack_result::alloc;
@@ -2021,7 +2021,7 @@ static pack_result ext_buffer_pull_attachment_list(EXT_PULL *pext, ATTACHMENT_LI
 	
 	TRY(pext->g_uint16(&r->count));
 	CLAMP16(r->count);
-	r->pplist = pext->anew<ATTACHMENT_CONTENT *>(strange_roundup(r->count, SR_GROW_ATTACHMENT_CONTENT));
+	r->pplist = pext->anew<ATTACHMENT_CONTENT *>(gx_capacity(r->count, SR_GROW_ATTACHMENT_CONTENT));
 	if (r->pplist == nullptr) {
 		r->count = 0;
 		return pack_result::alloc;

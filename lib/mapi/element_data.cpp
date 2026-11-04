@@ -76,7 +76,7 @@ ATTACHMENT_LIST* attachment_list_init()
 		return NULL;
 	}
 	plist->count = 0;
-	auto count = strange_roundup(plist->count, SR_GROW_ATTACHMENT_CONTENT);
+	auto count = gx_capacity(plist->count, SR_GROW_ATTACHMENT_CONTENT);
 	plist->pplist = me_alloc<ATTACHMENT_CONTENT *>(count);
 	if (NULL == plist->pplist) {
 		free(plist);
@@ -119,10 +119,10 @@ BOOL attachment_list::append_internal(attachment_content *pattachment)
 	if (plist->count >= 0x8000) {
 		return FALSE;
 	}
-	auto c = strange_roundup(plist->count, SR_GROW_ATTACHMENT_CONTENT);
-	if (plist->count + 1U >= c) {
-		c += SR_GROW_ATTACHMENT_CONTENT;
-		auto new_list = re_alloc<ATTACHMENT_CONTENT *>(plist->pplist, c);
+	auto cap = gx_capacity(plist->count, SR_GROW_ATTACHMENT_CONTENT);
+	if (plist->count >= cap) {
+		cap = gx_capacity(plist->count + 1U, SR_GROW_ATTACHMENT_CONTENT);
+		auto new_list = re_alloc<ATTACHMENT_CONTENT *>(plist->pplist, cap);
 		if (new_list == nullptr)
 			return FALSE;
 		plist->pplist = new_list;

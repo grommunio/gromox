@@ -150,7 +150,7 @@ NSP_ROWSET* common_util_proprowset_init()
 	if (pset == nullptr)
 		return NULL;
 	memset(pset, 0, sizeof(NSP_ROWSET));
-	auto count = strange_roundup(pset->crows, SR_GROW_NSP_ROWSET);
+	auto count = gx_capacity(pset->crows, SR_GROW_NSP_ROWSET);
 	pset->prows = ndr_stack_anew<NSP_PROPROW>(NDR_STACK_OUT, count);
 	if (pset->prows == nullptr)
 		return NULL;
@@ -160,10 +160,10 @@ NSP_ROWSET* common_util_proprowset_init()
 NSP_PROPROW* common_util_proprowset_enlarge(NSP_ROWSET *pset)
 {
 	NSP_PROPROW *prows;
-	auto count = strange_roundup(pset->crows, SR_GROW_NSP_ROWSET);
-	if (pset->crows + 1 >= count) {
-		count += SR_GROW_NSP_ROWSET;
-		prows = ndr_stack_anew<NSP_PROPROW>(NDR_STACK_OUT, count);
+	auto cap = gx_capacity(pset->crows, SR_GROW_NSP_ROWSET);
+	if (pset->crows >= cap) {
+		cap = gx_capacity(pset->crows + 1, SR_GROW_NSP_ROWSET);
+		prows = ndr_stack_anew<NSP_PROPROW>(NDR_STACK_OUT, cap);
 		if (prows == nullptr)
 			return NULL;
 		memcpy(prows, pset->prows, sizeof(NSP_PROPROW)*pset->crows);
@@ -181,7 +181,7 @@ NSP_PROPROW* common_util_propertyrow_init(NSP_PROPROW *prow)
 			return NULL;
 	}
 	memset(prow, 0, sizeof(NSP_PROPROW));
-	auto count = strange_roundup(prow->cvalues, SR_GROW_NSP_PROPROW);
+	auto count = gx_capacity(prow->cvalues, SR_GROW_NSP_PROPROW);
 	prow->pprops = ndr_stack_anew<PROPERTY_VALUE>(NDR_STACK_OUT, count);
 	if (prow->pprops == nullptr)
 		return NULL;
@@ -191,10 +191,10 @@ NSP_PROPROW* common_util_propertyrow_init(NSP_PROPROW *prow)
 PROPERTY_VALUE* common_util_propertyrow_enlarge(NSP_PROPROW *prow)
 {
 	PROPERTY_VALUE *pprops;
-	auto count = strange_roundup(prow->cvalues, SR_GROW_NSP_PROPROW);
-	if (prow->cvalues + 1 >= count) {
-		count += SR_GROW_NSP_PROPROW;
-		pprops = ndr_stack_anew<PROPERTY_VALUE>(NDR_STACK_OUT, count);
+	auto cap = gx_capacity(prow->cvalues, SR_GROW_NSP_PROPROW);
+	if (prow->cvalues >= cap) {
+		cap = gx_capacity(prow->cvalues + 1, SR_GROW_NSP_PROPROW);
+		pprops = ndr_stack_anew<PROPERTY_VALUE>(NDR_STACK_OUT, cap);
 		if (pprops == nullptr)
 			return NULL;
 		memcpy(pprops, prow->pprops,

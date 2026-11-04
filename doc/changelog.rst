@@ -61,6 +61,9 @@ Enhancements:
 * oxcmail: long address lists, Subject, References, In-Reply-To, passthrough
   headers and encoded attachment file names are now folded instead of being
   emitted as one line of any length.
+* lib: property lists, row sets, attachment lists and NSPI rows now double
+  their capacity when they grow. Growing by a fixed 100 slots made building
+  large sets quadratic, in time everywhere and in memory for nsp and zcore.
 
 Changes:
 
