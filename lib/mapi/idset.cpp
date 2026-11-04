@@ -112,13 +112,15 @@ bool idset::contains(uint64_t eid) const
 	return prepl_node->range_list.contains(value);
 }
 
+static constexpr uint32_t idset_bin_step = 4096;
+
 static binary_ptr idset_init_binary()
 {
 	binary_ptr pbin(gromox::me_alloc<BINARY>());
 	if (pbin == nullptr)
 		return NULL;
 	pbin->cb = 0;
-	pbin->pv = malloc(4096);
+	pbin->pv = malloc(gx_capacity(pbin->cb, idset_bin_step));
 	if (pbin->pv == nullptr)
 		return NULL;
 	return pbin;
@@ -126,9 +128,9 @@ static binary_ptr idset_init_binary()
 
 static BOOL idset_write_to_binary(BINARY *pbin, const void *pb, uint8_t len)
 {
-	uint32_t alloc_len = strange_roundup(pbin->cb, 4096);
-	if (pbin->cb + len >= alloc_len) {
-		alloc_len = strange_roundup(pbin->cb + len, 4096);
+	uint32_t alloc_len = gx_capacity(pbin->cb, idset_bin_step);
+	if (pbin->cb + len > alloc_len) {
+		alloc_len = gx_capacity(pbin->cb + len, idset_bin_step);
 		auto pdata = gromox::re_alloc<uint8_t>(pbin->pb, alloc_len);
 		if (pdata == nullptr)
 			return FALSE;
