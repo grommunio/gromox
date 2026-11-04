@@ -273,6 +273,10 @@ static ec_error_t multibody_html(std::string &&utfbody, xmldocptr &ag_doc) try
 	std::unique_ptr<xmlDoc, xmlfree> doc(htmlReadMemory(utfbody.c_str(),
 		utfbody.size(), nullptr, "utf-8",
 		HTML_PARSE_NOERROR | HTML_PARSE_NOWARNING | HTML_PARSE_NONET));
+	if (doc == nullptr && utfbody.size() == 0)
+		/* Old libxml (prior to v2.13.0) has problems with 0-sized documents */
+		doc.reset(htmlReadMemory("<!-- -->", 8, nullptr, "utf-8",
+			HTML_PARSE_NOERROR | HTML_PARSE_NOWARNING | HTML_PARSE_NONET));
 	if (doc == nullptr)
 		return ecServerOOM;
 	utfbody.clear();
@@ -674,8 +678,10 @@ ec_error_t quote_html(const quote_header &hdr, std::string &html) try
 {
 	xmldocptr doc(htmlReadMemory(html.c_str(), html.size(), nullptr, "utf-8",
 		HTML_PARSE_NOERROR | HTML_PARSE_NOWARNING | HTML_PARSE_NONET));
-	if (doc == nullptr)
-		doc.reset(htmlNewDocNoDtD(nullptr, nullptr));
+	if (doc == nullptr && html.size() == 0)
+		/* Old libxml (prior to v2.13.0) has problems with 0-sized documents */
+		doc.reset(htmlReadMemory("<!-- -->", 8, nullptr, "utf-8",
+			HTML_PARSE_NOERROR | HTML_PARSE_NOWARNING | HTML_PARSE_NONET));
 	if (doc == nullptr)
 		return ecServerOOM;
 	auto mknode = [&](xmlNode *parent, const char *name) {
