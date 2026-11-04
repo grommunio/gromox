@@ -234,7 +234,7 @@ mapi_la_LDFLAGS += -Wl,--allow-shlib-undefined
 endif
 EXTRA_mapi_la_DEPENDENCIES = default.sym
 
-noinst_PROGRAMS = dldcheck tests/bodyconv tests/compress tests/imapargs tests/dnsbl_check tests/ewsrules tests/exrpctest tests/gxl-383 tests/jsontest tests/oxcmail_ie tests/ucvttest tests/udb tests/utf8filter tests/utiltest tests/vcard tools/tzdump
+noinst_PROGRAMS = dldcheck tests/bodyconv tests/compress tests/dnsbl_check tests/ewsrules tests/exrpctest tests/gxl-383 tests/imapargs tests/imaptest tests/jsontest tests/oxcmail_ie tests/ucvttest tests/udb tests/utf8filter tests/utiltest tests/vcard tools/tzdump
 if HAVE_ESEDB
 noinst_PROGRAMS += tests/epv_unpack
 endif
@@ -244,35 +244,35 @@ endif
 dldcheck_SOURCES = tools/dldcheck.cpp
 dldcheck_LDADD = ${dl_LIBS} ${libHX_LIBS}
 TESTS = tests/bodyconv tests/ewsrules tests/imapargs tests/jsontest tests/oxcmail_ie tests/utiltest
-tests_udb_SOURCES = tests/userdb.cpp
-tests_udb_LDADD = ${libHX_LIBS} libgromox_common.la libgxs_mysql_adaptor.la
 tests_bodyconv_SOURCES = tests/bodyconv.cpp
 tests_bodyconv_LDADD = ${libHX_LIBS} libgromox_common.la libgromox_mapi.la
 tests_compress_SOURCES = tests/compress.cpp
 tests_compress_LDADD = libgromox_common.la
 tests_dnsbl_check_SOURCES = tests/dnsbl_check.cpp
 tests_dnsbl_check_LDADD = libgromox_authz.la libgromox_common.la
+tests_epv_unpack_SOURCES = tests/epv_unpack.cpp tools/edb_pack.cpp tools/edb_pack.hpp
+tests_epv_unpack_LDADD = ${libesedb_LIBS} ${libHX_LIBS} libgromox_common.la libgromox_mapi.la
 tests_ewsrules_SOURCES = tests/ewsrules.cpp exch/ews/rules.cpp exch/ews/rules.hpp
 tests_ewsrules_LDADD = ${fmt_LIBS} ${libHX_LIBS} ${tinyxml2_LIBS} libgromox_common.la libgromox_mapi.la
 tests_ewsrules_CXXFLAGS = ${AM_CXXFLAGS}
-tests_epv_unpack_SOURCES = tests/epv_unpack.cpp tools/edb_pack.cpp tools/edb_pack.hpp
-tests_epv_unpack_LDADD = ${libesedb_LIBS} ${libHX_LIBS} libgromox_common.la libgromox_mapi.la
 tests_exrpctest_SOURCES = tests/exrpctest.cpp
 tests_exrpctest_LDADD = libgromox_common.la libgromox_exrpc.la libgromox_mapi.la
 tests_gssauth_SOURCES = tests/gssauth.cpp
 tests_gssauth_LDADD = ${libHX_LIBS} ${gss_LIBS} libgromox_common.la
 tests_gxl_383_SOURCES = tests/gxl-383.cpp
 tests_gxl_383_LDADD = libgromox_common.la libgromox_exrpc.la libgromox_mapi.la
+tests_imapargs_SOURCES = tests/imapargs.cpp
+tests_imapargs_LDADD = ${libHX_LIBS} libgromox_common.la
 tests_jsontest_SOURCES = tests/jsontest.cpp
 tests_jsontest_LDADD = ${jsoncpp_LIBS} libgromox_common.la libgromox_mapi.la
 tests_oxcmail_ie_SOURCES = tests/oxcmail_ie.cpp
 tests_oxcmail_ie_LDADD = ${jsoncpp_LIBS} ${libHX_LIBS} ${vmime_LIBS} libgromox_common.la libgromox_mapi.la
 tests_ucvttest_SOURCES = tests/ucvttest.cpp
 tests_ucvttest_LDADD = libgromox_mapi.la
+tests_udb_SOURCES = tests/userdb.cpp
+tests_udb_LDADD = ${libHX_LIBS} libgromox_common.la libgxs_mysql_adaptor.la
 tests_utf8filter_SOURCES = tests/utf8filter.cpp
 tests_utf8filter_LDADD = ${libHX_LIBS} libgromox_common.la
-tests_imapargs_SOURCES = tests/imapargs.cpp
-tests_imapargs_LDADD = ${libHX_LIBS} libgromox_common.la
 tests_utiltest_SOURCES = tests/utiltest.cpp
 tests_utiltest_LDADD = ${libHX_LIBS} libgromox_common.la libgromox_exrpc.la libgromox_mapi.la
 tests_vcard_SOURCES = tests/vcard.cpp
