@@ -48,7 +48,6 @@ const char *g_storedir;
 unsigned int g_user_id, g_wet_run = 1;
 unsigned int g_public_folder, g_verbose_create;
 static thread_local alloc_context g_alloc_mgr;
-ec_error_t (*exmdb_local_rules_execute)(const char *, const char *, const char *, eid_t, eid_t, unsigned int);
 
 YError::YError(const std::string &s) : m_str(s)
 {}
@@ -491,8 +490,6 @@ eid_t gi_lookup_eid_any_way(const char *dir, const char *name)
 
 int gi_startup_client(unsigned int maxconn)
 {
-	exmdb_local_rules_execute = reinterpret_cast<decltype(exmdb_local_rules_execute)>(service_query("rules_execute",
-	                            typeid(*exmdb_local_rules_execute)));
 	exmdb_rpc_alloc = gi_alloc;
 	exmdb_rpc_free = gi_free;
 	exmdb_client.emplace(maxconn);

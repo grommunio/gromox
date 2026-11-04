@@ -813,15 +813,6 @@ struct exreq_update_folder_rule final : public exreq {
 	RULE_DATA *prow = nullptr;
 };
 
-enum delivery_flags {
-	DELIVERY_DO_RULES_SV = 0x1U,
-	DELIVERY_DO_NOTIF_SV = 0x2U,
-	DELIVERY_DO_MRAUTOPROC = 0x4U,
-	DELIVERY_FORCE_JUNK = 0x8U,
-	DELIVERY_DO_RULES_CL = 0x10U,
-	DELIVERY_DO_NOTIF_CL = 0x20U,
-};
-
 struct exreq_deliver_message final : public exreq {
 	using view_t = exreq_deliver_message;
 	char *from_address = nullptr, *account = nullptr;

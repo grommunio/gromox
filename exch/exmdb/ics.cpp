@@ -19,6 +19,7 @@
 #include "db_engine.hpp"
 
 using namespace gromox;
+using LLU = unsigned long long;
 
 namespace {
 
@@ -206,13 +207,12 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 		snprintf(sql_string, std::size(sql_string), "SELECT message_id,"
 			" change_number, is_associated, message_size,"
 			" read_state, read_cn FROM messages WHERE "
-		         "parent_fid=%llu AND is_deleted=0",
-		         static_cast<unsigned long long>(fid_val));
+		         "parent_fid=%llu AND is_deleted=0", LLU{fid_val});
 	else
 		snprintf(sql_string, std::size(sql_string), "SELECT message_id,"
 			" change_number, is_associated, message_size "
 			"FROM messages WHERE parent_fid=%llu AND "
-			"is_deleted=0", static_cast<unsigned long long>(fid_val));
+			"is_deleted=0", LLU{fid_val});
 	auto stm_select_msg = pdb->prep(sql_string);
 	if (stm_select_msg == nullptr)
 		return false;
@@ -254,8 +254,7 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 		rcv_cutoff = *static_cast<const int64_t *>(prestriction->prop->propval.pvalue);
 		snprintf(sql_string, std::size(sql_string), "SELECT message_id "
 		         "FROM msgtime_index WHERE folder_id=%llu AND rcvtime>=%lld",
-		         static_cast<unsigned long long>(fid_val),
-		         static_cast<long long>(rcv_cutoff));
+		         LLU{fid_val}, static_cast<long long>(rcv_cutoff));
 		auto stm_scope = pdb->prep(sql_string);
 		if (stm_scope != nullptr) {
 			int ret;
@@ -579,7 +578,7 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	}
 	fprintf(lf, "-------------\n");
 	fprintf(lf, "dir=%s actor=%s CONTENT_SYNC folder_id=%llxh given=",
-		dir, znul(username), static_cast<unsigned long long>(folder_id));
+		dir, znul(username), LLU{folder_id});
 	pgiven->dump(lf);
 	fprintf(lf, " read=");
 	if (pread != nullptr)
@@ -603,7 +602,7 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	fprintf(lf, "}\nnolonger[%u]={", pnolonger_mids->count);
 	for (unsigned long long mid : *pnolonger_mids)
 		fprintf(lf, "%llxh,", mid);
-	fprintf(lf, "}\nlastcn=%llxh\n", static_cast<unsigned long long>(*plast_cn));
+	fprintf(lf, "}\nlastcn=%llxh\n", LLU{*plast_cn});
 	return TRUE;
 }
 
@@ -874,7 +873,7 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 	}
 	fprintf(lf, "-------------\n");
 	fprintf(lf, "* dir=%s actor=%s HIER_SYNC folder_id=%llxh given=",
-		dir, znul(username), static_cast<unsigned long long>(folder_id));
+		dir, znul(username), LLU{folder_id});
 	pgiven->dump(lf);
 	fprintf(lf, " Out: given={");
 	for (unsigned long long fid : *pgiven_fids)
@@ -882,6 +881,6 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 	fprintf(lf, "}\ndel={");
 	for (unsigned long long fid : *pdeleted_fids)
 		fprintf(lf, "%llxh,", fid);
-	fprintf(lf, "}\nlastcn=%llxh\n", static_cast<unsigned long long>(*plast_cn));
+	fprintf(lf, "}\nlastcn=%llxh\n", LLU{*plast_cn});
 	return TRUE;
 }

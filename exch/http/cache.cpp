@@ -43,6 +43,7 @@
 #define BOUNDARY_STRING				"00000000000000000001"
 
 using namespace gromox;
+using LLU = unsigned long long;
 
 namespace {
 struct cache_item {
@@ -228,9 +229,7 @@ static bool mod_cache_serialize_etag(const struct stat &sb, char *etag, size_t l
 		return false;
 	snprintf(etag, len, "%x-%llx-%llx-%llx",
 	         static_cast<unsigned int>(sb.st_dev),
-	         static_cast<unsigned long long>(sb.st_ino),
-	         static_cast<unsigned long long>(sb.st_size),
-	         static_cast<unsigned long long>(sb.st_mtime));
+	         LLU{sb.st_ino}, LLU(sb.st_size), LLU{sb.st_mtime});
 	return true;
 }
 
@@ -288,7 +287,7 @@ static BOOL mod_cache_response_single_header(http_context *phttp) try
 	if (emit_206)
 		rsp += fmt::format("Content-Range: bytes {}-{}/{}\r\n\r\n",
 		       pcontext->offset, pcontext->until - 1,
-		       static_cast<unsigned long long>(pcontext->pitem->sb.st_size));
+		       LLU(pcontext->pitem->sb.st_size));
 	else
 		rsp += "\r\n";
 	return phttp->stream_out.write(rsp.c_str(), rsp.size()) == STREAM_WRITE_OK ? TRUE : false;
@@ -316,7 +315,7 @@ static uint32_t mod_cache_calculate_content_length(cache_context *pcontext)
 		/* Content-Range: bytes x-x/xxx\r\n */
 		content_length += 23 + snprintf(num_buff, std::size(num_buff), "%u-%u/%llu",
 		                  pcontext->range[i].begin, pcontext->range[i].end,
-		                  static_cast<unsigned long long>(pcontext->pitem->sb.st_size));
+		                  LLU(pcontext->pitem->sb.st_size));
 		content_length += 2; /* \r\n */
 		content_length += pcontext->range[i].end - pcontext->range[i].begin + 1;
 		content_length += 2; /* \r\n */
@@ -484,7 +483,7 @@ http_status mod_cache_take_request(http_context *phttp)
 			return http_status::server_error;
 		else if (!S_ISREG(node_stat.st_mode))
 			return http_status::forbidden;
-		else if (static_cast<unsigned long long>(node_stat.st_size) >= UINT32_MAX)
+		else if (LLU(node_stat.st_size) >= UINT32_MAX)
 			return http_status::server_error;
 		static_assert(UINT32_MAX <= SIZE_MAX);
 	}
@@ -653,7 +652,7 @@ BOOL mod_cache_read_response(http_context *phttp)
 					BOUNDARY_STRING, pcontent_type,
 					pcontext->range[pcontext->range_pos].begin,
 					pcontext->range[pcontext->range_pos].end,
-				          static_cast<unsigned long long>(pcontext->pitem->sb.st_size));
+					LLU(pcontext->pitem->sb.st_size));
 			} else {
 				tmp_len = gx_snprintf(tmp_buff, std::size(tmp_buff),
 					"\r\n--%s--\r\n",

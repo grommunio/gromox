@@ -21,6 +21,7 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/json.hpp>
 #include <gromox/mail.hpp>
+#include <gromox/ruleproc.hpp>
 #include <gromox/svc_loader.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/tie.hpp>
@@ -51,7 +52,7 @@ static propididmap_t g_thru_name_map;
 static uint8_t g_splice;
 static uint64_t g_anchor_folder; /* GCV */
 static unsigned int g_oexcl = 1, g_repeat_iter = 1;
-static unsigned int g_do_delivery, g_skip_notif, g_skip_rules, g_twostep;
+static unsigned int g_do_delivery, g_skip_notif, g_skip_rules;
 static unsigned int g_continuous_mode, g_mrautoproc, g_mlog_level = MLOG_DEFAULT_LEVEL;
 
 static constexpr generic_module g_dfl_svc_plugins[] = {
@@ -76,7 +77,6 @@ static constexpr HXoption g_options_table[] = {
 	{"repeat", 0, HXTYPE_UINT, &g_repeat_iter, {}, {}, 0, "For testing purposes, import each message N times", "N"},
 	{"skip-notif", 0, HXTYPE_NONE, &g_skip_notif, nullptr, nullptr, 0, "Skip emission of notifications (if -D)"},
 	{"skip-rules", 0, HXTYPE_NONE, &g_skip_rules, nullptr, nullptr, 0, "Skip execution of rules (if -D)"},
-	{"twostep", '2', HXTYPE_NONE, &g_twostep, nullptr, nullptr, 0, "TWOSTEP rule executor (implies -D; development)"},
 	{"autoproc", 0, HXTYPE_NONE, &g_mrautoproc, {}, {}, 0, "Perform meeting request processing (development)"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
@@ -457,10 +457,6 @@ static int exm_deliver_msg(const char *target, MESSAGE_CONTENT *ct,
 		return ece2nerrno(ret);
 	uint64_t folder_id = 0, msg_id = 0;
 	uint32_t r32 = 0;
-	if (mode & DELIVERY_TWOSTEP) {
-		mode &= ~(DELIVERY_DO_RULES_SV | DELIVERY_DO_NOTIF_SV);
-		mode |= DELIVERY_DO_RULES_CL | DELIVERY_DO_NOTIF_CL;
-	}
 	uint64_t change_num = 0;
 	if (!exmdb_client->allocate_cn(g_storedir, &change_num)) {
 		fprintf(stderr, "exm: allocate_cn(msg)[delivery] RPC failed\n");
@@ -510,17 +506,11 @@ static int exm_deliver_msg(const char *target, MESSAGE_CONTENT *ct,
 		fprintf(stderr, "Partial completion - The server could not save all of the message (wrong permissions/disk full/...)\n");
 		return EXIT_FAILURE;
 	}
-	if (!(mode & DELIVERY_TWOSTEP))
-		return EXIT_SUCCESS;
-	if (exmdb_local_rules_execute == nullptr) {
-		fprintf(stderr, "Programmer's error: libgxs_ruleproc.so was not activated, cannot perform rule processing");
-		return EXIT_FAILURE;
-	}
-	fprintf(stderr, "Exercising TWOSTEP ruleprocessor:\n");
 	if (msg_id == 0) {
 		fprintf(stderr, "deliver_message RPC did not give us a message_id -- not executing any rules.\n");
 		return EXIT_SUCCESS;
 	}
+	fprintf(stderr, "Running rule processor...\n");
 	auto err = exmdb_local_rules_execute(g_storedir, ENVELOPE_FROM_NULL,
 	           target, folder_id, msg_id, mode);
 	if (err != ecSuccess) {
@@ -584,17 +574,13 @@ static int exm_message(const ob_desc &obd, MESSAGE_CONTENT &ctnt,
 		}
 		return EXIT_SUCCESS;
 	}
-	unsigned int mode = DELIVERY_DO_RULES_SV | DELIVERY_DO_NOTIF_SV;
-	if (g_twostep) {
-		mode  = DELIVERY_TWOSTEP;
-		mode |= DELIVERY_DO_RULES_CL | DELIVERY_DO_NOTIF_CL;
-		if (g_mrautoproc)
-			mode |= DELIVERY_MRAUTOPROC;
-	}
+	unsigned int mode = DELIVERY_DO_RULES_CL | DELIVERY_DO_NOTIF_CL;
+	if (g_mrautoproc)
+		mode |= DELIVERY_MRAUTOPROC;
 	if (g_skip_rules)
-		mode &= ~(DELIVERY_DO_RULES_SV | DELIVERY_DO_RULES_CL);
+		mode &= ~DELIVERY_DO_RULES_CL;
 	if (g_skip_notif)
-		mode &= ~(DELIVERY_DO_NOTIF_SV | DELIVERY_DO_NOTIF_CL);
+		mode &= ~DELIVERY_DO_NOTIF_CL;
 	for (auto i = 0U; i < g_repeat_iter; ++i) {
 		if (i > 0 && i % 1024 == 0)
 			fprintf(stderr, "importer repeat cycle %u/%u\n", i, g_repeat_iter);
@@ -698,8 +684,6 @@ int main(int argc, char **argv) try
 	setup_utf8_locale();
 	if (g_continuous_mode)
 		fprintf(stderr, "Continuous mode has been selcted: On errors, the import will NOT abort\n");
-	if (g_twostep)
-		g_do_delivery = true;
 	if (g_do_delivery && g_anchor_folder != 0)
 		fprintf(stderr, "gromox-import: -B option has no effect when -D is used\n");
 	if (iconv_validate() != 0)

@@ -46,7 +46,6 @@ static constexpr generic_module g_dfl_mpc_plugins[] = {
 };
 static constexpr generic_module g_dfl_svc_plugins[] = {
 	{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor},
-	{"libgxs_ruleproc.so", SVC_ruleproc},
 };
 
 static constexpr cfg_directive gromox_cfg_defaults[] = {
