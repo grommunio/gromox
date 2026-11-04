@@ -234,7 +234,7 @@ mapi_la_LDFLAGS += -Wl,--allow-shlib-undefined
 endif
 EXTRA_mapi_la_DEPENDENCIES = default.sym
 
-noinst_PROGRAMS = dldcheck tests/bodyconv tests/compress tests/dnsbl_check tests/ewsrules tests/exrpctest tests/gxl-383 tests/imapargs tests/imaptest tests/jsontest tests/oxcmail_ie tests/ucvttest tests/udb tests/utf8filter tests/utiltest tests/vcard tools/tzdump
+noinst_PROGRAMS = dldcheck tests/bodyconv tests/compress tests/dnsbl_check tests/ewsrules tests/exrpctest tests/gxl-383 tests/imapargs tests/jsontest tests/oxcmail_ie tests/ucvttest tests/udb tests/utf8filter tests/utiltest tests/vcard tools/tzdump
 if HAVE_ESEDB
 noinst_PROGRAMS += tests/epv_unpack
 endif
