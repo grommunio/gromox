@@ -108,6 +108,8 @@ Fixes:
   in eM Client or Outlook for Mac.
 * oxcmail: IPM.Sharing messages now carry a Content-Class header on export,
   which eM Client needs to show a calendar sharing invitation.
+* oxcmail: long values of stored transport headers such as
+  X-Sharing-Remote-Uid are no longer turned into encoded-words on export.
 * EWS: GetUserConfiguration returned the UserConfiguration element in the
   types namespace and its folder id without a namespace. Clients built on
   the EWS Managed API such as eM Client rejected the response and could not

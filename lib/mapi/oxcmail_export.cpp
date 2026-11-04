@@ -4,6 +4,7 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
+#include <algorithm>
 #include <cstring>
 #include <string>
 #include <utility>
@@ -15,6 +16,7 @@
 #include <vmime/contentTypeField.hpp>
 #include <vmime/dateTime.hpp>
 #include <vmime/header.hpp>
+#include <vmime/headerFieldFactory.hpp>
 #include <vmime/mailboxList.hpp>
 #include <vmime/messageIdSequence.hpp>
 #include <vmime/stringContentHandler.hpp>
@@ -491,6 +493,54 @@ static AWUR ec_error_t omv_export_tocc(const message_content &mct,
 	return ecSuccess;
 }
 
+namespace {
+
+static bool plain_ascii(const std::string &s)
+{
+	return std::all_of(s.begin(), s.end(), [](unsigned char c) {
+		return (c >= 0x20 && c < 0x7f) || c == '\t';
+	});
+}
+
+static size_t longest_run(const std::string &s)
+{
+	size_t best = 0, cur = 0;
+	for (unsigned char c : s) {
+		cur = c == ' ' || c == '\t' ? 0 : cur + 1;
+		best = std::max(best, cur);
+	}
+	return best;
+}
+
+/*
+ * Stored transport headers come out as stored and fold at whitespace
+ * only, unlike vmime::text which turns a word longer than the line into
+ * encoded-words. Everything else is left to text, so vmime can parse,
+ * clone and copy the value like any other.
+ */
+class passthrough_value final : public vmime::text {
+	public:
+	explicit passthrough_value(const char *v)
+	{
+		appendWord(vmime::make_shared<vmime::word>(v, vmime::charsets::UTF_8));
+	}
+	vmime::shared_ptr<vmime::component> clone() const override
+	{
+		return vmime::make_shared<passthrough_value>(*this);
+	}
+	void generateImpl(const vmime::generationContext &ctx,
+	    vmime::utility::outputStream &os, size_t cur, size_t *nl) const override
+	{
+		auto v = getWholeBuffer();
+		if (plain_ascii(v) && cur + longest_run(v) <= vmime::lineLengthLimits::max)
+			encodeAndFold(ctx, os, cur, nl, vmime::text::FORCE_NO_ENCODING);
+		else
+			vmime::text::generateImpl(ctx, os, cur, nl);
+	}
+};
+
+}
+
 static std::string omv_export_content_class_1(const char *cls)
 {
 	if (class_match_prefix(cls, "IPM.Note.Microsoft.Fax") == 0)
@@ -820,6 +870,7 @@ static AWUR ec_error_t omv_export_mail_head(const message_content &mct,
 
 	vhead.getField("X-Mailer")->setValue("gromox-oxcmail " PACKAGE_VERSION);
 	auto guid = PS_INTERNET_HEADERS;
+	auto pctx = vmail_default_parsectx();
 	for (size_t i = 0; i < mct.proplist.count; ++i) {
 		auto proptag = mct.proplist.ppropval[i].proptag;
 		if (!is_nameprop_id(PROP_ID(proptag)))
@@ -836,14 +887,20 @@ static AWUR ec_error_t omv_export_mail_head(const message_content &mct,
 		    strcasecmp(ppropname->pname, "Content-Type") == 0)
 			continue;
 		str = static_cast<const char *>(mct.proplist.ppropval[i].pvalue);
+		auto field = vhead.getField(ppropname->pname);
+		passthrough_value pv(str);
+		auto hff = vmime::headerFieldFactory::getInstance();
+		if (hff->isValueTypeValid(*field, pv)) {
+			field->setValue(pv);
+			continue;
+		}
 		/*
-		 * Do not use text8 here: for header names vmime has a
-		 * registered value class for (Received, Return-Path, ...),
-		 * setValue(text) throws bad_field_value_type at runtime. The
-		 * string overload parses into whatever type the field wants,
-		 * like the MAIL exporter's untyped set_field did.
+		 * Header names with a registered vmime value class, such as
+		 * Received or Return-Path, take a string. It is parsed into
+		 * the type the field wants, and setValue of any other type
+		 * throws bad_field_value_type at runtime.
 		 */
-		vhead.getField(ppropname->pname)->setValue(std::string(str));
+		field->parse(pctx, std::string(str));
 	}
 	return ecSuccess;
 }
