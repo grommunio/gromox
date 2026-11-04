@@ -1645,28 +1645,6 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_rule_new_message &d)
 	return x.p_uint64(d.message_id);
 }
 
-static pack_result exmdb_pull(EXT_PULL &x, exreq_set_message_timer &d)
-{
-	TRY(x.g_uint64(&d.message_id));
-	return x.g_uint32(&d.timer_id);
-}
-
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_set_message_timer &d)
-{
-	TRY(x.p_uint64(d.message_id));
-	return x.p_uint32(d.timer_id);
-}
-
-static pack_result exmdb_pull(EXT_PULL &x, exreq_get_message_timer &d)
-{
-	return x.g_uint64(&d.message_id);
-}
-
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_message_timer &d)
-{
-	return x.p_uint64(d.message_id);
-}
-
 static pack_result exmdb_pull(EXT_PULL &x, exreq_empty_folder_permission &d)
 {
 	return x.g_uint64(&d.folder_id);
@@ -3240,29 +3218,6 @@ static pack_result exmdb_pull(EXT_PULL &x, exresp_link_messages &d)
 static pack_result exmdb_push(EXT_PUSH &x, const exresp_link_messages &d)
 {
 	return x.p_bool(d.b_partial);
-}
-
-static pack_result exmdb_pull(EXT_PULL &x, exresp_get_message_timer &d)
-{
-	uint8_t tmp_byte;
-	
-	TRY(x.g_uint8(&tmp_byte));
-	if (0 == tmp_byte) {
-		d.ptimer_id = nullptr;
-		return pack_result::ok;
-	}
-	d.ptimer_id = cu_alloc<uint32_t>();
-	if (d.ptimer_id == nullptr)
-		return pack_result::alloc;
-	return x.g_uint32(d.ptimer_id);
-}
-
-static pack_result exmdb_push(EXT_PUSH &x, const exresp_get_message_timer &d)
-{
-	if (d.ptimer_id == nullptr)
-		return x.p_uint8(0);
-	TRY(x.p_uint8(1));
-	return x.p_uint32(*d.ptimer_id);
 }
 
 static pack_result exmdb_pull(EXT_PULL &x, exresp_update_folder_rule &d)

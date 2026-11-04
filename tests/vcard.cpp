@@ -11,6 +11,7 @@
 #include <gromox/mapidefs.h>
 #include <gromox/mime.hpp>
 #include <gromox/oxcmail.hpp>
+#include <gromox/rop_util.hpp>
 #include <gromox/vcard.hpp>
 #include "../tools/staticnpmap.cpp"
 #include "../tools/genimport.hpp"
@@ -321,6 +322,81 @@ static int t_rrule()
 	return EXIT_SUCCESS;
 }
 
+static int t_clip_one(const char *dtstart, const char *rrule,
+    time_t exp_start, time_t exp_end)
+{
+	std::string input =
+		"BEGIN:VCALENDAR\n"
+		"VERSION:2.0\n"
+		"BEGIN:VTIMEZONE\n"
+		"TZID:W. Europe Standard Time\n"
+		"BEGIN:STANDARD\n"
+		"DTSTART:16010101T030000\n"
+		"TZOFFSETFROM:+0200\n"
+		"TZOFFSETTO:+0100\n"
+		"RRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=10\n"
+		"END:STANDARD\n"
+		"BEGIN:DAYLIGHT\n"
+		"DTSTART:16010101T020000\n"
+		"TZOFFSETFROM:+0100\n"
+		"TZOFFSETTO:+0200\n"
+		"RRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=3\n"
+		"END:DAYLIGHT\n"
+		"END:VTIMEZONE\n"
+		"BEGIN:VEVENT\n"
+		"UID:clip@example.com\n"
+		"DTSTAMP:20240101T000000Z\n"
+		"SUMMARY:clip\n";
+	input += "DTSTART"s + dtstart + "\nDURATION:PT1H\nRRULE:" + rrule +
+	         "\nEND:VEVENT\nEND:VCALENDAR\n";
+	ical icalin;
+	if (!icalin.load_from_str_move(input.data()))
+		return EXIT_FAILURE;
+	oxcical_converter cvt;
+	cvt.alloc = zalloc;
+	cvt.get_propids = ee_get_propids;
+	cvt.username_to_entryid = oxcmail_username_to_entryid;
+	auto msg = cvt.ical_to_mapi_single(icalin);
+	assert(msg != nullptr);
+	PROPERTY_NAME names[] = {
+		{MNID_ID, PSETID_Appointment, PidLidClipStart},
+		{MNID_ID, PSETID_Appointment, PidLidClipEnd},
+	};
+	const PROPNAME_ARRAY pna = {std::size(names), names};
+	PROPID_ARRAY ids;
+	assert(ee_get_propids(&pna, &ids) && ids.size() == 2);
+	auto cs = msg->proplist.get<const uint64_t>(PROP_TAG(PT_SYSTIME, ids[0]));
+	auto ce = msg->proplist.get<const uint64_t>(PROP_TAG(PT_SYSTIME, ids[1]));
+	assert(cs != nullptr && ce != nullptr);
+	assert(rop_util_nttime_to_unix(*cs) == exp_start);
+	if (exp_end == 0)
+		assert(*ce == rop_util_rtime_to_nttime(ENDDATE_MISSING));
+	else
+		assert(rop_util_nttime_to_unix(*ce) == exp_end);
+	return EXIT_SUCCESS;
+}
+
+/* MS-OXOCAL v22.1 §2.2.1.14/§2.2.1.15 */
+static int t_clip()
+{
+	static constexpr char tz[] = ";TZID=W. Europe Standard Time:";
+	auto ret = t_clip_one((tz + "20240110T090000"s).c_str(),
+	           "FREQ=DAILY;COUNT=3", 1704841200, 1705014000);
+	if (ret != EXIT_SUCCESS)
+		return ret;
+	/* last day already in summer time */
+	ret = t_clip_one((tz + "20240330T090000"s).c_str(),
+	      "FREQ=DAILY;COUNT=3", 1711753200, 1711922400);
+	if (ret != EXIT_SUCCESS)
+		return ret;
+	ret = t_clip_one((tz + "20240110T090000"s).c_str(),
+	      "FREQ=WEEKLY", 1704841200, 0);
+	if (ret != EXIT_SUCCESS)
+		return ret;
+	return t_clip_one(":20240110T090000Z", "FREQ=DAILY;COUNT=3",
+	       1704844800, 1705017600);
+}
+
 int main()
 {
 	auto ret = t_ical_api();
@@ -334,6 +410,9 @@ int main()
 	if (ret != EXIT_SUCCESS)
 		return ret;
 	ret = t_rrule();
+	if (ret != EXIT_SUCCESS)
+		return ret;
+	ret = t_clip();
 	if (ret != EXIT_SUCCESS)
 		return ret;
 	return EXIT_SUCCESS;

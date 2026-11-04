@@ -411,8 +411,10 @@ bool RESTRICTION_PROPERTY::eval(const void *dbval) const
 		return propval_compare_relop_nullok(relop, PROP_TYPE(proptag),
 		       dbval, propval.pvalue);
 
+	/* EQ matches if any value is equal, NE if none is */
 	RESTRICTION_PROPERTY r2 = *this;
 	r2.proptag &= ~MV_FLAG;
+	r2.relop = RELOP_EQ;
 	bool mop = relop == RELOP_EQ;
 
 	switch (PROP_TYPE(proptag)) {

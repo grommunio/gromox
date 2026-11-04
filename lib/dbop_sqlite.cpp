@@ -424,6 +424,13 @@ static constexpr char tbl_fixupperms_29[] =
 static constexpr char tbl_msgtimemidindex_30[] =
 "CREATE INDEX IF NOT EXISTS msgtime_mid_idx ON msgtime_index (message_id)";
 
+static constexpr char tbl_deferredsends_31[] =
+"CREATE TABLE deferred_sends ("
+"  message_id INTEGER PRIMARY KEY,"
+"  due_time INTEGER NOT NULL,"
+"  FOREIGN KEY (message_id) REFERENCES messages (message_id) ON DELETE CASCADE ON UPDATE CASCADE);"
+"CREATE INDEX deferred_sends_time_index ON deferred_sends(due_time);";
+
 static constexpr char tbl_pub_folders_0[] =
 "CREATE TABLE folders ("
 "  folder_id INTEGER PRIMARY KEY,"
@@ -539,6 +546,7 @@ static constexpr tbl_init tbl_pvt_init_top[] = {
 	{"search_result", tbl_pvt_searchresult_0},
 	{"autoreply_ts", tbl_pvt_autoreply_ts_11},
 	{"msgtime_index", tbl_msgtimeindex_30},
+	{"deferred_sends", tbl_deferredsends_31},
 	TABLE_END,
 };
 
@@ -779,6 +787,7 @@ static constexpr tblite_upgradefn tbl_pvt_upgrade_list[] = {
 	{28, tbl_rebuildmsgtimeindex_28},
 	{29, tbl_fixupperms_29},
 	{30, tbl_msgtimemidindex_30},
+	{31, tbl_deferredsends_31},
 	/* advance schema numbers in lockstep with public stores */
 	TABLE_END,
 };

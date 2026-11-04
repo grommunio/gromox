@@ -776,6 +776,135 @@ static int ical_exception_roundtrip()
 	return EXIT_SUCCESS;
 }
 
+static int ical_exception_origdate()
+{
+	static constexpr char data[] =
+		"BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//EN\r\n"
+		"BEGIN:VTIMEZONE\r\nTZID:Europe/Berlin\r\n"
+		"BEGIN:DAYLIGHT\r\nTZOFFSETFROM:+0100\r\nTZOFFSETTO:+0200\r\n"
+		"DTSTART:19700329T020000\r\nRRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=3\r\nEND:DAYLIGHT\r\n"
+		"BEGIN:STANDARD\r\nTZOFFSETFROM:+0200\r\nTZOFFSETTO:+0100\r\n"
+		"DTSTART:19701025T030000\r\nRRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=10\r\nEND:STANDARD\r\n"
+		"END:VTIMEZONE\r\n"
+		"BEGIN:VEVENT\r\nUID:exc-od\r\nDTSTAMP:20261005T100000Z\r\nSUMMARY:daily\r\n"
+		"RRULE:FREQ=DAILY;COUNT=5\r\n"
+		"DTSTART;TZID=Europe/Berlin:20261020T003000\r\nDTEND;TZID=Europe/Berlin:20261020T013000\r\n"
+		"END:VEVENT\r\n"
+		"BEGIN:VEVENT\r\nUID:exc-od\r\nDTSTAMP:20261005T100000Z\r\nSUMMARY:moved\r\n"
+		"RECURRENCE-ID;TZID=Europe/Berlin:20261022T003000\r\n"
+		"DTSTART;TZID=Europe/Berlin:20261022T143000\r\nDTEND;TZID=Europe/Berlin:20261022T153000\r\n"
+		"END:VEVENT\r\nEND:VCALENDAR\r\n";
+	fprintf(stderr, "=== ical_exception_origdate\n");
+	auto msg = ical_load(data);
+	assert(msg != nullptr);
+	APPOINTMENT_RECUR_PAT apr{};
+	assert(ical_recur(*msg, apr));
+	assert(apr.pexceptioninfo.size() == 1);
+	/* 2026-10-22 00:30 local, not 2026-10-21 22:30 UTC */
+	auto want = rop_util_unix_to_rtime(1792629000);
+	if (apr.pexceptioninfo[0].originalstartdate != want ||
+	    apr.pextendedexception[0].originalstartdate != want ||
+	    !apr.recur_pat.contains_del(want - 30)) {
+		fprintf(stderr, "originalstartdate %u, want %u\n",
+		        apr.pexceptioninfo[0].originalstartdate, want);
+		return EXIT_FAILURE;
+	}
+
+	/* an EXDATE for the same day must not swallow the exception */
+	std::string d2 = data;
+	d2.insert(d2.find("DTSTART;TZID=Europe/Berlin:20261020"),
+		"EXDATE;TZID=Europe/Berlin:20261022T003000\r\n");
+	msg = ical_load(std::move(d2));
+	assert(msg != nullptr);
+	apr = {};
+	assert(ical_recur(*msg, apr));
+	if (apr.pexceptioninfo.size() != 1 ||
+	    apr.recur_pat.pdeletedinstancedates.size() != 1) {
+		fprintf(stderr, "%zu exceptions, %zu deletions\n",
+		        apr.pexceptioninfo.size(),
+		        apr.recur_pat.pdeletedinstancedates.size());
+		return EXIT_FAILURE;
+	}
+	return EXIT_SUCCESS;
+}
+
+/*
+ * An occurrence moved to another day. MS-OXOCAL wants its new day in
+ * ModifiedInstanceDates. EWS used to store the original day there, and the
+ * export then had an RDATE without EXDATE, which the import rejects.
+ */
+static int ical_moved_exception_dates()
+{
+	static constexpr char data[] =
+		"BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//EN\r\n"
+		"BEGIN:VTIMEZONE\r\nTZID:Europe/Berlin\r\n"
+		"BEGIN:DAYLIGHT\r\nTZOFFSETFROM:+0100\r\nTZOFFSETTO:+0200\r\n"
+		"DTSTART:19700329T020000\r\nRRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=3\r\nEND:DAYLIGHT\r\n"
+		"BEGIN:STANDARD\r\nTZOFFSETFROM:+0200\r\nTZOFFSETTO:+0100\r\n"
+		"DTSTART:19701025T030000\r\nRRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=10\r\nEND:STANDARD\r\n"
+		"END:VTIMEZONE\r\n"
+		"BEGIN:VEVENT\r\nUID:exc-moved\r\nDTSTAMP:20261005T100000Z\r\nSUMMARY:daily\r\n"
+		"RRULE:FREQ=WEEKLY;COUNT=3\r\n"
+		"DTSTART;TZID=Europe/Berlin:20261102T100000\r\nDTEND;TZID=Europe/Berlin:20261102T110000\r\n"
+		"END:VEVENT\r\n"
+		"BEGIN:VEVENT\r\nUID:exc-moved\r\nDTSTAMP:20261005T100000Z\r\nSUMMARY:moved\r\n"
+		"RECURRENCE-ID;TZID=Europe/Berlin:20261109T100000\r\n"
+		"DTSTART;TZID=Europe/Berlin:20261110T140000\r\nDTEND;TZID=Europe/Berlin:20261110T150000\r\n"
+		"END:VEVENT\r\nEND:VCALENDAR\r\n";
+	static const PROPERTY_NAME namelist[] = {
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentRecur},
+	};
+	PROPNAME_ARRAY na = {1, deconst(namelist)};
+	PROPID_ARRAY pids;
+	assert(ee_get_propids(&na, &pids));
+	fprintf(stderr, "=== ical_moved_exception_dates\n");
+	for (bool legacy : {false, true}) {
+		auto msg1 = ical_load(data);
+		assert(msg1 != nullptr);
+		APPOINTMENT_RECUR_PAT apr{};
+		assert(ical_recur(*msg1, apr));
+		assert(apr.pexceptioninfo.size() == 1);
+		assert(apr.recur_pat.pmodifiedinstancedates.size() == 1);
+		auto &ei = apr.pexceptioninfo[0];
+		apr.recur_pat.pmodifiedinstancedates[0] = legacy ?
+			ei.originalstartdate / 1440 * 1440 :
+			ei.startdatetime / 1440 * 1440;
+		EXT_PUSH ep;
+		assert(ep.init(nullptr, 0, EXT_FLAG_UTF16) &&
+		       ep.p_apptrecpat(apr) == pack_result::ok);
+		BINARY bin;
+		bin.cb = ep.m_offset;
+		bin.pv = ep.m_udata;
+		assert(msg1->proplist.set(PROP_TAG(PT_BINARY, pids[0]), &bin) == ecSuccess);
+
+		oxcical_converter cvt;
+		cvt.log_id = "-";
+		cvt.org_name = "x500org";
+		cvt.alloc = g_alloc;
+		cvt.get_propids = ee_get_propids;
+		ical icalout;
+		assert(cvt.mapi_to_ical(*msg1, icalout));
+		std::string icstr;
+		assert(icalout.serialize(icstr) == ecSuccess);
+		if (icstr.find("RDATE") != std::string::npos ||
+		    icstr.find("EXDATE") != std::string::npos) {
+			fprintf(stderr, "%s", icstr.c_str());
+			return EXIT_FAILURE;
+		}
+		auto msg2 = ical_load(std::move(icstr));
+		assert(msg2 != nullptr);
+		APPOINTMENT_RECUR_PAT apr2{};
+		assert(ical_recur(*msg2, apr2));
+		assert(apr2.pexceptioninfo.size() == 1);
+		assert(apr2.pexceptioninfo[0].startdatetime == ei.startdatetime);
+		assert(apr2.recur_pat.pdeletedinstancedates.size() == 1);
+		assert(apr2.recur_pat.pmodifiedinstancedates.size() == 1);
+		assert(apr2.recur_pat.pmodifiedinstancedates[0] / 1440 ==
+		       ei.startdatetime / 1440);
+	}
+	return EXIT_SUCCESS;
+}
+
 /*
  * A meeting response identifies the responder through
  * PR_SENT_REPRESENTING_SMTP_ADDRESS (the iCalendar ATTENDEE) and through
@@ -1016,6 +1145,143 @@ static int ical_allday_hint()
 	if (icstr.find("DTSTART;VALUE=DATE:20261020") == std::string::npos ||
 	    icstr.find("DTEND;VALUE=DATE:20261021") == std::string::npos) {
 		fprintf(stderr, "%s", icstr.c_str());
+		return EXIT_FAILURE;
+	}
+	return EXIT_SUCCESS;
+}
+
+/* GXL-797 */
+static int ical_standalone_occurrence()
+{
+	static constexpr char data[] =
+		"BEGIN:VCALENDAR\r\nMETHOD:REQUEST\r\nVERSION:2.0\r\nPRODID:-//test//EN\r\n"
+		"BEGIN:VTIMEZONE\r\nTZID:W. Europe Standard Time\r\n"
+		"BEGIN:STANDARD\r\nDTSTART:16010101T030000\r\nTZOFFSETFROM:+0200\r\nTZOFFSETTO:+0100\r\n"
+		"RRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=10\r\nEND:STANDARD\r\n"
+		"BEGIN:DAYLIGHT\r\nDTSTART:16010101T020000\r\nTZOFFSETFROM:+0100\r\nTZOFFSETTO:+0200\r\n"
+		"RRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=3\r\nEND:DAYLIGHT\r\nEND:VTIMEZONE\r\n"
+		"BEGIN:VEVENT\r\n"
+		"UID:040000008200E00074C5B7101A82E008000000008094416AF015DD01000000000000000"
+		"010000000794CB8A8093341F056A4152A7710228F\r\n"
+		"RECURRENCE-ID;VALUE=DATE;TZID=W. Europe Standard Time:20260810\r\n"
+		"DTSTART;VALUE=DATE;TZID=W. Europe Standard Time:20260811\r\n"
+		"DTEND;VALUE=DATE;TZID=W. Europe Standard Time:20260812\r\n"
+		"DTSTAMP:20260717T133447Z\r\nSEQUENCE:1\r\nSUMMARY:x\r\n"
+		"X-MICROSOFT-CDO-ALLDAYEVENT:TRUE\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n";
+	static const PROPERTY_NAME namelist[] = {
+		{MNID_ID, PSETID_Appointment, PidLidExceptionReplaceTime},
+		{MNID_ID, PSETID_Meeting, PidLidIsException},
+		{MNID_ID, PSETID_Meeting, PidLidGlobalObjectId},
+	};
+	PROPNAME_ARRAY na = {static_cast<uint16_t>(std::size(namelist)), deconst(namelist)};
+	PROPID_ARRAY pids;
+	assert(ee_get_propids(&na, &pids));
+	const auto xrt_tag = PROP_TAG(PT_SYSTIME, pids[0]);
+	const auto isx_tag = PROP_TAG(PT_BOOLEAN, pids[1]);
+	const auto goid_tag = PROP_TAG(PT_BINARY, pids[2]);
+
+	fprintf(stderr, "=== ical_standalone_occurrence\n");
+	auto msg = ical_load(data);
+	assert(msg != nullptr);
+	auto xrt = msg->proplist.get<const uint64_t>(xrt_tag);
+	auto isx = msg->proplist.get<const uint8_t>(isx_tag);
+	/* 2026-08-10 00:00 CEST */
+	if (xrt == nullptr || rop_util_nttime_to_unix(*xrt) != 1786312800 ||
+	    isx == nullptr || *isx == 0) {
+		fprintf(stderr, "occurrence not marked\n");
+		return EXIT_FAILURE;
+	}
+
+	oxcical_converter cvt;
+	cvt.log_id = "-";
+	cvt.org_name = "x500org";
+	cvt.alloc = g_alloc;
+	cvt.get_propids = ee_get_propids;
+	for (unsigned int i = 0; i < 2; ++i) {
+		/* copies stored before the fix only have the GOID date */
+		if (i == 1) {
+			msg->proplist.erase(xrt_tag);
+			msg->proplist.erase(isx_tag);
+		}
+		ical icalout;
+		assert(cvt.mapi_to_ical(*msg, icalout));
+		std::string icstr;
+		assert(icalout.serialize(icstr) == ecSuccess);
+		if (icstr.find("RECURRENCE-ID;VALUE=DATE:20260810\r\n") == std::string::npos ||
+		    icstr.find("DTSTART;VALUE=DATE:20260811\r\n") == std::string::npos ||
+		    icstr.find("X-MICROSOFT-CDO-INSTTYPE:3\r\n") == std::string::npos ||
+		    icstr.find("RRULE", icstr.find("BEGIN:VEVENT")) != std::string::npos) {
+			fprintf(stderr, "pass %u:\n%s", i, icstr.c_str());
+			return EXIT_FAILURE;
+		}
+	}
+
+	/* a GOID not in the EncodedGlobalId format carries no date */
+	uint8_t junk[40];
+	memset(junk, 0xbc, sizeof(junk));
+	memcpy(&junk[16], "\x07\xea\x08\x0a", 4);
+	BINARY jbin;
+	jbin.cb = sizeof(junk);
+	jbin.pb = junk;
+	assert(msg->proplist.set(goid_tag, &jbin) == ecSuccess);
+	ical icalout;
+	assert(cvt.mapi_to_ical(*msg, icalout));
+	std::string icstr;
+	assert(icalout.serialize(icstr) == ecSuccess);
+	if (icstr.find("RECURRENCE-ID") != std::string::npos ||
+	    icstr.find("X-MICROSOFT-CDO-INSTTYPE:0\r\n") == std::string::npos) {
+		fprintf(stderr, "junk GOID:\n%s", icstr.c_str());
+		return EXIT_FAILURE;
+	}
+	return EXIT_SUCCESS;
+}
+
+static int ical_allday_date_zone()
+{
+	static const PROPERTY_NAME namelist[] = {
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentStartWhole},
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentEndWhole},
+	};
+	PROPNAME_ARRAY na = {static_cast<uint16_t>(std::size(namelist)), deconst(namelist)};
+	PROPID_ARRAY pids;
+	assert(ee_get_propids(&na, &pids));
+	fprintf(stderr, "=== ical_allday_date_zone\n");
+	auto msg = ical_import_str("DTSTART;VALUE=DATE:20261019\r\n"
+	           "DTEND;VALUE=DATE:20261020\r\n"
+	           "RRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=3\r\n"
+	           "X-MICROSOFT-CDO-ALLDAYEVENT:TRUE\r\n");
+	assert(msg != nullptr);
+	auto start = msg->proplist.get<const uint64_t>(PROP_TAG(PT_SYSTIME, pids[0]));
+	auto end = msg->proplist.get<const uint64_t>(PROP_TAG(PT_SYSTIME, pids[1]));
+	assert(start != nullptr && end != nullptr);
+	/* local midnight in Europe/Berlin, not UTC midnight */
+	if (rop_util_nttime_to_unix(*start) != 1792360800 ||
+	    rop_util_nttime_to_unix(*end) != 1792447200) {
+		fprintf(stderr, "start %lld end %lld\n",
+			static_cast<long long>(rop_util_nttime_to_unix(*start)),
+			static_cast<long long>(rop_util_nttime_to_unix(*end)));
+		return EXIT_FAILURE;
+	}
+
+	/* the original date of a moved occurrence stays on its day */
+	msg = ical_import_str("DTSTART;VALUE=DATE:20261019\r\n"
+	      "DTEND;VALUE=DATE:20261020\r\n"
+	      "RRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=3\r\n"
+	      "X-MICROSOFT-CDO-ALLDAYEVENT:TRUE\r\n"
+	      "END:VEVENT\r\nBEGIN:VEVENT\r\nUID:allday-hint\r\n"
+	      "DTSTAMP:20261005T100000Z\r\n"
+	      "RECURRENCE-ID;VALUE=DATE:20261026\r\n"
+	      "DTSTART;VALUE=DATE:20261027\r\n"
+	      "DTEND;VALUE=DATE:20261028\r\n");
+	assert(msg != nullptr);
+	APPOINTMENT_RECUR_PAT apr{};
+	assert(ical_recur(*msg, apr));
+	assert(apr.pexceptioninfo.size() == 1);
+	auto want = rop_util_unix_to_rtime(1792972800);
+	if (apr.pexceptioninfo[0].originalstartdate != want ||
+	    !apr.recur_pat.contains_del(want)) {
+		fprintf(stderr, "originalstartdate %u, want %u\n",
+		        apr.pexceptioninfo[0].originalstartdate, want);
 		return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;
@@ -1476,6 +1742,50 @@ static int vexport_recipients()
 	assert(err == ecSuccess);
 	ostr = vmsg->generate();
 	assert(strstr(ostr.c_str(), "Sender: ") == nullptr);
+	return EXIT_SUCCESS;
+}
+
+static int vexport_sched_delegate()
+{
+	static const PROPERTY_NAME namelist[] = {
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentStartWhole},
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentEndWhole},
+	};
+	PROPNAME_ARRAY na = {static_cast<uint16_t>(std::size(namelist)), deconst(namelist)};
+	PROPID_ARRAY pids;
+	assert(ee_get_propids(&na, &pids));
+	static constexpr uint64_t v_time = 0x1dabd02f773da00;
+	auto cvt = ve_converter();
+	message_content_ptr mct(message_content_init());
+	auto &props = mct->proplist;
+	props.set(PR_MESSAGE_CLASS, "IPM.Schedule.Meeting.Resp.Pos");
+	props.set(PR_SUBJECT, "appointment");
+	props.set(PROP_TAG(PT_SYSTIME, pids[0]), &v_time);
+	props.set(PROP_TAG(PT_SYSTIME, pids[1]), &v_time);
+	props.set(PR_SENDER_NAME, "Sunder");
+	props.set(PR_SENDER_SMTP_ADDRESS, "sender@ex.de");
+	props.set(PR_SENT_REPRESENTING_NAME, "Riprezenting");
+	props.set(PR_SENT_REPRESENTING_SMTP_ADDRESS, "boss@ex.de");
+	assert(ve_new_rcpt(mct.get(), MAPI_TO, nullptr, "org@ex.de") != nullptr);
+
+	/* A delegate answers in the owner's name */
+	auto vmsg = vmime::make_shared<vmime::message>();
+	auto err = cvt.mapi_to_inet(*mct, vmsg);
+	assert(err == ecSuccess);
+	auto ostr = vmsg->generate();
+	assert(strstr(ostr.c_str(), "method=REPLY") != nullptr);
+	assert(strstr(ostr.c_str(), "From: \"Riprezenting\" <boss@ex.de>") != nullptr);
+	assert(strstr(ostr.c_str(), "Sender: \"Sunder\" <sender@ex.de>") != nullptr);
+
+	/* Without a represented sender, the sender is the From */
+	props.erase(PR_SENT_REPRESENTING_NAME);
+	props.erase(PR_SENT_REPRESENTING_SMTP_ADDRESS);
+	vmsg = vmime::make_shared<vmime::message>();
+	err = cvt.mapi_to_inet(*mct, vmsg);
+	assert(err == ecSuccess);
+	ostr = vmsg->generate();
+	assert(strstr(ostr.c_str(), "From: \"Sunder\" <sender@ex.de>") != nullptr);
+	assert(strstr(ostr.c_str(), "\nSender:") == nullptr);
 	return EXIT_SUCCESS;
 }
 
@@ -2026,6 +2336,32 @@ static int openpgp_legacy_layout()
 	return EXIT_SUCCESS;
 }
 
+static int meeting_prefixes()
+{
+	static constexpr struct {
+		const char *loc, *key, *exp;
+	} cases[] = {
+		{"de", "accepted", "Angenommen: "},
+		{"de-DE", "tentative", "Mit Vorbehalt angenommen: "},
+		{"de_AT.UTF-8@euro", "canceled", "Abgesagt: "},
+		{"fr-FR", "declined", "Refusé: "},
+		{"NL", "accepted", "Geaccepteerd: "},
+		{"xx_YY", "tentative", "Tentative: "},
+		{"", "canceled", "Canceled: "},
+		{nullptr, "newtime", "New Time Proposed: "},
+		{"de", "nosuchkey", ""},
+	};
+	for (const auto &c : cases) {
+		auto p = meeting_subject_prefix(c.loc, c.key);
+		if (strcmp(p, c.exp) != 0) {
+			fprintf(stderr, "meeting_subject_prefix(%s, %s) = \"%s\"\n",
+			        znul(c.loc), c.key, p);
+			return EXIT_FAILURE;
+		}
+	}
+	return EXIT_SUCCESS;
+}
+
 int main()
 {
 	mlog_init(nullptr, nullptr, LV_DEBUG, nullptr);
@@ -2051,12 +2387,14 @@ int main()
 		E(select_parts_5), E(select_parts_6), E(select_parts_7),
 		E(ical_export_1), E(ical_export_2), E(ical_reply_identity),
 		E(ical_export_exception), E(ical_export_allday_exception),
-		E(ical_allday_hint),
+		E(ical_allday_hint), E(ical_allday_date_zone),
+		E(ical_standalone_occurrence),
 		E(hdrparse_1),
 		E(vcard_tel_types), E(vcard_escaped_values), E(vcard_photo), E(vcard_dates),
 		E(vcard_fileas_categories),
 		E(vexport_head), E(vexport_simple_body), E(vexport_image),
 		E(vexport_inline_image), E(vexport_recipients),
+		E(vexport_sched_delegate),
 		E(vexport_headers), E(vexport_internet_headers),
 		E(vexport_dsn), E(vexport_mdn), E(vexport_smime),
 		E(vexport_embedded), E(vexport_depth_cap), E(vexport_tnef),
@@ -2064,7 +2402,8 @@ int main()
 		E(vexport_filename_utf8), E(vexport_body_fallback),
 		E(vexport_calendar), E(openpgp_roundtrip),
 		E(openpgp_legacy_layout),
-		E(ical_exception_roundtrip),
+		E(ical_exception_roundtrip), E(ical_exception_origdate),
+		E(ical_moved_exception_dates), E(meeting_prefixes),
 	};
 #undef E
 	for (const auto &t : tests)

@@ -23,10 +23,12 @@
 #include <gromox/freebusy.hpp>
 #include <gromox/ical.hpp>
 #include <gromox/mapi_types.hpp>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/util.hpp>
 #include <gromox/textmaps.hpp>
+#include <gromox/usercvt.hpp>
 #include "ews.hpp"
 #include "structures.hpp"
 #include "namedtags.hpp"
@@ -462,7 +464,7 @@ tRecurrenceRange get_recurrence_range(const RECURRENCE_PATTERN& recur_pat)
 	}
 }
 
-static inline std::chrono::system_clock::time_point
+static inline EWS::time_point
 rtime_to_tp(const TZDEF *tz, std::chrono::seconds tz_offset, uint32_t rtime)
 {
 	int64_t off;
@@ -486,21 +488,24 @@ void process_occurrences(const TAGGED_PROPVAL* entryid, const APPOINTMENT_RECUR_
 	std::vector<tDeletedOccurrenceInfoType> &delOccs,
 	const TZDEF *tz, std::chrono::seconds tz_offset)
 {
-	std::set<uint32_t> mod_insts(apprecurr.recur_pat.pmodifiedinstancedates.cbegin(),
-		apprecurr.recur_pat.pmodifiedinstancedates.cend());
-
-	size_t del_count = 0; // counter for deleted occurrences
-	for (size_t i = 0; i < apprecurr.recur_pat.pdeletedinstancedates.size(); ++i) {
-		auto di = apprecurr.recur_pat.pdeletedinstancedates[i];
-		if (mod_insts.find(di) != mod_insts.end()) {
-			auto &ei = apprecurr.pexceptioninfo[i-del_count];
+	/*
+	 * A deleted date with an exception for its day is a modified
+	 * occurrence. ModifiedInstanceDates holds the new day, which
+	 * says nothing about the original one. Older EWS exceptions
+	 * carry only the original day, not the time.
+	 */
+	for (auto di : apprecurr.recur_pat.pdeletedinstancedates) {
+		auto ei = std::find_if(apprecurr.pexceptioninfo.cbegin(),
+		          apprecurr.pexceptioninfo.cend(),
+		          [&](const EXCEPTIONINFO &e) { return e.originalstartdate / 1440 == di / 1440; });
+		if (ei != apprecurr.pexceptioninfo.cend()) {
 			modOccs.emplace_back(tOccurrenceInfoType({
-				sOccurrenceId(*entryid, ei.originalstartdate / 1440 * 1440),
-				rtime_to_tp(tz, tz_offset, ei.startdatetime),
-				rtime_to_tp(tz, tz_offset, ei.enddatetime),
-				rtime_to_tp(tz, tz_offset, ei.originalstartdate)}));
+				sOccurrenceId(*entryid, ei->originalstartdate / 1440 * 1440),
+				rtime_to_tp(tz, tz_offset, ei->startdatetime),
+				rtime_to_tp(tz, tz_offset, ei->enddatetime),
+				rtime_to_tp(tz, tz_offset, di / 1440 * 1440 +
+					apprecurr.starttimeoffset)}));
 		} else {
-			del_count++;
 			delOccs.emplace_back(tDeletedOccurrenceInfoType{rtime_to_tp(tz, tz_offset,
 				di + apprecurr.starttimeoffset)});
 		}
@@ -571,9 +576,12 @@ std::string rotate_days(const std::string &list, int days)
 	return out;
 }
 
-inline time_t unix_day(time_t t)
+bool has_day(const std::string &list, int wday)
 {
-	return t >= 0 ? t / 86400 : (t - 86399) / 86400;
+	for (const auto &day : gx_split(list, ' '))
+		if (day == weekday_names[wday])
+			return true;
+	return false;
 }
 
 }
@@ -744,8 +752,9 @@ void sCalendarMeetingRequestCommon::firstLastOccurrence(const TAGGED_PROPVAL &ei
 	};
 	auto mkOcc = [&](uint32_t date) {
 		uint32_t ostart = date + apr.starttimeoffset;
+		/* Older exceptions only carry the original day */
 		for (const auto &ei : apr.pexceptioninfo)
-			if (ei.originalstartdate == ostart)
+			if (ei.originalstartdate / 1440 == date / 1440)
 				return tOccurrenceInfoType(sOccurrenceId(eid, date),
 				       toUtc(ei.startdatetime), toUtc(ei.enddatetime), toUtc(ostart));
 		return tOccurrenceInfoType(sOccurrenceId(eid, date), toUtc(ostart),
@@ -780,8 +789,9 @@ int32_t sRecurrenceFrame::offset(time_t t) const
 /**
  * @brief      Move the recurrence by whole days
  *
- * Day of month and month are only moved where they match the start of
- * the range; DayOfWeekIndex is kept.
+ * Monthly and yearly day rules are only moved where they match the start
+ * of the range before but not after the move. This is a best guess at
+ * whether the client gave them in UTC. DayOfWeekIndex is kept.
  *
  * @param      days  Number of days (may be negative)
  */
@@ -801,10 +811,14 @@ void tRecurrenceType::shift(int days)
 		r->EndDate += delta;
 	std::visit([&](auto &p) {
 		using T = std::decay_t<decltype(p)>;
-		if constexpr (std::is_same_v<T, tWeeklyRecurrencePattern> ||
-		    std::is_same_v<T, tRelativeMonthlyRecurrencePattern> ||
-		    std::is_same_v<T, tRelativeYearlyRecurrencePattern>)
+		if constexpr (std::is_same_v<T, tWeeklyRecurrencePattern>)
 			p.DaysOfWeek = rotate_days(p.DaysOfWeek, days);
+		if constexpr (std::is_same_v<T, tRelativeMonthlyRecurrencePattern> ||
+		    std::is_same_v<T, tRelativeYearlyRecurrencePattern>) {
+			if (has_day(p.DaysOfWeek, before.tm_wday) &&
+			    !has_day(p.DaysOfWeek, after.tm_wday))
+				p.DaysOfWeek = rotate_days(p.DaysOfWeek, days);
+		}
 		if constexpr (std::is_same_v<T, tAbsoluteMonthlyRecurrencePattern>) {
 			if (p.DayOfMonth == before.tm_mday)
 				p.DayOfMonth = after.tm_mday;
@@ -831,6 +845,17 @@ std::optional<int32_t> tRecurrenceType::startDateZone() const
 }
 
 /**
+ * @brief      Whether a weekly pattern names a day of the week
+ *
+ * @param      wday   Day of the week, 0 is Sunday
+ */
+bool tRecurrenceType::weeklyOn(int wday) const
+{
+	auto p = std::get_if<tWeeklyRecurrencePattern>(&RecurrencePattern);
+	return p != nullptr && has_day(p->DaysOfWeek, wday);
+}
+
+/**
  * @brief      Set the zone the range dates are written with
  */
 void tRecurrenceType::zone(int32_t z)
@@ -841,18 +866,19 @@ void tRecurrenceType::zone(int32_t z)
 }
 
 /**
- * @brief      Convert a stored recurrence to the request's time zone
+ * @brief      Mark the range dates of a stored recurrence with its zone
  *
- * Only done for series whose stored start agrees with the item start, so
- * that series written by earlier versions are returned as before.
+ * The pattern stays in the item's time zone and the range dates carry its
+ * offset, as in Exchange's GetItem responses. Only done for series whose
+ * stored start agrees with the item start, so that series written by
+ * earlier versions are returned as before.
  *
  * @param      rec     Recurrence in the item's time zone
- * @param      frame   Time zone of the request
  * @param      apr     Stored recurrence pattern
  * @param      start   Item start (UTC)
  * @param      tz      Item time zone, if known
  */
-static void recurrence_to_frame(tRecurrenceType &rec, const sRecurrenceFrame &frame,
+static void recurrence_zone(tRecurrenceType &rec,
     const APPOINTMENT_RECUR_PAT &apr, time_t start, const TZDEF *tz)
 {
 	auto first = rop_util_rtime_to_unix(apr.recur_pat.startdate + apr.starttimeoffset);
@@ -864,8 +890,7 @@ static void recurrence_to_frame(tRecurrenceType &rec, const sRecurrenceFrame &fr
 	} else if (std::abs(east) > 14 * 60) {
 		return;
 	}
-	rec.shift(unix_day(start + frame.offset(start) * 60) - unix_day(first));
-	rec.zone(frame.offset(start));
+	rec.zone(east);
 }
 
 static std::string tzdef_keyname(const BINARY *bin)
@@ -885,22 +910,25 @@ static std::string tzdef_keyname(const BINARY *bin)
  *
  * @param      user   Acting user (for free/busy permissions)
  * @param      dir    Store directory
+ * @param      org    X500 organization name of the store
  * @param      goid   PidLidCleanGlobalObjectId of the item itself
  * @param      start  Start of the item
  * @param      end    End of the item
  */
 void sCalendarMeetingRequestCommon::loadConflicts(const char *user,
-    const char *dir, const BINARY *goid, time_t start, time_t end)
+    const char *dir, const char *org, const BINARY *goid, time_t start,
+    time_t end)
 {
 	std::vector<freebusy_event> events;
-	if (get_freebusy(user, dir, start, end, events) != ecSuccess)
+	if (get_freebusy(user, dir, org, start, end, events) != ecSuccess)
 		return;
 	auto self = goid != nullptr ? goid_to_uid(*goid) : std::string();
 	bool selfSeen = false;
 	auto &conflicts = ConflictingMeetings.emplace();
 	auto &adjacent = AdjacentMeetings.emplace();
 	for (const auto &ev : events) {
-		if (!self.empty() ? ev.id && *ev.id == self :
+		/* Private events of others come without ID */
+		if (!self.empty() && ev.id ? *ev.id == self :
 		    !selfSeen && ev.start_time == start && ev.end_time == end) {
 			selfSeen = true;
 			continue;
@@ -939,19 +967,29 @@ void sCalendarMeetingRequestCommon::update(const sShape &shape)
 	fromProp(shape.get(NtRecurrencePattern), When);
 
 
+	/* MS-OXOCAL v22.1 §4.2.2.3: the represented sender organizes */
 	const TAGGED_PROPVAL* prop;
-	if ((prop = shape.get(PR_SENDER_ADDRTYPE)))
+	bool repr = shape.get(PR_SENT_REPRESENTING_EMAIL_ADDRESS) != nullptr ||
+	            shape.get(PR_SENT_REPRESENTING_SMTP_ADDRESS) != nullptr;
+	if ((prop = shape.get(repr ? PR_SENT_REPRESENTING_ADDRTYPE : PR_SENDER_ADDRTYPE)))
 		fromProp(prop, defaulted(Organizer).Mailbox.RoutingType);
-	if ((prop = shape.get(PR_SENDER_EMAIL_ADDRESS)))
+	if ((prop = shape.get(repr ? PR_SENT_REPRESENTING_EMAIL_ADDRESS : PR_SENDER_EMAIL_ADDRESS)))
 		fromProp(prop, defaulted(Organizer).Mailbox.EmailAddress);
-	if ((prop = shape.get(PR_SENDER_NAME)))
+	if ((prop = shape.get(repr ? PR_SENT_REPRESENTING_NAME : PR_SENDER_NAME)))
 		fromProp(prop, defaulted(Organizer).Mailbox.Name);
-	if (Organizer && Organizer->Mailbox.RoutingType &&
-	    strcasecmp(Organizer->Mailbox.RoutingType->c_str(), "SMTP") != 0 &&
-	    (prop = shape.get(PR_SENDER_SMTP_ADDRESS))) {
-		fromProp(prop, Organizer->Mailbox.EmailAddress);
+	if ((!Organizer || !Organizer->Mailbox.RoutingType ||
+	    strcasecmp(Organizer->Mailbox.RoutingType->c_str(), "SMTP") != 0) &&
+	    (prop = shape.get(repr ? PR_SENT_REPRESENTING_SMTP_ADDRESS : PR_SENDER_SMTP_ADDRESS))) {
+		fromProp(prop, defaulted(Organizer).Mailbox.EmailAddress);
 		Organizer->Mailbox.RoutingType = "SMTP";
 	}
+	/* iCal import leaves the name unset if ORGANIZER has no CN */
+	auto sender = shape.get<char>(PR_SENDER_SMTP_ADDRESS);
+	if (repr && Organizer && !Organizer->Mailbox.Name &&
+	    Organizer->Mailbox.EmailAddress && sender != nullptr &&
+	    strcasecmp(sender, Organizer->Mailbox.EmailAddress->c_str()) == 0 &&
+	    (prop = shape.get(PR_SENDER_NAME)))
+		fromProp(prop, Organizer->Mailbox.Name);
 
 	const uint8_t* u8;
 	if ((u8 = shape.get<uint8_t>(NtAppointmentNotAllowPropose)))
@@ -981,9 +1019,12 @@ void sCalendarMeetingRequestCommon::update(const sShape &shape)
 	const uint64_t* u64;
 	if ((u64 = shape.get<uint64_t>(NtAppointmentReplyTime)))
 		AppointmentReplyTime.emplace(rop_util_nttime_to_unix2(*u64));
-	if((u64 = shape.get<uint64_t>(NtCommonEnd)))
+	/* Items that lost the common times still have the whole ones */
+	if ((u64 = shape.get<uint64_t>(NtCommonEnd)) ||
+	    (u64 = shape.get<uint64_t>(NtAppointmentEndWhole)))
 		End.emplace(rop_util_nttime_to_unix2(*u64));
-	if((u64 =  shape.get<uint64_t>(NtCommonStart)))
+	if ((u64 = shape.get<uint64_t>(NtCommonStart)) ||
+	    (u64 = shape.get<uint64_t>(NtAppointmentStartWhole)))
 		Start.emplace(rop_util_nttime_to_unix2(*u64));
 
 	auto tzid = tzdef_keyname(shape.get<BINARY>(NtAppointmentTimeZoneDefinitionStartDisplay));
@@ -995,6 +1036,15 @@ void sCalendarMeetingRequestCommon::update(const sShape &shape)
 	/* A description, not necessarily a zone name */
 	if (tzid.empty() && (str = shape.get<char>(NtTimeZoneDescription)) != nullptr)
 		tzid = str;
+	/* A single all-day item stored at UTC midnight without any zone */
+	auto u8allday = shape.get<uint8_t>(NtAppointmentSubType, sShape::FL_ANY);
+	if (tzid.empty() && u8allday != nullptr && *u8allday &&
+	    shape.get(NtAppointmentRecur) == nullptr &&
+	    (shape.requested(shape.tag(NtAppointmentTimeZoneDefinitionStartDisplay)) ||
+	    shape.requested(shape.tag(NtAppointmentTimeZoneDefinitionEndDisplay))) &&
+	    (u64 = shape.get<uint64_t>(NtCommonStart, sShape::FL_ANY)) != nullptr &&
+	    rop_util_nttime_to_unix(*u64) % 86400 == 0)
+		tzid = "UTC";
 	if (!tzid.empty())
 		timezoneId(tzid);
 
@@ -1017,9 +1067,9 @@ void sCalendarMeetingRequestCommon::update(const sShape &shape)
 			auto sp = shape.get<uint64_t>(PR_START_DATE);
 			if (!sp)
 				sp = shape.get<uint64_t>(NtCommonStart);
-			if (sp && shape.recurrenceFrame != nullptr) {
+			if (sp) {
 				auto tzdef = binary_to_tzdef(shape.get<BINARY>(NtAppointmentTimeZoneDefinitionRecur, sShape::FL_ANY));
-				recurrence_to_frame(rec, *shape.recurrenceFrame, apprecurr,
+				recurrence_zone(rec, apprecurr,
 					rop_util_nttime_to_unix(*sp), tzdef ? &*tzdef : nullptr);
 			}
 
@@ -1471,7 +1521,8 @@ PROPTAG_ARRAY sShape::remove() const
 bool sShape::requested(proptag_t tag, uint8_t mask) const
 {
 	auto it = props.find(tag);
-	return it != props.end() && (mask == FL_ANY || it->second.flags & mask);
+	return it != props.end() && (mask == FL_ANY || it->second.flags & mask) &&
+	       readable(tag, access);
 }
 
 /**
@@ -1575,11 +1626,28 @@ const TAGGED_PROPVAL* sShape::writes(const PROPERTY_NAME& name) const
 
 /**
  * @brief      Reset all properties to unloaded
+ *
+ * @param      exception  Next item is an exception of the last series master
  */
-void sShape::clean()
+void sShape::clean(bool exception)
 {
 	for (auto &entry : props)
 		entry.second.prop = nullptr;
+	/* A private series makes all of its exceptions private */
+	if (exception)
+		applySeriesAccess();
+	else
+		privateItem = false;
+	inException = exception;
+}
+
+/**
+ * @brief      Give the next item the access level of the last series master
+ */
+void sShape::applySeriesAccess()
+{
+	privateItem = seriesPrivate;
+	access = seriesAccess;
 }
 
 /**
@@ -1731,6 +1799,203 @@ void sShape::properties(const TPROPVAL_ARRAY& properties)
 {
 	for (const auto &prop : properties)
 		props[prop.proptag].prop = &prop;
+	deriveSmtp();
+	if (rights.has_value())
+		redact();
+}
+
+/**
+ * @brief      Fill in missing SMTP addresses of EX type originators
+ */
+void sShape::deriveSmtp()
+{
+	static constexpr proptag_t tags[][3] = {
+		{PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS, PR_SENDER_SMTP_ADDRESS},
+		{PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_EMAIL_ADDRESS, PR_SENT_REPRESENTING_SMTP_ADDRESS},
+		{PR_RECEIVED_BY_ADDRTYPE, PR_RECEIVED_BY_EMAIL_ADDRESS, PR_RECEIVED_BY_SMTP_ADDRESS},
+		{PR_RCVD_REPRESENTING_ADDRTYPE, PR_RCVD_REPRESENTING_EMAIL_ADDRESS, PR_RCVD_REPRESENTING_SMTP_ADDRESS},
+	};
+	static_assert(std::size(tags) == std::size(smtpProps));
+	for (size_t i = 0; i < std::size(tags); ++i) {
+		auto it = props.find(tags[i][2]);
+		if (it == props.end() || it->second.prop != nullptr)
+			continue;
+		auto type = get<char>(tags[i][0], FL_ANY);
+		auto addr = get<char>(tags[i][1], FL_ANY);
+		if (type == nullptr || addr == nullptr || strcasecmp(type, "EX") != 0)
+			continue;
+		const char *smtp = nullptr;
+		if (x500Org != nullptr) {
+			auto c = smtpCache.find(addr);
+			if (c == smtpCache.end()) {
+				std::string user;
+				if (cvt_essdn_to_username(addr, x500Org,
+				    mysql_adaptor_userid_to_name, user) != ecSuccess)
+					user.clear();
+				c = smtpCache.emplace(addr, std::move(user)).first;
+			}
+			if (!c->second.empty())
+				smtp = c->second.c_str();
+		}
+		/* Sender and representee are often the same mailbox */
+		auto sender = get<char>(PR_SENDER_EMAIL_ADDRESS, FL_ANY);
+		if (smtp == nullptr && i == 1 && sender != nullptr &&
+		    strcasecmp(sender, addr) == 0)
+			smtp = get<char>(PR_SENDER_SMTP_ADDRESS, FL_ANY);
+		if (smtp == nullptr)
+			continue;
+		smtpProps[i] = TAGGED_PROPVAL{tags[i][2], deconst(smtp)};
+		it->second.prop = &smtpProps[i];
+	}
+}
+
+/**
+ * Named properties readable without frightsReadAny. The first one is only
+ * readable with frightsFreeBusyDetailed, the second one is not passed on
+ * as is, see putExtended().
+ */
+static const PROPERTY_NAME fbNameList[] = {
+	NtLocation, NtAppointmentRecur,
+	NtAppointmentStartWhole, NtAppointmentEndWhole,
+	NtAppointmentDuration, NtAppointmentSubType, NtRecurring,
+	NtRecurrenceType, NtRecurrencePattern, NtBusyStatus,
+	NtAppointmentStateFlags, NtCommonStart, NtCommonEnd, NtClipStart,
+	NtClipEnd, NtExceptionReplaceTime, NtIsException, NtPrivate,
+	NtTimeZone, NtTimeZoneStruct,
+	NtAppointmentTimeZoneDefinitionStartDisplay,
+	NtAppointmentTimeZoneDefinitionEndDisplay,
+	NtAppointmentTimeZoneDefinitionRecur,
+	NtGlobalObjectId, NtCleanGlobalObjectId,
+};
+
+const PROPNAME_ARRAY sShape::fbNames = {std::size(fbNameList), deconst(fbNameList)};
+
+/**
+ * @brief      Limit item contents to what folder rights allow
+ *
+ * Readers without frightsReadAny only get times and busy status of items.
+ * With frightsFreeBusyDetailed, they also get subject and location of
+ * items that are not private. Readers who do not see private items only
+ * get times and busy status of those, whatever their rights.
+ *
+ * @param      folderRights  Rights of the reader on the parent folder
+ * @param      ids           IDs of fbNames in the store of the folder
+ * @param      seesPrivate   Reader sees private items in full
+ */
+void sShape::restrict(uint32_t folderRights, const PROPID_ARRAY &ids,
+    bool seesPrivate)
+{
+	/* Not after named tags, namedProperties() drops those from the end */
+	add(PR_SENSITIVITY);
+	privateItem = seriesPrivate = false;
+	if (folderRights & frightsGromoxStoreOwner) {
+		rights.reset();
+		access = seriesAccess = Access::full;
+		return;
+	}
+	rights = folderRights;
+	seesPrivateItems = seesPrivate;
+	fbIds.clear();
+	locationId = recurId = 0;
+	if (ids.size() != std::size(fbNameList))
+		return;
+	locationId = ids[0];
+	recurId = ids[1];
+	for (size_t i = 1; i < ids.size(); ++i)
+		if (ids[i] != 0)
+			fbIds.push_back(ids[i]);
+}
+
+/**
+ * @brief      Determine access level of the current item and drop the rest
+ */
+void sShape::redact()
+{
+	auto sens = get<const uint32_t>(PR_SENSITIVITY, FL_ANY);
+	if (sens != nullptr && *sens == SENSITIVITY_PRIVATE)
+		privateItem = true;
+	access = privateItem && !seesPrivateItems ? Access::fbsimple :
+	         *rights & frightsReadAny ? Access::full :
+	         !privateItem && *rights & frightsFreeBusyDetailed ?
+	         Access::fbdetail : Access::fbsimple;
+	if (!inException) {
+		seriesPrivate = privateItem;
+		seriesAccess = access;
+	}
+	if (access == Access::full)
+		return;
+	for (auto &entry : props)
+		if (entry.second.prop != nullptr && !readable(entry.first, access))
+			entry.second.prop = nullptr;
+}
+
+/**
+ * @brief      Returns whether a property is readable at an access level
+ */
+bool sShape::readable(proptag_t tag, Access level) const
+{
+	if (level == Access::full)
+		return true;
+	auto id = PROP_ID(tag);
+	if (level == Access::fbdetail) {
+		if (id == PROP_ID(PR_SUBJECT) ||
+		    id == PROP_ID(PR_NORMALIZED_SUBJECT) ||
+		    id == PROP_ID(PR_SUBJECT_PREFIX))
+			return true;
+		if (locationId != 0 && id == locationId)
+			return true;
+	}
+	static constexpr propid_t fbIdList[] = {
+		PROP_ID(PR_ENTRYID), PROP_ID(PR_PARENT_ENTRYID),
+		PROP_ID(PR_CHANGE_KEY), PROP_ID(PR_MESSAGE_CLASS),
+		PROP_ID(PR_SENSITIVITY), PROP_ID(PR_START_DATE),
+		PROP_ID(PR_END_DATE), PROP_ID(PR_MESSAGE_SIZE),
+		PROP_ID(PR_CREATION_TIME), PROP_ID(PR_LAST_MODIFICATION_TIME),
+		PROP_ID(PidTagMid), PROP_ID(PidTagFolderId),
+		PROP_ID(PidTagChangeNumber),
+	};
+	if (std::find(std::begin(fbIdList), std::end(fbIdList), id) != std::end(fbIdList))
+		return true;
+	return is_nameprop_id(id) &&
+	       std::find(fbIds.begin(), fbIds.end(), id) != fbIds.end();
+}
+
+/**
+ * @brief      Returns whether the reader may read every property of every item
+ */
+bool sShape::allReadable() const
+{
+	return !rights.has_value() ||
+	       (*rights & frightsReadAny && seesPrivateItems);
+}
+
+/**
+ * @brief      Returns in which items a property may be filtered or sorted by
+ */
+sShape::Query sShape::queryable(proptag_t tag) const
+{
+	/* No item has a property with ID 0 */
+	if (allReadable() || PROP_ID(tag) == 0 ||
+	    readable(tag, Access::fbsimple))
+		return Query::all;
+	/* Private items are at Access::fbsimple here, see redact() */
+	auto pubAccess = *rights & frightsReadAny ? Access::full :
+	                 *rights & frightsFreeBusyDetailed ? Access::fbdetail :
+	                 Access::fbsimple;
+	return readable(tag, pubAccess) ? Query::publicOnly : Query::none;
+}
+
+/**
+ * @brief      Returns the special fields to load for the current item
+ */
+uint64_t sShape::specials() const
+{
+	if (access == Access::full)
+		return special;
+	auto s = special & (Rights | Occurrences | ResponseObjects);
+	if (s & Rights && privateItem && !seesPrivateItems)
+		s |= Redacted;
+	return s;
 }
 
 /**
@@ -1751,7 +2016,10 @@ PROPTAG_ARRAY sShape::proptags() const
 void sShape::putExtended(std::vector<tExtendedProperty>& extprops) const
 {
 	for (const auto &prop : props)
-		if (prop.second.flags & FL_EXT && prop.second.prop)
+		/* Exceptions in the recurrence blob carry subject and location */
+		if (prop.second.flags & FL_EXT && prop.second.prop &&
+		    (access == Access::full || recurId == 0 ||
+		    PROP_ID(prop.first) != recurId))
 			extprops.emplace_back(*prop.second.prop,
 				prop.second.name ? *prop.second.name : NONAME);
 }
@@ -2226,8 +2494,10 @@ void tCalendarItem::update(const sShape& shape)
 			UID.emplace(goid_to_uid(*goid));
 	}
 
-	if ((prop = shape.get(NtExceptionReplaceTime)))
+	if ((prop = shape.get(NtExceptionReplaceTime))) {
 		RecurrenceId.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
+		OriginalStart = RecurrenceId;
+	}
 
 	if ((prop = shape.get(PR_CREATION_TIME)))
 		fromProp(prop, DateTimeStamp);
@@ -2244,7 +2514,7 @@ void tCalendarItem::update(const sShape& shape)
 void tCalendarItem::setDatetimeFields(sShape& shape)
 {
 	int64_t startOffset = 0, endOffset = 0;
-	std::optional<uint64_t> startTime = 0, endTime = 0;
+	std::optional<uint64_t> startTime, endTime;
 	fromProp(shape.writes(NtCommonStart), startTime);
 	fromProp(shape.writes(NtCommonEnd), endTime);
 	if (shape.tag(NtCalendarTimeZone) != 0) {
@@ -2306,25 +2576,18 @@ void tCalendarItem::setDatetimeFields(sShape& shape)
 		}
 	}
 
-	for (auto &prop : {NtCommonStart, NtCommonEnd}) {
-		if (shape.tag(prop) == 0)
-			continue;
-		switch (prop.lid) {
-		case PidLidCommonStart: {
-			auto start = EWSContext::construct<uint64_t>(startTime.value() + startOffset * 600000000);
-			shape.write(NtCommonStart, TAGGED_PROPVAL{PT_SYSTIME, start});
-			shape.write(NtAppointmentStartWhole, TAGGED_PROPVAL{PT_SYSTIME, start});
-			shape.write(TAGGED_PROPVAL{PR_START_DATE, start});
-			break;
-		}
-		case PidLidCommonEnd: {
-			auto end = EWSContext::construct<uint64_t>(endTime.value() + endOffset * 600000000);
-			shape.write(NtCommonEnd, TAGGED_PROPVAL{PT_SYSTIME, end});
-			shape.write(NtAppointmentEndWhole, TAGGED_PROPVAL{PT_SYSTIME, end});
-			shape.write(TAGGED_PROPVAL{PR_END_DATE, end});
-			break;
-		}
-		}
+	/* Only rewrite what the client set, not a deleted field */
+	if (startTime.has_value()) {
+		auto start = EWSContext::construct<uint64_t>(*startTime + startOffset * 600000000);
+		shape.write(NtCommonStart, TAGGED_PROPVAL{PT_SYSTIME, start});
+		shape.write(NtAppointmentStartWhole, TAGGED_PROPVAL{PT_SYSTIME, start});
+		shape.write(TAGGED_PROPVAL{PR_START_DATE, start});
+	}
+	if (endTime.has_value()) {
+		auto end = EWSContext::construct<uint64_t>(*endTime + endOffset * 600000000);
+		shape.write(NtCommonEnd, TAGGED_PROPVAL{PT_SYSTIME, end});
+		shape.write(NtAppointmentEndWhole, TAGGED_PROPVAL{PT_SYSTIME, end});
+		shape.write(TAGGED_PROPVAL{PR_END_DATE, end});
 	}
 }
 
@@ -2509,10 +2772,10 @@ RESTRICTION* tCalendarView::restriction(const sGetNameId& getId) const
 ///////////////////////////////////////////////////////////////////////////////
 
 tFreeBusyView::tFreeBusyView(const char *username, const char *dir,
-    time_t start_time, time_t end_time)
+    const char *org, time_t start_time, time_t end_time)
 {
 	std::vector<freebusy_event> fb_data;
-	auto err = get_freebusy(username, dir, start_time, end_time, fb_data);
+	auto err = get_freebusy(username, dir, org, start_time, end_time, fb_data);
 	if (err != ecSuccess)
 		throw EWSError::FreeBusyGenerationFailed(E3144);
 
@@ -2521,6 +2784,9 @@ tFreeBusyView::tFreeBusyView(const char *username, const char *dir,
 			return fb_event.has_details;
 		}) ? "Detailed" : "FreeBusy";
 
+	/* Exchange omits an empty CalendarEventArray, and clients rely on it */
+	if (fb_data.empty())
+		return;
 	auto &cal_events = CalendarEventArray.emplace();
 	cal_events.reserve(fb_data.size());
 
@@ -3478,41 +3744,47 @@ RESTRICTION* tRestriction::any(RESTRICTION* r1, RESTRICTION* r2)
  *
  * New restriction is stack allocated and must not be freed manually.
  *
- * @param      getId   Function to resolve property name
+ * @param      getId     Function to resolve property name
+ * @param      getEssdn  Function to resolve SMTP addresses to ESSDNs
  *
  * @return     RESTRICTION* or nullptr if empty
  */
-RESTRICTION* tRestriction::build(const sGetNameId& getId) const
+RESTRICTION *tRestriction::build(const sGetNameId &getId, const sGetEssdn &getEssdn) const
 {
 	if (!source)
 		return nullptr;
 	RESTRICTION* restriction = EWSContext::alloc<RESTRICTION>();
-	deserialize(*restriction, source, getId);
+	deserialize(*restriction, source, getId, getEssdn);
 	return restriction;
 }
 
-void tRestriction::deserialize(RESTRICTION &dst, const tinyxml2::XMLElement *src, const sGetNameId &getId)
+void tRestriction::deserialize(RESTRICTION &dst, const tinyxml2::XMLElement *src,
+    const sGetNameId &getId, const sGetEssdn &getEssdn)
 {
 	const char* name = src->Name();
 	if (!strcmp(name, "And") || !strcmp(name, "Or")) {
-		build_andor(dst, src, getId);
+		build_andor(dst, src, getId, getEssdn);
 	} else if (!strcmp(name, "Contains")) {
 		build_contains(dst, src, getId);
+		widen_addr(dst, src, getEssdn);
 	} else if (!strcmp(name, "Excludes")) {
 		build_excludes(dst, src, getId);
 	} else if (!strcmp(name, "Exists")) {
 		build_exists(dst, src, getId);
+		widen_addr(dst, src, getEssdn);
 	} else if (!strcmp(name, "Not")) {
-		build_not(dst, src, getId);
+		build_not(dst, src, getId, getEssdn);
 	} else try {
 		build_compare(dst, src, relop(Enum::RestrictionRelop(name).index()), getId);
+		widen_addr(dst, src, getEssdn);
 	} catch (const EnumError &) {
 		/* The name of the node could not be mapped to a relop */
 		throw EWSError::InvalidRestriction(E3220(name));
 	}
 }
 
-void tRestriction::build_andor(RESTRICTION &dst, const tinyxml2::XMLElement *src, const sGetNameId &getId)
+void tRestriction::build_andor(RESTRICTION &dst, const tinyxml2::XMLElement *src,
+    const sGetNameId &getId, const sGetEssdn &getEssdn)
 {
 	dst.rt = strcmp(src->Name(), "And") ? mapi_rtype::r_or : mapi_rtype::r_and;
 	dst.andor = EWSContext::alloc<RESTRICTION_AND_OR>();
@@ -3523,7 +3795,7 @@ void tRestriction::build_andor(RESTRICTION &dst, const tinyxml2::XMLElement *src
 	RESTRICTION* res = dst.andor->pres = EWSContext::alloc<RESTRICTION>(dst.andor->count);
 	for (const tinyxml2::XMLElement *child = src->FirstChildElement();
 	     child != nullptr; child = child->NextSiblingElement())
-		deserialize(*res++, child, getId);
+		deserialize(*res++, child, getId, getEssdn);
 }
 
 void tRestriction::build_compare(RESTRICTION &dst, const tinyxml2::XMLElement *src, relop op, const sGetNameId &getId)
@@ -3532,14 +3804,16 @@ void tRestriction::build_compare(RESTRICTION &dst, const tinyxml2::XMLElement *s
 	const tinyxml2::XMLElement *cmptarget = src->FirstChildElement("FieldURIOrConstant");
 	if (!cmptarget)
 		throw EWSError::InvalidRestriction(E3221);
-	void* constantData = loadConstant(cmptarget, PROP_TYPE(tag));
+	/* A multivalue property matches if any of its values does */
+	proptype_t ctype = PROP_TYPE(tag) & ~MV_FLAG;
+	void *constantData = loadConstant(cmptarget, ctype);
 	dst.rt = constantData ? mapi_rtype::property : mapi_rtype::propcmp;
 	if (constantData) {
 		/* Constant found and loaded -> compare to static data */
 		dst.prop = EWSContext::construct<RESTRICTION_PROPERTY>();
 		dst.prop->relop = op;
 		dst.prop->proptag = tag;
-		dst.prop->propval = TAGGED_PROPVAL{tag, constantData};
+		dst.prop->propval = TAGGED_PROPVAL{CHANGE_PROP_TYPE(tag, ctype), constantData};
 	} else {
 		dst.pcmp = EWSContext::construct<RESTRICTION_PROPCOMPARE>();
 		dst.pcmp->relop = op;
@@ -3554,11 +3828,13 @@ void tRestriction::build_contains(RESTRICTION &dst, const tinyxml2::XMLElement *
 {
 	dst.rt = mapi_rtype::content;
 	dst.cont = EWSContext::construct<RESTRICTION_CONTENT>();
-	if (!(dst.cont->propval.proptag = dst.cont->proptag = getTag(src, getId)))
+	if (!(dst.cont->proptag = getTag(src, getId)))
 		throw EWSError::InvalidRestriction(E3224);
+	proptype_t ctype = PROP_TYPE(dst.cont->proptag) & ~MV_FLAG;
+	dst.cont->propval.proptag = CHANGE_PROP_TYPE(dst.cont->proptag, ctype);
 	if (!dst.cont->comparable())
 			throw EWSError::InvalidRestriction(E3225);
-	if (!(dst.cont->propval.pvalue = loadConstant(src, PROP_TYPE(dst.cont->proptag))))
+	if (!(dst.cont->propval.pvalue = loadConstant(src, ctype)))
 		throw EWSError::InvalidRestriction(E3226);
 	const char* mode = src->Attribute("ContainmentMode");
 	if (!mode || !strcmp(mode, "FullString"))
@@ -3615,14 +3891,115 @@ void tRestriction::build_exists(RESTRICTION &dst, const tinyxml2::XMLElement *sr
 		throw EWSError::InvalidRestriction(E3232);
 }
 
-void tRestriction::build_not(RESTRICTION &dst, const tinyxml2::XMLElement *src, const sGetNameId &getId)
+void tRestriction::build_not(RESTRICTION &dst, const tinyxml2::XMLElement *src,
+    const sGetNameId &getId, const sGetEssdn &getEssdn)
 {
 	const tinyxml2::XMLElement *child = src->FirstChildElement();
 	if (!child)
 		throw EWSError::InvalidRestriction(E3233);
 	dst.rt = mapi_rtype::r_not;
 	dst.xnot = EWSContext::construct<RESTRICTION_NOT>();
-	deserialize(dst.xnot->res, child, getId);
+	deserialize(dst.xnot->res, child, getId, getEssdn);
+}
+
+/**
+ * @brief      Match address fields against their SMTP address
+ *
+ * Address fields are compared by SMTP address. Items carry it either in the
+ * dedicated SMTP property or, with an SMTP address type, in the plain email
+ * address property. Use the SMTP property where present and the email
+ * address otherwise. Items with an EX address type and no SMTP property,
+ * such as delivered mail for ReceivedBy, are compared by ESSDN.
+ *
+ * @param      dst       Restriction built for the field
+ * @param      src       XML node the restriction was built from
+ * @param      getEssdn  Function to resolve SMTP addresses to ESSDNs
+ */
+void tRestriction::widen_addr(RESTRICTION &dst, const tinyxml2::XMLElement *src,
+    const sGetEssdn &getEssdn)
+{
+	static constexpr struct {
+		const char *uri;
+		proptag_t smtp, type, addr;
+	} fields[] = {
+		{"calendar:Organizer", PR_SENDER_SMTP_ADDRESS,
+		 PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS},
+		{"message:From", PR_SENT_REPRESENTING_SMTP_ADDRESS,
+		 PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_EMAIL_ADDRESS},
+		{"message:ReceivedBy", PR_RECEIVED_BY_SMTP_ADDRESS,
+		 PR_RECEIVED_BY_ADDRTYPE, PR_RECEIVED_BY_EMAIL_ADDRESS},
+		{"message:ReceivedRepresenting", PR_RCVD_REPRESENTING_SMTP_ADDRESS,
+		 PR_RCVD_REPRESENTING_ADDRTYPE, PR_RCVD_REPRESENTING_EMAIL_ADDRESS},
+		{"message:Sender", PR_SENDER_SMTP_ADDRESS,
+		 PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS},
+	};
+	if (dst.rt != mapi_rtype::property && dst.rt != mapi_rtype::content &&
+	    dst.rt != mapi_rtype::exist)
+		return;
+	auto uri = src->FirstChildElement("FieldURI");
+	auto name = uri != nullptr ? uri->Attribute("FieldURI") : nullptr;
+	if (name == nullptr)
+		return;
+	auto f = std::find_if(std::begin(fields), std::end(fields),
+	         [&](const auto &e) { return strcmp(e.uri, name) == 0; });
+	if (f == std::end(fields))
+		return;
+
+	auto exist = [](proptag_t tag) {
+		auto r = EWSContext::construct<RESTRICTION>();
+		r->rt = mapi_rtype::exist;
+		r->exist = EWSContext::construct<RESTRICTION_EXIST>();
+		r->exist->proptag = tag;
+		return r;
+	};
+	auto negate = [](RESTRICTION *in) {
+		auto r = EWSContext::construct<RESTRICTION>();
+		r->rt = mapi_rtype::r_not;
+		r->xnot = EWSContext::construct<RESTRICTION_NOT>();
+		r->xnot->res = std::move(*in);
+		return r;
+	};
+	if (dst.rt == mapi_rtype::exist) {
+		dst = std::move(*any(exist(f->smtp), exist(f->addr)));
+		return;
+	}
+	auto retag = [&](proptag_t tag) {
+		auto r = EWSContext::construct<RESTRICTION>();
+		r->rt = dst.rt;
+		if (dst.rt == mapi_rtype::property) {
+			r->prop = EWSContext::construct<RESTRICTION_PROPERTY>(*dst.prop);
+			r->prop->proptag = r->prop->propval.proptag = tag;
+		} else {
+			r->cont = EWSContext::construct<RESTRICTION_CONTENT>(*dst.cont);
+			r->cont->proptag = r->cont->propval.proptag = tag;
+		}
+		return r;
+	};
+	/* No SMTP property, but the given address type */
+	auto useAddr = [&](const char *type) {
+		auto r = EWSContext::construct<RESTRICTION>();
+		r->rt = mapi_rtype::property;
+		r->prop = EWSContext::construct<RESTRICTION_PROPERTY>();
+		r->prop->relop = RELOP_EQ;
+		r->prop->proptag = f->type;
+		r->prop->propval = TAGGED_PROPVAL{f->type, deconst(type)};
+		return all(negate(exist(f->smtp)), r);
+	};
+	RESTRICTION *viaEx = nullptr;
+	if (dst.rt == mapi_rtype::property && PROP_TYPE(dst.prop->proptag) == PT_UNICODE) {
+		/* An address that does not resolve is compared as is */
+		auto addr = static_cast<const char *>(dst.prop->propval.pvalue);
+		auto essdn = getEssdn ? getEssdn(addr) : std::string();
+		viaEx = retag(f->addr);
+		if (!essdn.empty())
+			viaEx->prop->propval.pvalue = EWSContext::cpystr(essdn);
+		viaEx = all(useAddr("EX"), viaEx);
+	}
+	auto viaAddr = all(useAddr("SMTP"), retag(f->addr));
+	auto viaSmtp = all(negate(useAddr("SMTP")), retag(f->smtp));
+	if (viaEx != nullptr)
+		viaSmtp = all(negate(useAddr("EX")), viaSmtp);
+	dst = std::move(*any(any(viaAddr, viaEx), viaSmtp));
 }
 
 void *tRestriction::loadConstant(const tinyxml2::XMLElement *parent, proptype_t type)
@@ -3676,6 +4053,20 @@ void *tRestriction::loadConstant(const tinyxml2::XMLElement *parent, proptype_t 
 		memcpy(static_cast<char *>(dest), value, len + 1);
 		break;
 	}
+	case PT_BINARY: {
+		std::string_view src = value;
+		auto bin = static_cast<BINARY *>(dest);
+		bin->pv = EWSContext::alloc(src.size() + 1);
+		size_t outlen = 0;
+		if (base64nl_decode_sized(src, bin->pv, src.size() + 1, &outlen) < 0)
+			throw EWSError::InvalidRestriction(E3580(src));
+		bin->cb = outlen;
+		break;
+	}
+	case PT_CLSID:
+		if (!static_cast<GUID *>(dest)->from_str(value))
+			throw EWSError::InvalidRestriction(E3581(value));
+		break;
 	default:
 		throw EWSError::InvalidRestriction(E3241(tExtendedFieldURI::typeName(type)));
 	}
@@ -3917,6 +4308,17 @@ void tExtendedProperty::deserialize(const XMLElement *xml, proptype_t type, void
 		memcpy(static_cast<char*>(dest), src, len + 1);
 		break;
 	}
+	case PT_BINARY: {
+		std::string_view src = znul(content);
+		auto bin = static_cast<BINARY *>(dest);
+		bin->cb = 0;
+		bin->pv = EWSContext::alloc(src.size() + 1);
+		size_t outlen = 0;
+		if (base64nl_decode_sized(src, bin->pv, src.size() + 1, &outlen) < 0)
+			throw EWSError::InvalidExtendedPropertyValue(E3493(src));
+		bin->cb = outlen;
+		break;
+	}
 	case PT_MV_SHORT:
 		deserializeMV(xml, type, &SHORT_ARRAY::ps); break;
 	case PT_MV_LONG:
@@ -3933,6 +4335,8 @@ void tExtendedProperty::deserialize(const XMLElement *xml, proptype_t type, void
 	case PT_MV_STRING8:
 	case PT_MV_UNICODE:
 		deserializeMV(xml, type, &STRING_ARRAY::ppstr); break;
+	case PT_MV_BINARY:
+		deserializeMV(xml, type, &BINARY_ARRAY::pbin); break;
 	default:
 		throw NotImplementedError(E3107(tExtendedFieldURI::typeName(type)));
 	}
@@ -4014,6 +4418,8 @@ void tExtendedProperty::serialize(const void *data, proptype_t type, XMLElement 
 	case PT_MV_STRING8:
 	case PT_MV_UNICODE:
 		return serializeMV(data, type, xml, &STRING_ARRAY::ppstr);
+	case PT_MV_BINARY:
+		return serializeMV(data, type, xml, &BINARY_ARRAY::pbin);
 	}
 }
 
@@ -4045,6 +4451,7 @@ SORTORDER_SET* tFieldOrder::build(const std::vector<tFieldOrder>& sorts, const s
 		current->type = PROP_TYPE(tag);
 		current->propid = PROP_ID(tag);
 		current->table_sort = sort.Order.index();
+		++current;
 	}
 	return sset;
 }
@@ -4059,6 +4466,10 @@ decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 	{"calendar:Organizer", PR_SENDER_EMAIL_ADDRESS},
 	{"calendar:Organizer", PR_SENDER_NAME},
 	{"calendar:Organizer", PR_SENDER_SMTP_ADDRESS},
+	{"calendar:Organizer", PR_SENT_REPRESENTING_ADDRTYPE},
+	{"calendar:Organizer", PR_SENT_REPRESENTING_EMAIL_ADDRESS},
+	{"calendar:Organizer", PR_SENT_REPRESENTING_NAME},
+	{"calendar:Organizer", PR_SENT_REPRESENTING_SMTP_ADDRESS},
 	{"calendar:Start", PR_START_DATE},
 	{"contacts:AssistantName", PR_ASSISTANT},
 	{"contacts:Birthday", PR_BIRTHDAY},
@@ -4276,6 +4687,17 @@ void tFieldURI::tags(sShape& shape, bool add) const
 	for (auto it = tags.first; it != tags.second; ++it)
 		shape.add(it->second, add ? sShape::FL_FIELD : sShape::FL_RM);
 	bool found = tags.first != tags.second;
+	/*
+	 * Only filled by deriveSmtp. Kept out of tagMap so that tag does not
+	 * pick them for restrictions and sorting.
+	 */
+	static constexpr std::pair<const char *, proptag_t> smtpTags[] = {
+		{"message:ReceivedBy", PR_RECEIVED_BY_SMTP_ADDRESS},
+		{"message:ReceivedRepresenting", PR_RCVD_REPRESENTING_SMTP_ADDRESS},
+	};
+	for (const auto &[uri, tag] : smtpTags)
+		if (FieldURI == uri)
+			shape.add(tag, add ? sShape::FL_FIELD : sShape::FL_RM);
 
 	auto names = nameMap.equal_range(FieldURI);
 	for (auto it = names.first; it != names.second; ++it)
@@ -4337,6 +4759,41 @@ tFileAttachment::tFileAttachment(const sAttachmentId& aid, const sShape& shape) 
 		Content.emplace(*tp);
 		Size = Content->size();
 	}
+}
+
+/**
+ * @brief      Properties of a new attachment made from this one
+ *
+ * @return     Properties, valid for the duration of the request
+ */
+std::vector<TAGGED_PROPVAL> tFileAttachment::props() const
+{
+	std::vector<TAGGED_PROPVAL> props;
+	if (Name) {
+		auto name = EWSContext::cpystr(*Name);
+		props.push_back({PR_ATTACH_LONG_FILENAME, name});
+		props.push_back({PR_ATTACH_FILENAME, name});
+		props.push_back({PR_DISPLAY_NAME, name});
+	}
+	if (ContentType)
+		props.push_back({PR_ATTACH_MIME_TAG, EWSContext::cpystr(*ContentType)});
+	if (ContentId)
+		props.push_back({PR_ATTACH_CONTENT_ID, EWSContext::cpystr(*ContentId)});
+	static constexpr uint32_t method = ATTACH_BY_VALUE;
+	props.push_back({PR_ATTACH_METHOD, deconst(&method)});
+	if (IsInline && *IsInline) {
+		static constexpr uint32_t flags = ATT_MHTML_REF;
+		props.push_back({PR_ATTACH_FLAGS, deconst(&flags)});
+	}
+	if (IsContactPhoto && *IsContactPhoto)
+		props.push_back({PR_ATTACHMENT_CONTACTPHOTO, deconst(&byte_value_one)});
+	if (Content) {
+		auto bin = EWSContext::construct<BINARY>(BINARY{static_cast<uint32_t>(Content->size()), {EWSContext::alloc<char>(Content->size())}});
+		memcpy(bin->pc, Content->data(), bin->cb);
+		props.push_back({PR_ATTACH_DATA_BIN, bin});
+		props.push_back({PR_ATTACH_SIZE, EWSContext::construct<int32_t>(bin->cb)});
+	}
+	return props;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -4745,7 +5202,10 @@ sItem tItem::create(const sShape& shape)
 		return tMeetingRequestMessage(shape);
 	else if (class_match_prefix(itemClass, "IPM.Schedule.Meeting.Resp") == 0)
 		return tMeetingResponseMessage(shape);
-	return tItem(shape);
+	else if (class_match_prefix(itemClass, "IPM.DistList") == 0)
+		return tItem(shape);
+	/* Exchange serves classes without a dedicated EWS type as Message */
+	return tMessage(shape);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -4882,6 +5342,12 @@ void tItemResponseShape::tags(sShape& shape) const
 		for (const auto& named : namedTagsAllProperties)
 			shape.add(*named.first, named.second, sShape::FL_FIELD);
 	}
+	/*
+	 * The UTC fallback zone of all-day items needs these. Added last so
+	 * that a field request made above keeps its flags.
+	 */
+	shape.add(NtAppointmentSubType, PT_BOOLEAN);
+	shape.add(NtCommonStart, PT_SYSTIME);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -4910,14 +5376,27 @@ void tMessage::update(const sShape& shape)
 		fromProp(prop, defaulted(ReceivedRepresenting).Mailbox.EmailAddress);
 	if ((prop = shape.get(PR_RCVD_REPRESENTING_NAME)))
 		fromProp(prop, defaulted(ReceivedRepresenting).Mailbox.Name);
+	if (ReceivedRepresenting && ReceivedRepresenting->Mailbox.RoutingType &&
+	    strcasecmp(ReceivedRepresenting->Mailbox.RoutingType->c_str(), "SMTP") != 0 &&
+	    (prop = shape.get(PR_RCVD_REPRESENTING_SMTP_ADDRESS))) {
+		fromProp(prop, ReceivedRepresenting->Mailbox.EmailAddress);
+		ReceivedRepresenting->Mailbox.RoutingType = "SMTP";
+	}
 	fromProp(shape.get(PR_READ), IsRead);
 	fromProp(shape.get(PR_READ_RECEIPT_REQUESTED), IsReadReceiptRequested);
+	fromProp(shape.get(PR_RESPONSE_REQUESTED), IsResponseRequested);
 	if ((prop = shape.get(PR_RECEIVED_BY_ADDRTYPE)))
 		fromProp(prop, defaulted(ReceivedBy).Mailbox.RoutingType);
 	if ((prop = shape.get(PR_RECEIVED_BY_EMAIL_ADDRESS)))
 		fromProp(prop, defaulted(ReceivedBy).Mailbox.EmailAddress);
 	if ((prop = shape.get(PR_RECEIVED_BY_NAME)))
 		fromProp(prop, defaulted(ReceivedBy).Mailbox.Name);
+	if (ReceivedBy && ReceivedBy->Mailbox.RoutingType &&
+	    strcasecmp(ReceivedBy->Mailbox.RoutingType->c_str(), "SMTP") != 0 &&
+	    (prop = shape.get(PR_RECEIVED_BY_SMTP_ADDRESS))) {
+		fromProp(prop, ReceivedBy->Mailbox.EmailAddress);
+		ReceivedBy->Mailbox.RoutingType = "SMTP";
+	}
 	if ((prop = shape.get(PR_SENDER_ADDRTYPE)))
 		fromProp(prop, defaulted(Sender).Mailbox.RoutingType);
 	if ((prop = shape.get(PR_SENDER_EMAIL_ADDRESS)))
@@ -5177,6 +5656,22 @@ PERMISSION_DATA tBasePermission::write(uint32_t rights) const
 }
 
 /**
+ * @brief      Rights of a calendar permission level
+ *
+ * Calendar levels that can read items can also read free/busy data, as in
+ * Exchange and Outlook.
+ */
+static uint32_t calendarProfile(size_t index)
+{
+	uint32_t rights = tBasePermission::profileTable[index];
+	if (rights & frightsReadAny)
+		rights |= frightsFreeBusySimple | frightsFreeBusyDetailed;
+	else if (rights & frightsFreeBusyDetailed)
+		rights |= frightsFreeBusySimple;
+	return rights;
+}
+
+/**
  * @brief      Create permission from properties
  *
  * The properties `PR_MEMBER_ID`, `PR_MEMBER_NAME`, `PR_MEMBER_RIGHTS` and
@@ -5190,13 +5685,17 @@ tCalendarPermission::tCalendarPermission(const TPROPVAL_ARRAY& props) : tBasePer
 	if (!rights)
 		rights = &uint_value_zero;
 	ReadItems.emplace(*rights & frightsReadAny ? Enum::FullDetails :
-	                  *rights & frightsFreeBusyDetailed ? Enum::FreeBusyTimeAndSubjectAndLocation :
-	                  *rights & frightsFreeBusySimple ? Enum::TimeOnly :Enum::None);
-	auto index = ct_index(profileTable, *rights);
-	if (index < calendarProfiles)
-		CalendarPermissionLevel = static_cast<uint8_t>(index);
-	else
-		CalendarPermissionLevel = Enum::Custom;
+	                  *rights & frightsFreeBusyDetailed ? Enum::TimeAndSubjectAndLocation :
+	                  *rights & frightsFreeBusySimple ? Enum::TimeOnly : Enum::None);
+	CalendarPermissionLevel = Enum::Custom;
+	for (size_t i = 0; i < calendarProfiles; ++i) {
+		/* The free/busy levels may come with a visible folder */
+		auto masked = i >= profiles ? *rights & ~frightsVisible : *rights;
+		if (*rights == profileTable[i] || masked == calendarProfile(i)) {
+			CalendarPermissionLevel = static_cast<uint8_t>(i);
+			break;
+		}
+	}
 }
 
 
@@ -5207,10 +5706,13 @@ tCalendarPermission::tCalendarPermission(const TPROPVAL_ARRAY& props) : tBasePer
  */
 PERMISSION_DATA tCalendarPermission::write() const
 {
+	static constexpr uint32_t fb = frightsFreeBusySimple | frightsFreeBusyDetailed;
 	uint32_t rights = CalendarPermissionLevel == Enum::Custom ?
-	                  0 : profileTable[CalendarPermissionLevel.index()];
+	                  0 : calendarProfile(CalendarPermissionLevel.index());
 	if (ReadItems)
-		rights |= *ReadItems == Enum::FullDetails ? frightsReadAny : 0;
+		rights |= *ReadItems == Enum::FullDetails ? frightsReadAny | fb :
+		          *ReadItems == Enum::TimeAndSubjectAndLocation ? fb :
+		          *ReadItems == Enum::TimeOnly ? frightsFreeBusySimple : 0;
 	return tBasePermission::write(rights);
 }
 

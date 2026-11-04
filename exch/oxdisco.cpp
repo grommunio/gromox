@@ -11,8 +11,10 @@
 #include <cstring>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
+#include <vector>
 #include <tinyxml2.h>
 #include <fmt/format.h>
 #include <fmt/printf.h>
@@ -37,6 +39,7 @@ using namespace tinyxml2;
 static constexpr char
 	uri_autod_xml[] = "/autodiscover/autodiscover.xml",
 	uri_autod_json[] = "/autodiscover/autodiscover.json",
+	uri_autod_svc[] = "/autodiscover/autodiscover.svc",
 	uri_wkmc11_xml[] = "/.well-known/autoconfig/mail/config-v1.1.xml",
 	uri_wkcaldav[] = "/.well-known/caldav",
 	uri_wkcarddav[] = "/.well-known/carddav",
@@ -53,7 +56,7 @@ class OxdiscoPlugin {
 	OxdiscoPlugin();
 
 	http_status proc(int, const void *, uint64_t);
-	std::pair<unsigned int, std::string> access_ok(int, const char *, const char *);
+	std::pair<unsigned int, std::string> access_ok(const char *, const char *) const;
 	static bool preproc(int);
 
 	struct _exmdb {
@@ -70,7 +73,7 @@ class OxdiscoPlugin {
 	uint server_id; // Hash of the name of the mail server
 	std::string RedirectAddr; // Domain to perform Autodiscover
 	std::string RedirectUrl; // URL for a subsequent Autodiscover request
-	std::string host_id, m_server_version;
+	std::string host_id, m_server_version, m_server_version_dotted;
 	int request_logging = 0; // 0 = none, 1 = request data
 	int response_logging = 0; // 0 = none, 1 = response data
 	int pretty_response = 0; // 0 = compact output, 1 = pretty printed response
@@ -85,6 +88,10 @@ class OxdiscoPlugin {
 	int resp_web(tinyxml2::XMLElement *, const char *, const char *, const char *ua) const;
 	int resp_eas(tinyxml2::XMLElement *, const char *) const;
 	http_status resp_json(int, const char *) const;
+	http_status resp_soap(int, const char *, const void *, uint64_t) const;
+	http_status soap_send(int, const tinyxml2::XMLDocument &, unsigned int, const char *) const;
+	http_status soap_fault(int, const char *) const;
+	void soap_user(XMLElement *, const char *actor, const char *email, const std::vector<std::string> &) const;
 	static void resp_mh(XMLElement *, const char *home, const char *dom, const std::string &, const std::string &, const std::string &, const std::string &, bool);
 	void resp_rpch(XMLElement *, const char *home, const char *dom, const std::string &ews_url, const std::string &oab_url, const std::string &ecp_url, std::string &&serverdn, std::string &&mdbdn, const std::string &mailboxid, bool is_pvt) const;
 	http_status resp_autocfg(int, const char *) const;
@@ -111,6 +118,7 @@ static constexpr char
 	web_base_url[] = "https://{}/web/",
 	public_folder[] = "Public Folder",
 	public_folder_email[] = "public.folder.root@";
+static constexpr size_t soap_max_entries = 100;
 static unsigned int ok_code = 200, bad_address_code = 501;
 static constexpr char bad_address_msg[] = "Bad Address";
 static unsigned int invalid_request_code = 600;
@@ -130,7 +138,8 @@ static constexpr char
 	header_templ[] =
 		"HTTP/1.1 {} {}\r\n"
 		"Content-Type: text/xml\r\n"
-		"Content-Length: {}\r\n\r\n",
+		"Content-Length: {}\r\n"
+		"X-SOAP-Enabled: True\r\n\r\n",
 	header_templ_json[] =
 		"HTTP/1.1 {} {}\r\n"
 		"Content-Type: application/json\r\n"
@@ -207,6 +216,7 @@ bool OxdiscoPlugin::preproc(int ctx_id)
 	auto uri = req->f_request_uri.c_str();
 	return umatch(uri, uri_autod_xml) != SIZE_MAX ||
 	       umatch(uri, uri_autod_json) != SIZE_MAX ||
+	       umatch(uri, uri_autod_svc) != SIZE_MAX ||
 	       umatch(uri, uri_wkmc11_xml) != SIZE_MAX ||
 	       umatch(uri, uri_wkcaldav) != SIZE_MAX ||
 	       umatch(uri, uri_wkcarddav) != SIZE_MAX ||
@@ -252,8 +262,8 @@ static std::string extract_qparam(const char *qstr, const char *srkey)
  * If @actor has _any_ kind of permission (or a scndstore hint entry),
  * then allow it.
  */
-std::pair<unsigned int, std::string> OxdiscoPlugin::access_ok(int ctx_id,
-    const char *target, const char *actor)
+std::pair<unsigned int, std::string> OxdiscoPlugin::access_ok(const char *target,
+    const char *actor) const
 {
 	if (m_validate_scndrequest == 0 || strcasecmp(target, actor) == 0 ||
 	    strncasecmp(target, public_folder_email, 19) == 0)
@@ -325,6 +335,10 @@ http_status OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) t
 		return resp_autocfg(ctx_id, username.c_str());
 	} else if (umatch(uri, uri_autod_json) != SIZE_MAX) {
 		return resp_json(ctx_id, uri);
+	} else if (umatch(uri, uri_autod_svc) != SIZE_MAX) {
+		if (auth_info.auth_status != http_status::ok)
+			return http_status::unauthorized;
+		return resp_soap(ctx_id, auth_info.username, content, len);
 	} else if (umatch(uri, uri_autod_xml) == SIZE_MAX) {
 		return http_status::not_found;
 	}
@@ -392,7 +406,7 @@ http_status OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) t
 		}
 	}
 
-	auto [err_code, reason] = access_ok(ctx_id, target_email.c_str(), auth_actor.c_str());
+	auto [err_code, reason] = access_ok(target_email.c_str(), auth_actor.c_str());
 	if (err_code != ok_code) {
 		if (eas_impersonation)
 			return http_status::unauthorized;
@@ -485,7 +499,8 @@ void OxdiscoPlugin::loadConfig()
 		s = c->get_value("oxdisco_exonym");
 		if (s != nullptr)
 			host_id = s;
-		m_server_version = exver_dotted_to_hex(c->get_value("reported_server_version"));
+		m_server_version_dotted = c->get_value("reported_server_version");
+		m_server_version = exver_dotted_to_hex(m_server_version_dotted.c_str());
 	}
 	if (x500_org_name.empty())
 		x500_org_name = "Gromox default";
@@ -1179,6 +1194,268 @@ http_status OxdiscoPlugin::resp_autocfg(int ctx_id, const char *email) const
 	return write_response(ctx_id, response, strlen(response));
 }
 
+static const char *local_name(const XMLElement *el)
+{
+	auto n = el->Name();
+	auto p = strchr(n, ':');
+	return p != nullptr ? p + 1 : n;
+}
+
+static XMLElement *soap_child(XMLElement *el, const char *name)
+{
+	if (el == nullptr)
+		return nullptr;
+	for (auto c = el->FirstChildElement(); c != nullptr; c = c->NextSiblingElement())
+		if (strcmp(local_name(c), name) == 0)
+			return c;
+	return nullptr;
+}
+
+static bool same_org(const char *a, const char *b)
+{
+	auto da = strchr(a, '@'), db = strchr(b, '@');
+	if (da == nullptr || db == nullptr)
+		return false;
+	unsigned int did_a = 0, did_b = 0, org_a = 0, org_b = 0;
+	if (!mysql_adaptor_get_domain_ids(da + 1, &did_a, &org_a) ||
+	    !mysql_adaptor_get_domain_ids(db + 1, &did_b, &org_b))
+		return false;
+	return did_a == did_b || (org_a != 0 && org_a == org_b);
+}
+
+void OxdiscoPlugin::soap_user(XMLElement *ur, const char *actor,
+    const char *mailbox, const std::vector<std::string> &wanted) const
+{
+	auto finish = [&](const char *code, const std::string &msg,
+	              const std::string &target = {}) {
+		add_child(ur, "ErrorCode", code);
+		add_child(ur, "ErrorMessage", msg);
+		auto rt = add_child(ur, "RedirectTarget");
+		if (target.empty())
+			rt->SetAttribute("i:nil", "true");
+		else
+			rt->SetText(target.c_str());
+		add_child(ur, "UserSettingErrors");
+		add_child(ur, "UserSettings");
+	};
+	std::string email = znul(mailbox);
+	if (email.size() > 0 && email[0] == '/') {
+		std::string uname;
+		if (cvt_essdn_to_username(email.c_str(), x500_org_name.c_str(),
+		    mysql_adaptor_userid_to_name, uname) == ecSuccess)
+			email = std::move(uname);
+	}
+	sql_meta_result mres{};
+	unsigned int user_id = 0, domain_id = 0;
+	std::string dispname, essdn, serverdn, mdbdn, mailboxid;
+	std::pair<std::string, std::string> homesrv_buf;
+	if (strchr(email.c_str(), '@') == nullptr ||
+	    mysql_adaptor_meta(email.c_str(), WANTPRIV_METAONLY, mres) != 0 ||
+	    !same_org(actor, mres.username.c_str()) ||
+	    !mysql_adaptor_get_user_ids(mres.username.c_str(), &user_id, &domain_id, nullptr) ||
+	    !mysql_adaptor_get_user_displayname(mres.username.c_str(), dispname) ||
+	    mysql_adaptor_get_homeserver(mres.username.c_str(), true, homesrv_buf) != 0)
+		return finish("InvalidUser", fmt::format("Invalid user: '{}'", znul(mailbox)));
+	if (!RedirectUrl.empty()) {
+		auto url = RedirectUrl;
+		if (url.size() >= 16 &&
+		    strcasecmp(&url[url.size()-16], "autodiscover.xml") == 0)
+			url.replace(url.size() - 3, 3, "svc");
+		return finish("RedirectUrl", "Redirection URL.", url);
+	} else if (!RedirectAddr.empty()) {
+		return finish("RedirectAddress", "Redirection address.",
+		       get_redirect_addr(mres.username.c_str()));
+	}
+	auto user = mres.username.c_str();
+	auto domain = strchr(user, '@') + 1;
+	const char *homesrv = homesrv_buf.second.c_str();
+	if (*homesrv == '\0')
+		homesrv = host_id.c_str();
+	auto org = x500_org_name.c_str();
+	if (cvt_username_to_essdn(user, org, mysql_adaptor_get_user_ids,
+	    mysql_adaptor_get_domain_ids, essdn) != ecSuccess)
+		essdn.clear();
+	if (cvt_username_to_mailboxid(user, user_id, mailboxid) != ecSuccess)
+		mailboxid.clear();
+	if (cvt_username_to_serverdn(user, org, user_id, serverdn) != ecSuccess)
+		serverdn.clear();
+	if (cvt_username_to_mdbdn(user, org, user_id, mdbdn) != ecSuccess)
+		mdbdn.clear();
+	static constexpr GUID dummyguid = {0xeeeeeeee, 0xeeee, 0xeeee, {0xee, 0xee}, {0xee, 0xee, 0xee, 0xee, 0xee, 0xee}};
+	char depl_id[39];
+	dummyguid.to_str(depl_id, std::size(depl_id));
+	auto ews_url = fmt::format(ews_base_url, homesrv, exchange_asmx);
+	/*
+	 * The DN settings are in the GAL anyway. Host names are connection
+	 * details and follow oxdisco_validate_scndrequest.
+	 */
+	std::optional<bool> conn_ok;
+	auto may_connect = [&]() {
+		if (!conn_ok.has_value())
+			conn_ok = access_ok(user, actor).first == ok_code;
+		return *conn_ok;
+	};
+
+	auto value_of = [&](const std::string &n) -> std::optional<std::string> {
+		if (n == "UserDisplayName")
+			return dispname;
+		if (n == "UserDN")
+			return essdn;
+		if (n == "UserDeploymentId")
+			return depl_id;
+		if (n == "AutoDiscoverSMTPAddress")
+			return mres.username;
+		if (n == "InternalMailboxServerDN")
+			return serverdn;
+		if (n == "MailboxDN")
+			return mdbdn;
+		if (n == "InternalRpcClientServer")
+			return mailboxid.empty() ? std::string() :
+			       fmt::format("{}@{}", mailboxid, domain);
+		if (n == "EwsSupportedSchemas")
+			return "Exchange2007, Exchange2007_SP1, Exchange2010, Exchange2010_SP1, Exchange2010_SP2, Exchange2013, Exchange2013_SP1";
+		if (n == "CasVersion")
+			return m_server_version_dotted;
+		if (n == "InternalMailboxServer" ||
+		    n == "ExternalMailboxServer" || n == "PublicFolderServer")
+			return may_connect() ? homesrv : std::string();
+		if (n == "InternalEwsUrl" || n == "ExternalEwsUrl")
+			return may_connect() ? ews_url : std::string();
+		return std::nullopt;
+	};
+
+	add_child(ur, "ErrorCode", "NoError");
+	add_child(ur, "ErrorMessage", "No error.");
+	add_child(ur, "RedirectTarget")->SetAttribute("i:nil", "true");
+	auto errs = add_child(ur, "UserSettingErrors");
+	auto sets = add_child(ur, "UserSettings");
+	for (const auto &n : wanted) {
+		auto v = value_of(n);
+		if (v.has_value() && !v->empty()) {
+			auto us = add_child(sets, "UserSetting");
+			us->SetAttribute("i:type", "StringSetting");
+			add_child(us, "Name", n);
+			add_child(us, "Value", *v);
+			continue;
+		}
+		auto e = add_child(errs, "UserSettingError");
+		if (!v.has_value()) {
+			add_child(e, "ErrorCode", "InvalidSetting");
+			add_child(e, "ErrorMessage", "Invalid user setting.");
+		} else {
+			add_child(e, "ErrorCode", "SettingIsNotAvailable");
+			add_child(e, "ErrorMessage", "User setting is not available.");
+		}
+		add_child(e, "SettingName", n);
+	}
+}
+
+http_status OxdiscoPlugin::soap_send(int ctx_id, const XMLDocument &doc,
+    unsigned int code, const char *status) const
+{
+	XMLPrinter printer(nullptr, !pretty_response);
+	doc.Print(&printer);
+	if (response_logging > 0)
+		mlog(LV_DEBUG, "[oxdisco] response: %s", printer.CStr());
+	size_t body_len = printer.CStrSize() - 1;
+	auto h = fmt::format("HTTP/1.1 {} {}\r\n"
+	         "Content-Type: text/xml; charset=utf-8\r\n"
+	         "Content-Length: {}\r\n\r\n", code, status, body_len);
+	write_response(ctx_id, h.c_str(), h.size());
+	return write_response(ctx_id, printer.CStr(), body_len);
+}
+
+/* SOAP 1.1 §4.4, §6.2 */
+http_status OxdiscoPlugin::soap_fault(int ctx_id, const char *msg) const
+{
+	XMLDocument doc;
+	doc.InsertEndChild(doc.NewDeclaration());
+	auto env = doc.NewElement("s:Envelope");
+	doc.InsertEndChild(env);
+	env->SetAttribute("xmlns:s", "http://schemas.xmlsoap.org/soap/envelope/");
+	auto f = add_child(add_child(env, "s:Body"), "s:Fault");
+	add_child(f, "faultcode", "s:Client");
+	add_child(f, "faultstring", msg)->SetAttribute("xml:lang", "en-US");
+	return soap_send(ctx_id, doc, 500, "Internal Server Error");
+}
+
+/**
+ * Autodiscover SOAP endpoint of MS-OXWSADISC. Only GetUserSettings.
+ */
+http_status OxdiscoPlugin::resp_soap(int ctx_id, const char *actor,
+    const void *content, uint64_t len) const
+{
+	XMLDocument doc;
+	if (doc.Parse(static_cast<const char *>(content), len) != XML_SUCCESS)
+		return soap_fault(ctx_id, "The request is not well-formed XML.");
+	if (request_logging > 0)
+		mlog(LV_DEBUG, "[oxdisco] incoming: %.*s",
+			static_cast<int>(len), static_cast<const char *>(content));
+	auto root = doc.RootElement();
+	if (root == nullptr || strcmp(local_name(root), "Envelope") != 0)
+		return soap_fault(ctx_id, "The request is not a SOAP envelope.");
+	auto rq = soap_child(soap_child(soap_child(root, "Body"),
+	          "GetUserSettingsRequestMessage"), "Request");
+	if (rq == nullptr)
+		return soap_fault(ctx_id, "The operation is not supported.");
+	std::vector<std::string> wanted;
+	for (auto c = soap_child(soap_child(rq, "RequestedSettings"), "Setting");
+	     c != nullptr; c = c->NextSiblingElement())
+		if (strcmp(local_name(c), "Setting") == 0 && c->GetText() != nullptr &&
+		    wanted.size() <= soap_max_entries)
+			wanted.emplace_back(c->GetText());
+	std::vector<const char *> users;
+	for (auto u = soap_child(soap_child(rq, "Users"), "User");
+	     u != nullptr; u = u->NextSiblingElement()) {
+		if (strcmp(local_name(u), "User") != 0)
+			continue;
+		if (users.size() >= soap_max_entries) {
+			users.clear();
+			break;
+		}
+		auto mbox = soap_child(u, "Mailbox");
+		users.push_back(mbox != nullptr ? mbox->GetText() : nullptr);
+	}
+
+	XMLDocument rdoc;
+	rdoc.InsertEndChild(rdoc.NewDeclaration());
+	auto env = rdoc.NewElement("s:Envelope");
+	rdoc.InsertEndChild(env);
+	env->SetAttribute("xmlns:s", "http://schemas.xmlsoap.org/soap/envelope/");
+	env->SetAttribute("xmlns:a", "http://www.w3.org/2005/08/addressing");
+	auto hdr = add_child(env, "s:Header");
+	auto act = add_child(hdr, "a:Action",
+	           "http://schemas.microsoft.com/exchange/2010/Autodiscover/Autodiscover/GetUserSettingsResponse");
+	act->SetAttribute("s:mustUnderstand", "1");
+	auto svi = add_child(hdr, "h:ServerVersionInfo");
+	svi->SetAttribute("xmlns:h", "http://schemas.microsoft.com/exchange/2010/Autodiscover");
+	svi->SetAttribute("xmlns:i", "http://www.w3.org/2001/XMLSchema-instance");
+	unsigned int ver[4]{};
+	sscanf(m_server_version_dotted.c_str(), "%u.%u.%u.%u",
+		&ver[0], &ver[1], &ver[2], &ver[3]);
+	add_child(svi, "h:MajorVersion", std::to_string(ver[0]));
+	add_child(svi, "h:MinorVersion", std::to_string(ver[1]));
+	add_child(svi, "h:MajorBuildNumber", std::to_string(ver[2]));
+	add_child(svi, "h:MinorBuildNumber", std::to_string(ver[3]));
+	add_child(svi, "h:Version", "Exchange2013_SP1");
+	auto rmsg = add_child(add_child(env, "s:Body"), "GetUserSettingsResponseMessage");
+	rmsg->SetAttribute("xmlns", "http://schemas.microsoft.com/exchange/2010/Autodiscover");
+	auto rsp = add_child(rmsg, "Response");
+	rsp->SetAttribute("xmlns:i", "http://www.w3.org/2001/XMLSchema-instance");
+	if (users.empty() || wanted.size() > soap_max_entries) {
+		add_child(rsp, "ErrorCode", "InvalidRequest");
+		add_child(rsp, "ErrorMessage", fmt::format("The request must name 1 to {} users and at most {} settings.", soap_max_entries, soap_max_entries));
+		add_child(rsp, "UserResponses");
+		return soap_send(ctx_id, rdoc, 200, "OK");
+	}
+	add_child(rsp, "ErrorCode", "NoError");
+	add_child(rsp, "ErrorMessage");
+	auto urs = add_child(rsp, "UserResponses");
+	for (auto u : users)
+		soap_user(add_child(urs, "UserResponse"), actor, u, wanted);
+	return soap_send(ctx_id, rdoc, 200, "OK");
+}
+
 /**
  * RFC 6764 §5
  */
@@ -1193,7 +1470,7 @@ http_status OxdiscoPlugin::resp_dav(int ctx_id) const
 std::string OxdiscoPlugin::get_redirect_addr(const char *email) const
 {
 	std::string s_email = email;
-	std::string username = s_email.substr(0, s_email.find('@') - 1);
+	std::string username = s_email.substr(0, s_email.find('@'));
 	std::string redirect_addr = username + "@" + RedirectAddr;
 	return redirect_addr;
 }

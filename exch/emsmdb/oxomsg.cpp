@@ -271,7 +271,6 @@ static void oxomsg_audit_send(const char *actor, const char *mailbox,
 ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin) try
 {
-	int timer_id;
 	BOOL b_marked;
 	ems_objtype object_type;
 	uint16_t rcpt_num;
@@ -424,15 +423,9 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	
 	auto deferred_time = props_to_defer_interval(tmp_propvals);
 	if (deferred_time > 0) {
-		timer_id = common_util_add_timer(plogon->get_account(),
-		           pmessage->get_id().gcv(), deferred_time);
-		if (0 == timer_id) {
-			exmdb_client->clear_submit(dir, pmessage->get_id(), b_unsent);
-			return ecError;
-		}
+		/* try_mark_submit recorded the deferral; exmdb sends it later. */
 		oxomsg_audit_send(get_rpc_info().username, actor, delegator.c_str(), repr_grant,
 			tmp_propvals.get<const char>(PR_SUBJECT), "scheduled", " for deferred send");
-		exmdb_client->set_message_timer(dir, pmessage->get_id(), timer_id);
 		pmessage->reload();
 		return ecSuccess;
 	}
@@ -458,7 +451,6 @@ ec_error_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	BOOL b_exist;
-	uint32_t *ptimer_id;
 	uint32_t *pmessage_flags;
 	
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
@@ -483,11 +475,7 @@ ec_error_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
 	if (pmessage_flags == nullptr)
 		return ecError;
 	if (*pmessage_flags & MSGFLAG_SUBMITTED) {
-		if (!exmdb_client->get_message_timer(plogon->get_dir(),
-		    message_id, &ptimer_id))
-			return ecError;
-		if (ptimer_id != nullptr && !common_util_cancel_timer(*ptimer_id))
-			return ecUnableToAbort;
+		/* clear_submit also cancels any pending deferred send */
 		if (!exmdb_client->clear_submit(plogon->get_dir(), message_id, TRUE))
 			return ecError;
 		return ecSuccess;

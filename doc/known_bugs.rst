@@ -33,12 +33,6 @@ Gaps in Gromox
   over **EWS** never produce a copy in the represented mailbox, because
   ``EWSContext::send`` performs no delegation checks.
 
-* Likewise for **deferred sends**. When a client requests delayed delivery,
-  RopSubmitMessage and zs_submitmessage hand the message to the timer daemon
-  and return before the code that would deposit the copy. The deferred path
-  completes through ``submit_command`` and it has not been established whether
-  a copy results.
-
 
 Noteworthy issues for developers
 ================================

@@ -314,6 +314,11 @@ enum {
 	_DTCT_NONE = 0xff, /* (sentinel value for gromox) */
 };
 
+enum { /* PR_DELEGATE_FLAGS */
+	DF_HIDEPRIVATE = 0,
+	DF_SHOWPRIVATE,
+};
+
 enum mapi_folder_type : uint32_t {
 	FOLDER_ROOT = 0,
 	FOLDER_GENERIC = 1,
@@ -903,6 +908,9 @@ struct GX_EXPORT ADVISE_INFO {
 
 /*
  * @pv:		may legitimately be nullptr (only if cb==0)
+ *
+ * An archaic container. New code should use std::string/string_view
+ * when possible.
  */
 struct GX_EXPORT BINARY {
 	uint32_t cb;

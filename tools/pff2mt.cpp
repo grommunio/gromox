@@ -545,9 +545,21 @@ static void emit_namedprop(namedprop_bimap &name_map, libpff_record_entry_t *ren
 		throw YError("PG-1142: did not assign namedprop propid as expected, call devs");
 }
 
+namespace {
+#if __cplusplus >= 202300L
+#define start_lt std::start_lifetime_as
+#else
+template<typename T> static inline T *start_lt(void *p) noexcept
+{
+	return static_cast<T *>(p);
+}
+#endif
+}
+
 static void recordent_to_tpropval(libpff_record_entry_t *rent,
     TPROPVAL_ARRAY *ar, namedprop_bimap *name_map)
 {
+
 	libpff_error_ptr err, e2, e3;
 	unsigned int etype = 0, vtype = 0;
 	size_t dsize = 0;
@@ -572,6 +584,7 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent,
 	}
 
 	auto buf = std::make_unique<uint8_t[]>(dsize + 1);
+	static_assert(__STDCPP_DEFAULT_NEW_ALIGNMENT__ >= sizeof(GUID));
 	if (dsize == 0)
 		buf[0] = '\0';
 	else if (libpff_record_entry_get_data(rent, buf.get(), dsize + 1, &~unique_tie(err)) < 1)
@@ -681,30 +694,30 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent,
 		break;
 	case PT_MV_SHORT:
 		u.sa.count = dsize / sizeof(uint16_t);
-		u.sa.ps = reinterpret_cast<uint16_t *>(buf.get());
+		u.sa.ps = start_lt<uint16_t>(buf.get());
 		pv.pvalue = &u.sa;
 		break;
 	case PT_MV_LONG:
 		u.la.count = dsize / sizeof(uint32_t);
-		u.la.pl = reinterpret_cast<uint32_t *>(buf.get());
+		u.la.pl = start_lt<uint32_t>(buf.get());
 		pv.pvalue = &u.la;
 		break;
 	case PT_MV_FLOAT:
 		u.fa.count = dsize / sizeof(float);
-		u.fa.mval = reinterpret_cast<float *>(buf.get());
+		u.fa.mval = start_lt<float>(buf.get());
 		pv.pvalue = &u.fa;
 		break;
 	case PT_MV_DOUBLE:
 	case PT_MV_APPTIME:
 		u.da.count = dsize / sizeof(double);
-		u.da.mval = reinterpret_cast<double *>(buf.get());
+		u.da.mval = start_lt<double>(buf.get());
 		pv.pvalue = &u.da;
 		break;
 	case PT_MV_I8:
 	case PT_MV_SYSTIME:
 	case PT_MV_CURRENCY:
 		u.lla.count = dsize / sizeof(uint64_t);
-		u.lla.pll = reinterpret_cast<uint64_t *>(buf.get());
+		u.lla.pll = start_lt<uint64_t>(buf.get());
 		pv.pvalue = &u.lla;
 		break;
 	case PT_MV_STRING8:
@@ -718,7 +731,7 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent,
 		break;
 	case PT_MV_CLSID:
 		u.ga.count = dsize / sizeof(GUID);
-		u.ga.pguid = reinterpret_cast<GUID *>(buf.get());
+		u.ga.pguid = start_lt<GUID>(buf.get());
 		pv.pvalue = &u.guid;
 		break;
 	case PT_OBJECT:

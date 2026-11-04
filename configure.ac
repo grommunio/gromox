@@ -23,14 +23,18 @@ my_CPPFLAGS=""
 my_CFLAGS="-Wall -Wmissing-declarations -Wwrite-strings"
 my_CXXFLAGS="-Wall -Wmissing-declarations"
 my_LDFLAGS=""
+
+min_standard="202000L"
+AS_IF([test -n "$COVERITY"], [max_standard=202099L], [max_standard=999900L])
+best_standard=""
 cxxmode="error"
-AC_MSG_CHECKING([for C++ standard availability])
-echo ""
-for i in "" "c++26" "c++2c" "c++23" "c++2b" "c++20"; do
-	dnl cov-scan cannot take too high a standard
-	AS_IF([test -n "$COVERITY" && test "$i" != "c++20"], [continue])
-	AC_MSG_CHECKING([if $CXX${i:+ -std=$i} works for our code])
-	CXXFLAGS="$saved_CXXFLAGS${i:+ -std=$i}"
+for i in "" "c++26" "c++2c" "c++23" "c++2b" "c++2a" "c++20"; do
+	AC_MSG_CHECKING([whether $CXX${i:+ -std=$i} works for our code])
+	dnl -std affects both the cpp stage (expansion of #ifs) and the c0
+	dnl stage (syntax to accepted). User-provided options should still
+	dnl be preferred, though.
+	CPPFLAGS="${i:+ -std=$i} $saved_CPPFLAGS"
+	CXXFLAGS="${i:+ -std=$i} $saved_CXXFLAGS"
 	AC_COMPILE_IFELSE([AC_LANG_SOURCE([
 		#include <span>
 		#include <unordered_map>
@@ -40,18 +44,38 @@ for i in "" "c++26" "c++2c" "c++23" "c++2b" "c++20"; do
 			std::span s = v;
 			std::unordered_map<int, int> um{{}};
 		}
-	])], [
-		AC_MSG_RESULT([yes])
-		cxxmode="${i:+ -std=$i}"
-		break
-	], [
+	])], [result=0], [result=1])
+	AS_IF([test "$result" != 0], [
 		AC_MSG_RESULT([no])
+		continue
+	])
+
+	AC_PREPROC_IFELSE([AC_LANG_SOURCE([__cplusplus])],
+		[[result="$(grep '^[0-9]' conftest.i)"]], [result=""])
+	AS_IF([test -z "$result"], [
+		AC_MSG_RESULT([yes])
+		AS_IF([test "$best_standard" = ""], [cxxmode="${i:+ -std=$i}"])
+		continue
+	])
+	AS_IF([test "$result" ">" "$max_standard"], [
+		AC_MSG_RESULT([no/$result])
+		continue
+	])
+	AC_MSG_RESULT([yes/$result])
+	AS_IF([test -z "$best_standard" || test "$best_standard" "<" "$result"], [
+		best_standard="$result"
+		cxxmode="${i:+ -std=$i}"
+		dnl The named -std=s are sorted, so we can exit sooner
+		AS_IF([test -n "$i"], [break])
 	])
 done
+CPPFLAGS="$saved_CPPFLAGS"
 CXXFLAGS="$saved_CXXFLAGS"
 AS_IF([test "$cxxmode" = error], [
-	AC_MSG_ERROR([None of the -std= flags we tried led to successful compilation, but we need C++20 support.])
+	AC_MSG_ERROR([No -std= flag combination led to an acceptable result.])
 ])
+echo "selecting standard: $best_standard ($cxxmode)"
+my_CPPFLAGS="$my_CPPFLAGS${cxxmode}"
 my_CXXFLAGS="$my_CXXFLAGS${cxxmode}"
 
 AC_ARG_ENABLE([rpcntlm],

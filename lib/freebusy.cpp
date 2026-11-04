@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2023–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2023–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
+#include <cstdlib>
+#include <cstring>
+#include <string>
+#include <string_view>
 #include <type_traits>
 #include <vector>
 #include <fmt/format.h>
@@ -14,18 +18,14 @@
 #include <gromox/ical.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mapi_types.hpp>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/rop_util.hpp>
+#include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 
 using namespace gromox;
 
 namespace {
-
-struct ievent {
-	time_t start_time = 0, end_time = 0;
-	const EXCEPTIONINFO *ei = nullptr;
-	const EXTENDEDEXCEPTION *xe = nullptr;
-};
 
 struct freebusy_tags {
 	freebusy_tags(const char *);
@@ -33,7 +33,7 @@ struct freebusy_tags {
 	uint32_t apptstartwhole = 0, apptendwhole = 0, busystatus = 0, recurring = 0,
 		apptrecur = 0, apptsubtype = 0, private_flag = 0, apptstateflags = 0,
 		clipend = 0, location = 0, reminderset = 0, globalobjectid = 0,
-		timezonestruct = 0;
+		timezonestruct = 0, exreplacetime = 0;
 	bool init_ok = false;
 };
 
@@ -55,6 +55,7 @@ freebusy_tags::freebusy_tags(const char *dir)
 		{MNID_ID, PSETID_Common,      PidLidReminderSet},
 		{MNID_ID, PSETID_Meeting,     PidLidGlobalObjectId},
 		{MNID_ID, PSETID_Appointment, PidLidTimeZoneStruct},
+		{MNID_ID, PSETID_Appointment, PidLidExceptionReplaceTime},
 	};
 
 	const PROPNAME_ARRAY propnames = {std::size(propname_buff), deconst(propname_buff)};
@@ -74,6 +75,7 @@ freebusy_tags::freebusy_tags(const char *dir)
 		reminderset    = PROP_TAG(PT_BOOLEAN, ids[10]);
 		globalobjectid = PROP_TAG(PT_BINARY,  ids[11]);
 		timezonestruct = PROP_TAG(PT_BINARY,  ids[12]);
+		exreplacetime  = PROP_TAG(PT_SYSTIME, ids[13]);
 		init_ok = true;
 	}
 }
@@ -222,20 +224,28 @@ static bool recurrencepattern_to_rrule(const ical_component *tzcom,
 	return false;
 }
 
-static bool find_recur_times(const ical_component *tzcom,
+/**
+ * Expand the occurrences of a series that overlap or touch
+ * [start_time, end_time], like the C1 to C3 conditions of get_freebusy do
+ * for single appointments. A negative end_time yields just the next
+ * occurrence.
+ */
+bool gromox::fb_recur_times(const ical_component *tzcom,
     time_t start_whole, const APPOINTMENT_RECUR_PAT &apr,
-    time_t start_time, time_t end_time, std::vector<ievent> &evlist)
+    time_t start_time, time_t end_time, std::vector<fb_instance> &evlist)
 {
 	ical_rrule irrule{};
+	auto duration = static_cast<time_t>(apr.endtimeoffset - apr.starttimeoffset) * 60;
 
 	if (!recurrencepattern_to_rrule(tzcom, start_whole, apr, &irrule))
 		return false;
 	do {
 		ical_time itime = irrule.instance_itime;
 		time_t ut{}, utnz{};
-		if (!ical_itime_to_utc(tzcom, itime, &ut))
+		if (!ical_itime_to_utc(tzcom, itime, &ut) ||
+		    (end_time >= 0 && ut > end_time))
 			break;
-		if (ut < start_time)
+		if (ut + duration < start_time)
 			continue;
 		if (!ical_itime_to_utc(nullptr, itime, &utnz))
 			break;
@@ -258,8 +268,8 @@ static bool find_recur_times(const ical_component *tzcom,
 		};
 		if (std::any_of(apr.pexceptioninfo.cbegin(), apr.pexceptioninfo.cend(), time_test))
 			continue;
-		evlist.push_back(ievent{ut, ut + static_cast<long>((apr.endtimeoffset - apr.starttimeoffset) * 60)});
-		if (ut >= end_time)
+		evlist.push_back(fb_instance{ut, ut + duration});
+		if (end_time < 0)
 			break;
 	} while (irrule.iterate());
 	if (apr.pexceptioninfo.size() != apr.pextendedexception.size()) {
@@ -271,15 +281,18 @@ static bool find_recur_times(const ical_component *tzcom,
 		auto ut = rop_util_rtime_to_unix(ei.startdatetime);
 		ical_time itime;
 		if (!ical_utc_to_datetime(nullptr, ut, &itime) ||
-		    !ical_itime_to_utc(tzcom, itime, &ut) ||
-		    ut < start_time || ut > end_time)
+		    !ical_itime_to_utc(tzcom, itime, &ut) || ut > end_time)
 			continue;
-		ievent event = {ut};
+		fb_instance event = {ut};
 		ut = rop_util_rtime_to_unix(ei.enddatetime);
 		if (!ical_utc_to_datetime(nullptr, ut, &itime) ||
-		    !ical_itime_to_utc(tzcom, itime, &ut))
+		    !ical_itime_to_utc(tzcom, itime, &ut) || ut < start_time)
 			continue;
 		event.end_time = ut;
+		ut = rop_util_rtime_to_unix(ei.originalstartdate);
+		if (ical_utc_to_datetime(nullptr, ut, &itime) &&
+		    ical_itime_to_utc(tzcom, itime, &ut))
+			event.orig_start = ut;
 		event.ei = &apr.pexceptioninfo[i];
 		event.xe = &apr.pextendedexception[i];
 		evlist.push_back(std::move(event));
@@ -357,12 +370,139 @@ unsigned int freebusy_perms(const char *actor, const char *target)
 	return perm & (frightsFreeBusySimple | frightsFreeBusyDetailed | frightsReadAny);
 }
 
-ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time,
-    time_t end_time, std::vector<freebusy_event> &fb_data)
+/**
+ * Returns whether @eid, an entry of PidTagScheduleInfoDelegateEntryIds, is
+ * @actor.
+ */
+bool delegate_eid_is(std::string_view eid, const char *org, const char *actor)
+{
+	std::string user;
+	return cvt_entryid_to_smtpaddr(eid, org,
+	       mysql_adaptor_userid_to_name, user) == ecSuccess &&
+	       strcasecmp(user.c_str(), actor) == 0;
+}
+
+/**
+ * @org:   X500DN setting, just passed through
+ * @found: The result of the existence check
+ *
+ * Test @props for presence of an ACE for @actor, and their
+ * permission level. (These are not the normal MAPI permissions.)
+ * Returns an indication whether private items may be viewed.
+ */
+static bool sees_private_items(const TPROPVAL_ARRAY &props, const char *org,
+    const char *actor, bool &found)
+{
+	auto eids  = props.get<const BINARY_ARRAY>(PR_SCHDINFO_DELEGATE_ENTRYIDS);
+	auto flags = props.get<const LONG_ARRAY>(PR_DELEGATE_FLAGS);
+	if (eids == nullptr || flags == nullptr)
+		return false;
+	for (size_t i = 0; i < eids->count && i < flags->count; ++i) {
+		if (!delegate_eid_is(eids->pbin[i], org, actor))
+			continue;
+		found = true;
+		return flags->pl[i] & DF_SHOWPRIVATE;
+	}
+	return false;
+}
+
+/**
+ * Returns whether the delegate list of the store at @dir lets @actor see
+ * private items, that is ShowPrivate in PidTagDelegateFlags of the
+ * LocalFreebusy message.
+ */
+bool sees_private_items(const char *dir, const char *org, const char *actor)
+{
+	static constexpr proptag_t tags[] = {PR_SCHDINFO_DELEGATE_ENTRYIDS, PR_DELEGATE_FLAGS};
+	/* Clients use the message named in PidTagFreeBusyEntryIds[1] */
+	static constexpr proptag_t fbtag[] = {PR_FREEBUSY_ENTRYIDS};
+	TPROPVAL_ARRAY fbprops;
+	if (!exmdb_client->get_folder_properties(dir, CP_ACP,
+	    eid_t(1, PRIVATE_FID_INBOX), fbtag, &fbprops))
+		return false;
+	auto fb = fbprops.get<const BINARY_ARRAY>(PR_FREEBUSY_ENTRYIDS);
+	if (fb != nullptr && fb->count > 1 && fb->pbin[1].cb > 0) {
+		static constexpr proptag_t mtags[] = {PR_MESSAGE_CLASS,
+			PR_SCHDINFO_DELEGATE_ENTRYIDS, PR_DELEGATE_FLAGS};
+		MESSAGE_ENTRYID meid;
+		EXT_PULL ep;
+		TPROPVAL_ARRAY props;
+		ep.init(fb->pbin[1].pb, fb->pbin[1].cb, malloc, 0);
+		bool found = false;
+		if (ep.g_msg_eid(&meid) == pack_result::ok &&
+		    exmdb_client->get_message_properties(dir, nullptr, CP_ACP,
+		    eid_t(1, rop_util_gc_to_value(meid.message_gc)), mtags, &props) &&
+		    props.has(PR_MESSAGE_CLASS))
+			return sees_private_items(props, org, actor, found);
+	}
+	for (uint8_t tflags : {uint8_t{0}, uint8_t{TABLE_FLAG_ASSOCIATED}}) {
+		uint32_t table_id = 0, row_count = 0;
+		if (!exmdb_client->load_content_table(dir, CP_ACP,
+		    eid_t(1, PRIVATE_FID_LOCAL_FREEBUSY), nullptr,
+		    tflags | TABLE_FLAG_NONOTIFICATIONS, nullptr, nullptr,
+		    &table_id, &row_count))
+			return false;
+		auto cl_0 = HX::make_scope_exit([&]() { exmdb_client->unload_table(dir, table_id); });
+		TARRAY_SET rows;
+		if (!exmdb_client->query_table(dir, nullptr, CP_ACP, table_id,
+		    tags, 0, row_count, &rows))
+			return false;
+		for (const auto &row : rows) {
+			bool found = false;
+			auto ret = sees_private_items(row, org, actor, found);
+			if (found)
+				return ret;
+		}
+	}
+	return false;
+}
+
+static bool appt_is_private(const TPROPVAL_ARRAY &props, const freebusy_tags &ptag)
+{
+	auto flag = props.get<const uint8_t>(ptag.private_flag);
+	auto sens = props.get<const uint32_t>(PR_SENSITIVITY);
+	return (flag != nullptr && *flag != 0) ||
+	       (sens != nullptr && *sens == SENSITIVITY_PRIVATE);
+}
+
+/**
+ * Returns whether the exception of @master that replaces the occurrence
+ * originally at @orig_start is private. The closest exception within a
+ * day counts, to absorb zone conversion errors.
+ */
+static bool exception_private(const message_content &master,
+    const freebusy_tags &ptag, time_t orig_start)
+{
+	auto atts = master.children.pattachments;
+	if (atts == nullptr)
+		return false;
+	const message_content *best = nullptr;
+	time_t best_diff = 86400;
+	for (const auto &at : *atts) {
+		if (at.pembedded == nullptr)
+			continue;
+		auto rt = at.pembedded->proplist.get<const uint64_t>(ptag.exreplacetime);
+		if (rt == nullptr)
+			continue;
+		time_t diff = std::abs(rop_util_nttime_to_unix(*rt) - orig_start);
+		if (diff < best_diff) {
+			best = at.pembedded;
+			best_diff = diff;
+		}
+	}
+	return best != nullptr && appt_is_private(best->proplist, ptag);
+}
+
+ec_error_t get_freebusy(const char *username, const char *dir, const char *org,
+    time_t start_time, time_t end_time, std::vector<freebusy_event> &fb_data)
 {
 	uint32_t permission = 0;
 	eid_t cal_eid(1, PRIVATE_FID_CALENDAR);
 
+	/* Store owners count as the owner */
+	if (username != nullptr && exmdb_client->get_mbox_perm(dir, username,
+	    &permission) && permission & frightsGromoxStoreOwner)
+		username = nullptr;
 	if (username != nullptr) {
 		permission = freebusy_perms(username, dir);
 		if (permission == 0)
@@ -379,6 +519,15 @@ ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time
 	                    SYSTEMTIME::maxyear * 31557600ULL * 10000000 :
 	                    rop_util_unix_to_nttime(end_time);
 	bool detailed     = permission & (frightsFreeBusyDetailed | frightsReadAny);
+	/*
+	 * PidLidClipEnd is local midnight of the last day, and an exception
+	 * may move past it. fb_recur_times filters the occurrences anyway.
+	 */
+	static constexpr uint64_t clip_slack = 7ULL * 86400 * 10000000;
+	auto clip_nttime  = start_nttime - clip_slack;
+	/* Owners and delegates allowed to see private items get their details */
+	bool see_private  = username == nullptr ||
+	                    (detailed && sees_private_items(dir, org, username));
 
 	/* C1: apptstartwhole >= start && apptstartwhole <= end */
 	RESTRICTION_PROPERTY rst_1 = {RELOP_GE, ptag.apptstartwhole, {ptag.apptstartwhole, &start_nttime}};
@@ -398,10 +547,10 @@ ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time
 	RESTRICTION rst_11[2]       = {{RES_PROPERTY, {&rst_9}}, {RES_PROPERTY, {&rst_10}}};
 	RESTRICTION_AND_OR rst_12   = {std::size(rst_11), rst_11};
 
-	/* C4: have(clipend) && recurring && clipend >= start */
+	/* C4: have(clipend) && recurring && clipend >= start - slack */
 	RESTRICTION_EXIST rst_13    = {ptag.clipend};
 	RESTRICTION_PROPERTY rst_14 = {RELOP_EQ, ptag.recurring, {ptag.recurring, deconst(&byte_value_one)}};
-	RESTRICTION_PROPERTY rst_15 = {RELOP_GE, ptag.clipend, {ptag.clipend, &start_nttime}};
+	RESTRICTION_PROPERTY rst_15 = {RELOP_GE, ptag.clipend, {ptag.clipend, &clip_nttime}};
 	RESTRICTION rst_16[3]       = {{RES_EXIST, {&rst_13}}, {RES_PROPERTY, {&rst_14}}, {RES_PROPERTY, {&rst_15}}};
 	RESTRICTION_AND_OR rst_17   = {std::size(rst_16), rst_16};
 
@@ -429,7 +578,7 @@ ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time
 		ptag.apptstartwhole, ptag.apptendwhole, ptag.busystatus,
 		ptag.recurring, ptag.apptsubtype, ptag.private_flag,
 		ptag.apptstateflags, ptag.location, ptag.reminderset,
-		PR_SUBJECT, PidTagMid,
+		PR_SUBJECT, PidTagMid, PR_SENSITIVITY,
 	};
 	TARRAY_SET rows;
 	if (!exmdb_client->query_table(dir, nullptr, CP_ACP, table_id,
@@ -458,8 +607,14 @@ ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time
 		auto location    = rows.pparray[i]->get<char>(ptag.location);
 		auto flag        = rows.pparray[i]->get<const uint8_t>(ptag.reminderset);
 		bool is_reminder = flag != nullptr && *flag != 0;
-		flag = rows.pparray[i]->get<uint8_t>(ptag.private_flag);
-		bool is_private  = flag != nullptr && *flag != 0;
+		bool is_private  = appt_is_private(*rows.pparray[i], ptag);
+		/* MS-OXWAVLS v17.0 §3.1.4.1.3.10 */
+		bool withhold    = is_private && !see_private;
+		std::optional<std::string> id;
+		if (withhold)
+			subject = location = nullptr;
+		else
+			id = uid_buf;
 		auto inum = rows.pparray[i]->get<const int32_t>(ptag.busystatus);
 		int32_t busy_type = inum == nullptr || *inum > olWorkingElsewhere ? 0 : *inum;
 		auto num = rows.pparray[i]->get<uint32_t>(ptag.apptstateflags);
@@ -471,7 +626,7 @@ ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time
 		if (flag == nullptr || *flag == 0) {
 			fb_data.push_back(FBE{
 				.start_time = start_whole, .end_time = end_whole,
-				.id = uid_buf, .subject = FBE::optnul(subject),
+				.id = id, .subject = FBE::optnul(subject),
 				.location = FBE::optnul(location),
 				.busy_status = static_cast<uint32_t>(busy_type),
 				.has_details = detailed,
@@ -502,8 +657,8 @@ ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time
 		if (ext_pull.g_apptrecpat(&apprecurr) != pack_result::ok)
 			continue;
 
-		std::vector<ievent> event_list;
-		if (!find_recur_times(tzcom.has_value() ? &*tzcom : nullptr,
+		std::vector<fb_instance> event_list;
+		if (!fb_recur_times(tzcom.has_value() ? &*tzcom : nullptr,
 		    start_whole, apprecurr, start_time, end_time, event_list))
 			continue;
 
@@ -512,7 +667,7 @@ ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time
 				fb_data.push_back(FBE{
 					.start_time = event.start_time,
 					.end_time = event.end_time,
-					.id = uid_buf, .subject = FBE::optnul(subject),
+					.id = id, .subject = FBE::optnul(subject),
 					.location = FBE::optnul(location),
 					.busy_status = static_cast<uint32_t>(busy_type),
 					.has_details = detailed,
@@ -525,24 +680,29 @@ ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time
 			bool ov_meeting  = (event.ei->overrideflags & ARO_MEETINGTYPE) ? event.ei->meetingtype & 1 : is_meeting;
 			bool ov_reminder = (event.ei->overrideflags & ARO_REMINDER)    ? event.ei->reminderset == 0 : is_reminder;
 			uint32_t ov_busy = (event.ei->overrideflags & ARO_BUSYSTATUS)  ? event.ei->busystatus : busy_type;
+			/* A private exception withholds only its own details */
+			bool ov_private  = is_private ||
+			                   exception_private(*ctnt, ptag, event.orig_start);
+			bool ov_withhold = ov_private && !see_private;
 			std::optional<std::string> ov_subj, ov_loc;
-			if (event.ei->overrideflags & ARO_SUBJECT)
+			if (!ov_withhold && event.ei->overrideflags & ARO_SUBJECT)
 				ov_subj = event.xe->subject;
-			else if (subject != nullptr)
+			else if (!ov_withhold && subject != nullptr)
 				ov_subj = subject;
-			if (event.ei->overrideflags & ARO_LOCATION)
+			if (!ov_withhold && event.ei->overrideflags & ARO_LOCATION)
 				ov_loc = event.xe->location;
-			else if (location != nullptr)
+			else if (!ov_withhold && location != nullptr)
 				ov_loc = location;
 
 			fb_data.push_back(FBE{
 				.start_time = event.start_time, .end_time = event.end_time,
-				.id = uid_buf, .subject = std::move(ov_subj),
+				.id = ov_withhold ? std::nullopt : id,
+				.subject = std::move(ov_subj),
 				.location = std::move(ov_loc),
 				.busy_status = ov_busy, .has_details = detailed,
 				.is_meeting = ov_meeting, .is_recurring = true,
 				.is_exception = true, .is_reminderset = ov_reminder,
-				.is_private = is_private});
+				.is_private = ov_private});
 		}
 	}
 

@@ -53,7 +53,6 @@ using namespace gromox;
 
 decltype(system_services_auth_login) system_services_auth_login;
 decltype(system_services_auth_login_token) system_services_auth_login_token;
-int (*system_services_add_timer)(const char *, uint64_t, int);
 
 gromox::atomic_bool g_main_notify_stop;
 std::shared_ptr<config_file> g_config_file;
@@ -74,7 +73,6 @@ static constexpr HXoption g_options_table[] = {
 static constexpr generic_module g_dfl_svc_plugins[] = {
 	{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor},
 	{"libgromox_auth.so/mgr", SVC_authmgr},
-	{"libgxs_timer_agent.so", SVC_timer_agent},
 };
 
 static constexpr cfg_directive zcore_gxcfg_dflt[] = {
@@ -157,7 +155,6 @@ static int system_services_run()
 } while (false)
 	E(system_services_auth_login, "auth_login_gen");
 	E(system_services_auth_login_token, "auth_login_token");
-	E(system_services_add_timer, "add_timer");
 	return 0;
 #undef E
 }

@@ -19,11 +19,14 @@
 #include <gromox/clock.hpp>
 #include <gromox/element_data.hpp>
 #include <gromox/fileio.h>
+#include <gromox/freebusy.hpp>
 #include <gromox/json.hpp>
 #include <gromox/mapitags.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mysql_adaptor.hpp>
+#include <gromox/propval.hpp>
 #include <gromox/rop_util.hpp>
+#include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 #include "exceptions.hpp"
 #include "namedtags.hpp"
@@ -42,6 +45,222 @@ using namespace tinyxml2;
 //Helper functions
 
 namespace {
+
+static constexpr uint32_t fbRights = frightsFreeBusySimple | frightsFreeBusyDetailed;
+/* Rights that let a reader read some properties of the items in a folder */
+static constexpr uint32_t itemReadRights = frightsReadAny | fbRights;
+
+/**
+ * @brief      Returns whether a folder is a calendar folder
+ */
+static bool isCalendar(const EWSContext &ctx, const std::string &dir,
+    uint64_t fid)
+{
+	static constexpr proptag_t tags[] = {PR_CONTAINER_CLASS};
+	auto cls = ctx.getFolderProps(dir, fid, tags).get<const char>(PR_CONTAINER_CLASS);
+	return cls != nullptr && class_match_prefix(cls, "IPF.Appointment") == 0;
+}
+
+/**
+ * @brief      Returns the rights of the user on a folder for reading its items
+ *
+ * frightsFreeBusySimple and frightsFreeBusyDetailed only grant access to
+ * the items of calendar folders. Without frightsReadAny they are removed
+ * from the rights on any other folder. frightsReadAny grants more than
+ * both on every folder, so with it the rights are returned unchanged and
+ * the folder class is not looked up.
+ */
+static uint32_t itemRights(const EWSContext &ctx, const std::string &dir,
+    uint64_t fid)
+{
+	auto rights = ctx.permissions(dir, fid);
+	if (rights & frightsReadAny)
+		return rights;
+	if (rights & fbRights && !isCalendar(ctx, dir, fid))
+		rights &= ~fbRights;
+	return rights;
+}
+
+/**
+ * @brief      Get the property tags a restriction leaf tests
+ *
+ * @return     Number of tags stored in @p tags
+ */
+static size_t leafTags(RESTRICTION &r, proptag_t *tags[2])
+{
+	switch (r.rt) {
+	case mapi_rtype::content:
+		tags[0] = &r.cont->proptag;
+		return 1;
+	case mapi_rtype::property:
+		tags[0] = &r.prop->proptag;
+		return 1;
+	case mapi_rtype::propcmp:
+		tags[0] = &r.pcmp->proptag1;
+		tags[1] = &r.pcmp->proptag2;
+		return 2;
+	case mapi_rtype::bitmask:
+		tags[0] = &r.bm->proptag;
+		return 1;
+	case mapi_rtype::exist:
+		tags[0] = &r.exist->proptag;
+		return 1;
+	default:
+		return 0;
+	}
+}
+
+/**
+ * @brief      Copy a restriction leaf so its tags can be changed
+ */
+static RESTRICTION copyLeaf(const RESTRICTION &r)
+{
+	RESTRICTION c;
+	c.rt = r.rt;
+	switch (r.rt) {
+	case mapi_rtype::content:
+		c.cont = EWSContext::construct<RESTRICTION_CONTENT>(*r.cont);
+		break;
+	case mapi_rtype::property:
+		c.prop = EWSContext::construct<RESTRICTION_PROPERTY>(*r.prop);
+		break;
+	case mapi_rtype::propcmp:
+		c.pcmp = EWSContext::construct<RESTRICTION_PROPCOMPARE>(*r.pcmp);
+		break;
+	case mapi_rtype::bitmask:
+		c.bm = EWSContext::construct<RESTRICTION_BITMASK>(*r.bm);
+		break;
+	default:
+		c.exist = EWSContext::construct<RESTRICTION_EXIST>(*r.exist);
+		break;
+	}
+	return c;
+}
+
+/**
+ * @brief      Build a restriction matching the private or the public items
+ *
+ * Private items have PR_SENSITIVITY set to SENSITIVITY_PRIVATE, public
+ * items are all others.
+ */
+static RESTRICTION *matchPrivate(bool priv)
+{
+	auto eq = EWSContext::construct<RESTRICTION_PROPERTY>();
+	eq->relop = priv ? relop::eq : relop::ne;
+	eq->proptag = eq->propval.proptag = PR_SENSITIVITY;
+	eq->propval.pvalue = EWSContext::construct<uint32_t>(SENSITIVITY_PRIVATE);
+	auto res = EWSContext::construct<RESTRICTION>();
+	res->rt = mapi_rtype::property;
+	res->prop = eq;
+	return res;
+}
+
+/**
+ * @brief      Limit a restriction to the properties the reader may read
+ *
+ * A property that the reader may not read in an item is treated as absent
+ * from that item, so the result never depends on its value.
+ *
+ * - A node on a property that is readable in no item gets property ID 0
+ *   in its tag. No message has a property with that ID.
+ * - A node on a property that is readable in public items only, see
+ *   sShape::Query, becomes (public AND node) OR (private AND node0). In
+ *   node0 that property has ID 0.
+ * - A node that tests no single property is replaced by RES_EXIST on
+ *   property ID 0, which matches no item, unless the reader may read
+ *   every property of every item. EWS builds no such nodes.
+ */
+static void limitRestriction(const sShape &shape, RESTRICTION &r)
+{
+	switch (r.rt) {
+	case mapi_rtype::r_and:
+	case mapi_rtype::r_or:
+		for (auto &sub : *r.andor)
+			limitRestriction(shape, sub);
+		return;
+	case mapi_rtype::r_not:
+		return limitRestriction(shape, r.xnot->res);
+	default:
+		break;
+	}
+	proptag_t *tags[2];
+	auto n = leafTags(r, tags);
+	if (n == 0) {
+		if (!shape.allReadable()) {
+			r.rt = mapi_rtype::exist;
+			r.exist = EWSContext::construct<RESTRICTION_EXIST>();
+		}
+		return;
+	}
+	bool publicOnly = false;
+	for (size_t i = 0; i < n; ++i) {
+		auto q = shape.queryable(*tags[i]);
+		if (q == sShape::Query::none)
+			*tags[i] = PROP_TAG(PROP_TYPE(*tags[i]), 0);
+		else if (q == sShape::Query::publicOnly)
+			publicOnly = true;
+	}
+	if (!publicOnly)
+		return;
+	auto node0 = EWSContext::construct<RESTRICTION>(copyLeaf(r));
+	n = leafTags(*node0, tags);
+	for (size_t i = 0; i < n; ++i)
+		if (shape.queryable(*tags[i]) == sShape::Query::publicOnly)
+			*tags[i] = PROP_TAG(PROP_TYPE(*tags[i]), 0);
+	auto node = EWSContext::construct<RESTRICTION>(r);
+	r = *tRestriction::any(tRestriction::all(matchPrivate(false), node),
+	    tRestriction::all(matchPrivate(true), node0));
+}
+
+/**
+ * @brief      Limit filter and sort order to the properties the reader may read
+ *
+ * The filter is edited by limitRestriction(). Each sort key is handled
+ * by the items in which the reader may read its property, see
+ * sShape::Query.
+ *
+ * - In all items: the key is kept.
+ * - In public items only: the key is kept. Private items then come from
+ *   a table of their own, sorted by the keys readable in all items, and
+ *   are listed after the others.
+ * - In no item: the key is removed.
+ *
+ * Private items never reveal more than public ones, so no key is readable
+ * in private items only.
+ *
+ * @param      shape     Shape restricted to the folder
+ * @param      res       Restriction to limit
+ * @param      sort      Sort order to limit
+ * @param      privSort  Set to the order of the private items
+ *
+ * @return     Whether private items need a table of their own
+ */
+static bool limitQuery(const sShape &shape, RESTRICTION *&res,
+    SORTORDER_SET *&sort, SORTORDER_SET *&privSort)
+{
+	privSort = nullptr;
+	if (res != nullptr)
+		limitRestriction(shape, *res);
+	if (sort == nullptr)
+		return false;
+	auto keep = EWSContext::construct<SORTORDER_SET>();
+	keep->psort = EWSContext::alloc<SORT_ORDER>(sort->count);
+	auto priv = EWSContext::construct<SORTORDER_SET>();
+	priv->psort = EWSContext::alloc<SORT_ORDER>(sort->count);
+	for (const auto &key : *sort) {
+		auto q = shape.queryable(PROP_TAG(key.type, key.propid));
+		if (q == sShape::Query::none)
+			continue;
+		keep->psort[keep->count++] = key;
+		if (q == sShape::Query::all)
+			priv->psort[priv->count++] = key;
+	}
+	sort = keep->count > 0 ? keep : nullptr;
+	if (priv->count == keep->count)
+		return false;
+	privSort = priv->count > 0 ? priv : nullptr;
+	return true;
+}
 
 /**
  * @brief      Encode hex string
@@ -402,7 +621,8 @@ static void findpeople_search_recipient_history(const EWSContext &ctx,
 		tPersonaId pid;
 		pid.Id = base64_encode(email);
 		persona.PersonaId = std::move(pid);
-		persona.RelevanceScore = entry.get("count", 1).asUInt();
+		persona.RelevanceScore = std::min(entry.get("count", 1).asUInt(),
+		                         static_cast<unsigned int>(INT32_MAX));
 		out.emplace_back(std::move(persona));
 	}
 } catch (const std::exception &e) {
@@ -587,7 +807,7 @@ void process(mFindPeopleRequest &&request, XMLElement *response, const EWSContex
 					tPersonaId pid;
 					pid.Id = base64_encode(std::move(email));
 					persona.PersonaId = std::move(pid);
-					persona.RelevanceScore = UINT32_MAX;
+					persona.RelevanceScore = INT32_MAX;
 				}
 				if (node.fetch_prop(PR_TITLE, val) == ecSuccess)
 					persona.Title = std::move(val);
@@ -780,8 +1000,11 @@ void process(mGetDelegateRequest &&request, XMLElement *response, const EWSConte
 		    dispname) && !dispname.empty())
 			msg.DelegateUser.UserId.DisplayName.emplace(
 			    std::move(dispname));
-		if (request.IncludePermissions && *request.IncludePermissions)
+		if (request.IncludePermissions && *request.IncludePermissions) {
 			msg.DelegateUser.DelegatePermissions.emplace(ctx.readDelegatePermissions(dir, deleg));
+			msg.DelegateUser.ViewPrivateItems = sees_private_items(dir.c_str(),
+				ctx.plugin().x500_org_name.c_str(), deleg.c_str());
+		}
 		found.insert(deleg);
 	}
 
@@ -838,6 +1061,7 @@ void process(mAddDelegateRequest &&request, XMLElement *response, const EWSConte
 			msg.DelegateUser.UserId.PrimarySmtpAddress.emplace(addr);
 			continue;
 		}
+		ctx.writeDelegateFlags(dir, addr, du.ViewPrivateItems, false);
 		delegate_list.emplace_back(addr);
 		existing.emplace(addr);
 		changed = true;
@@ -898,6 +1122,7 @@ void process(mRemoveDelegateRequest &&request, XMLElement *response, const EWSCo
 			msg.DelegateUser.UserId.PrimarySmtpAddress.emplace(addr);
 			continue;
 		}
+		ctx.writeDelegateFlags(dir, addr, {}, true);
 		delegate_list.erase(it);
 		changed = true;
 		msg.success();
@@ -957,6 +1182,10 @@ void process(mUpdateDelegateRequest &&request, XMLElement *response, const EWSCo
 		}
 		if (du.DelegatePermissions)
 			changed |= ctx.writeDelegatePermissions(dir, addr, *du.DelegatePermissions);
+		if (du.ViewPrivateItems) {
+			ctx.writeDelegateFlags(dir, addr, du.ViewPrivateItems, false);
+			changed = true;
+		}
 		msg.success();
 		msg.DelegateUser.UserId.PrimarySmtpAddress.emplace(addr);
 	}
@@ -1012,6 +1241,7 @@ static void updateOccRef(const EWSContext &ctx, const tItemId &refId,
 	/* The response is built from the content of the referenced item */
 	if (!(rights & frightsReadAny))
 		throw EWSError::AccessDenied(E3602);
+	ctx.assertCanReadPrivate(rdir, pf, rights, oid.messageId());
 	ctx.checkOccurrence(rdir, oid.messageId(), oid.basedate);
 	/* A declined occurrence goes once the reply is out */
 	if (resp == respDeclined && send_message) {
@@ -1038,7 +1268,8 @@ static void updateOccRef(const EWSContext &ctx, const tItemId &refId,
 
 static void updateRef(const EWSContext &ctx, const tItemId &refId,
     uint32_t resp, std::string &refDir, std::optional<sMessageEntryId> &refMid,
-    bool send_message, std::optional<sOccurrenceId> &declinedOcc)
+    bool send_message, std::optional<sOccurrenceId> &declinedOcc,
+    std::optional<std::pair<std::string, uint64_t>> *calItem = nullptr)
 {
 	if (refId.type == tItemId::ID_OCCURRENCE)
 		return updateOccRef(ctx, refId, resp, send_message, declinedOcc);
@@ -1052,6 +1283,7 @@ static void updateRef(const EWSContext &ctx, const tItemId &refId,
 		throw EWSError::AccessDenied(E3526);
 	if (!(rights & frightsReadAny))
 		throw EWSError::AccessDenied(E3602);
+	ctx.assertCanReadPrivate(rdir, pf, rights, mid.messageId());
 	/* Accepting writes the meeting into the calendar of the same store */
 	if ((resp == respAccepted || resp == respTentative) &&
 	    pf.location == sFolderSpec::PRIVATE) {
@@ -1082,17 +1314,107 @@ static void updateRef(const EWSContext &ctx, const tItemId &refId,
 	};
 	TPROPVAL_ARRAY proplist{std::size(props), props};
 	PROBLEM_ARRAY problems;
+	auto cls = ctx.getItemProp<char>(rdir, mid.messageId(), PR_MESSAGE_CLASS);
+	/* A declined Meeting object leaves the calendar once the reply is out */
+	std::optional<uint64_t> declinedCal;
+	bool isRequest = class_match_prefix(cls, "IPM.Schedule.Meeting.Request") == 0;
+	if (resp == respDeclined && send_message && calItem != nullptr &&
+	    pf.location == sFolderSpec::PRIVATE) {
+		uint64_t calFid = pf.folderId;
+		if (class_match_prefix(cls, "IPM.Appointment") == 0) {
+			if (pf.folderId != eid_t(1, PRIVATE_FID_DELETED_ITEMS))
+				declinedCal = mid.messageId();
+		} else if (isRequest) {
+			declinedCal = ctx.findMeetingObject(refId);
+			calFid = eid_t(1, PRIVATE_FID_CALENDAR);
+		}
+		auto calRights = declinedCal ? ctx.permissions(rdir, calFid) : 0;
+		if (declinedCal && !(calRights & frightsDeleteAny))
+			throw EWSError::AccessDenied(E3131);
+		/* The response status is also written to the calendar item */
+		if (declinedCal && *declinedCal != mid.messageId() &&
+		    !(calRights & frightsEditAny))
+			throw EWSError::AccessDenied(E3603);
+	}
 	if (!ctx.plugin().exmdb.set_message_properties(rdir.c_str(), username, CP_ACP,
 		mid.messageId(), &proplist, &problems))
 		throw EWSError::ItemSave(E3409);
-	if (resp == respAccepted || resp == respTentative)
-		ctx.createCalendarItemFromMeetingRequest(refId, resp);
-	auto cls = ctx.getItemProp<char>(rdir, mid.messageId(), PR_MESSAGE_CLASS);
+	if (resp == respAccepted || resp == respTentative) {
+		auto cal = ctx.createCalendarItemFromMeetingRequest(refId, resp);
+		if (cal && calItem != nullptr)
+			calItem->emplace(rdir, *cal);
+	}
+	if (declinedCal) {
+		if (*declinedCal != mid.messageId()) {
+			/* All but PR_PROCESSED, which is for the request */
+			TPROPVAL_ARRAY calProps{std::size(props) - 1, props};
+			if (!ctx.plugin().exmdb.set_message_properties(rdir.c_str(),
+			    username, CP_ACP, *declinedCal, &calProps, &problems))
+				throw EWSError::ItemSave(E3582);
+		}
+		calItem->emplace(rdir, *declinedCal);
+	}
 	if (pf.location == sFolderSpec::PRIVATE && rights & frightsDeleteAny &&
-	    class_match_prefix(cls, "IPM.Schedule.Meeting.Request") == 0) {
+	    isRequest) {
 		refDir = rdir;
 		refMid = mid;
 	}
+}
+
+/*
+ * Reply/forward and meeting response objects are treated the same way as a
+ * regular tMessage for persistence and sender identity purposes.
+ */
+static bool is_message_like(const sCreateItem &item)
+{
+	return std::holds_alternative<tMessage>(item) ||
+	       std::holds_alternative<tReplyToItem>(item) ||
+	       std::holds_alternative<tReplyAllToItem>(item) ||
+	       std::holds_alternative<tForwardItem>(item) ||
+	       std::holds_alternative<tAcceptItem>(item) ||
+	       std::holds_alternative<tTentativelyAcceptItem>(item) ||
+	       std::holds_alternative<tDeclineItem>(item);
+}
+
+/*
+ * Exchange keeps a SaveOnly message as a draft until it is sent. Importers
+ * opt out by setting PR_MESSAGE_FLAGS themselves.
+ */
+static bool client_sets_msgflags(const sCreateItem &item)
+{
+	auto &base = std::visit([](const auto &i) -> const tItem & {
+		if constexpr (std::is_base_of_v<tItem, std::decay_t<decltype(i)>>)
+			return i;
+		else
+			return i.Message;
+	}, item);
+	return base.IsDraft || std::any_of(base.ExtendedProperty.begin(),
+	       base.ExtendedProperty.end(), [](const tExtendedProperty &p) {
+	       	return p.propval.proptag == PR_MESSAGE_FLAGS;
+	       });
+}
+
+/*
+ * Folder for CreateItem when no SavedItemFolderId is given. Exchange keeps
+ * the copy of a sent message in Sent Items and an unsent one in Drafts.
+ * Calendar items, contacts and tasks go to their own default folder.
+ */
+static const char *default_folder(const sCreateItem &item,
+    const Enum::MessageDispositionType &disp)
+{
+	if (std::holds_alternative<tCalendarItem>(item))
+		return Enum::calendar;
+	if (std::holds_alternative<tContact>(item))
+		return Enum::contacts;
+	if (std::holds_alternative<tTask>(item))
+		return Enum::tasks;
+	if (is_message_like(item)) {
+		if (disp == Enum::SendAndSaveCopy)
+			return Enum::sentitems;
+		if (disp == Enum::SaveOnly)
+			return Enum::drafts;
+	}
+	return Enum::outbox;
 }
 
 /**
@@ -1108,13 +1430,9 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 
 	mCreateItemResponse data;
 
-	std::optional<sFolderSpec> targetFolder;
+	std::optional<sFolderSpec> savedFolder;
 	if (request.SavedItemFolderId)
-		targetFolder = ctx.resolveFolder(request.SavedItemFolderId->FolderId);
-	else
-		targetFolder = ctx.resolveFolder(tDistinguishedFolderId("outbox"));
-	std::string dir = ctx.getDir(*targetFolder);
-	bool hasAccess = ctx.permissions(dir, targetFolder->folderId) & (frightsOwner | frightsCreate);
+		savedFolder = ctx.resolveFolder(request.SavedItemFolderId->FolderId);
 
 	if (!request.MessageDisposition)
 		request.MessageDisposition = Enum::SaveOnly;
@@ -1125,7 +1443,13 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 
 	data.ResponseMessages.reserve(request.Items.size());
 	for (sCreateItem &item : request.Items) try {
-		if (!hasAccess)
+		auto targetFolder = savedFolder;
+		if (!targetFolder)
+			targetFolder = ctx.resolveFolder(tDistinguishedFolderId(
+			               default_folder(item, *request.MessageDisposition)));
+		std::string dir = ctx.getDir(*targetFolder);
+		if (!(ctx.permissions(dir, targetFolder->folderId) &
+		    (frightsOwner | frightsCreate)))
 			throw EWSError::AccessDenied(E3130);
 
 		if (auto srr = std::get_if<tSuppressReadReceipt>(&item)) {
@@ -1145,18 +1469,19 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 		}
 
 		mCreateItemResponseMessage msg;
-		/*
-		 * ReplyToItem/ReplyAllToItem/ForwardItem wrap a plain message
-		 * (see tReplyToItem) and should be treated the same way as a
-		 * regular tMessage for persistence/sender-identity purposes.
-		 */
-		bool isMessageLike = std::holds_alternative<tMessage>(item) ||
-		                     std::holds_alternative<tReplyToItem>(item) ||
-		                     std::holds_alternative<tReplyAllToItem>(item) ||
-		                     std::holds_alternative<tForwardItem>(item);
+		bool isMessageLike = is_message_like(item);
 		bool persist = !(isMessageLike && request.MessageDisposition == Enum::SendOnly);
 
 		auto content = ctx.toContent(dir, *targetFolder, item, persist);
+
+		if (isMessageLike &&
+		    request.MessageDisposition == Enum::SaveOnly &&
+		    !client_sets_msgflags(item)) {
+			auto flags = content->proplist.get<uint32_t>(PR_MESSAGE_FLAGS);
+			uint32_t newFlags = (flags != nullptr ? *flags : 0) | MSGFLAG_UNSENT;
+			if (content->proplist.set(PR_MESSAGE_FLAGS, &newFlags) == ecServerOOM)
+				throw EWSError::NotEnoughMemory(E3358);
+		}
 
 		if (isMessageLike &&
 		    request.MessageDisposition == Enum::SaveOnly &&
@@ -1181,42 +1506,84 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 			}
 		}
 
+		bool isResponse = std::holds_alternative<tAcceptItem>(item) ||
+		                  std::holds_alternative<tTentativelyAcceptItem>(item) ||
+		                  std::holds_alternative<tDeclineItem>(item);
+		/* Responses carry the attendee identity, see sendMeetingResponse */
+		if (isMessageLike && !isResponse && send_message)
+			ctx.stampSubmitIdentity(dir, *content);
 		if (send_message || (std::holds_alternative<tCalendarItem>(item) &&
 		    request.SendMeetingInvitations != Enum::SendToNone))
 			ctx.validate_sendas_perms(*content);
 
+		const tItemId *responseRef = nullptr;
+		if (auto acc = std::get_if<tAcceptItem>(&item))
+			responseRef = acc->ReferenceItemId ?
+			              &*acc->ReferenceItemId : nullptr;
+		else if (auto tent = std::get_if<tTentativelyAcceptItem>(&item))
+			responseRef = tent->ReferenceItemId ?
+			              &*tent->ReferenceItemId : nullptr;
+		else if (auto dec = std::get_if<tDeclineItem>(&item))
+			responseRef = dec->ReferenceItemId ?
+			              &*dec->ReferenceItemId : nullptr;
+		if (send_message && responseRef != nullptr) {
+			auto refFolder = ctx.resolveFolder(sMessageEntryId(
+			                 responseRef->Id.data(), responseRef->Id.size()));
+			if (refFolder.location == sFolderSpec::PRIVATE)
+				ctx.validate_sendas_perms(*refFolder.target);
+		}
+
 		std::optional<sMessageEntryId> refMid;
 		std::string refDir;
 		std::optional<sOccurrenceId> declinedOcc;
+		std::optional<std::pair<std::string, uint64_t>> calItem;
 		if (auto acc = std::get_if<tAcceptItem>(&item)) {
 			if (acc->ReferenceItemId)
 				updateRef(ctx, *acc->ReferenceItemId,
 				          respAccepted, refDir, refMid,
-				          send_message, declinedOcc);
+				          send_message, declinedOcc, &calItem);
 		} else if (auto tent = std::get_if<tTentativelyAcceptItem>(&item)) {
 			if (tent->ReferenceItemId)
 				updateRef(ctx, *tent->ReferenceItemId,
 				          respTentative, refDir, refMid,
-				          send_message, declinedOcc);
+				          send_message, declinedOcc, &calItem);
 		} else if (auto dec = std::get_if<tDeclineItem>(&item)) {
 			if (dec->ReferenceItemId)
 				updateRef(ctx, *dec->ReferenceItemId,
 				          respDeclined, refDir, refMid,
-				          send_message, declinedOcc);
+				          send_message, declinedOcc, &calItem);
 		}
-		if (send_message) {
-			const tItemId *responseRef = nullptr;
-			if (auto acc = std::get_if<tAcceptItem>(&item))
-				responseRef = acc->ReferenceItemId ?
-				              &*acc->ReferenceItemId : nullptr;
-			else if (auto tent = std::get_if<tTentativelyAcceptItem>(&item))
-				responseRef = tent->ReferenceItemId ?
-				              &*tent->ReferenceItemId : nullptr;
-			else if (auto dec2 = std::get_if<tDeclineItem>(&item))
-				responseRef = dec2->ReferenceItemId ?
-				              &*dec2->ReferenceItemId : nullptr;
-			if (responseRef != nullptr)
-				ctx.sendMeetingResponse(*responseRef, *content);
+		if (isResponse) {
+			bool sent = responseRef != nullptr &&
+			            ctx.sendMeetingResponse(*responseRef,
+			            *content, send_message);
+			/* Keep no copy of a response that was not sent */
+			if (send_message && !sent)
+				persist = false;
+		}
+		/*
+		 * Exchange returns the calendar item of the attendee along with
+		 * the response. macOS Calendar keys its event to the first item.
+		 */
+		if (calItem) {
+			uint64_t calFid = eid_t(1, PRIVATE_FID_CALENDAR);
+			/* A declined one is returned from Deleted Items */
+			if (std::holds_alternative<tDeclineItem>(item)) {
+				auto eid = ctx.getItemEntryId(calItem->first, calItem->second);
+				auto bin = static_cast<const BINARY *>(eid.pvalue);
+				sMessageEntryId calMeid(bin->pb, bin->cb);
+				calFid = eid_t(1, PRIVATE_FID_DELETED_ITEMS);
+				calItem->second = ctx.moveCopyItem(calItem->first,
+				                  calMeid, calFid, false);
+			}
+			sShape calShape;
+			calShape.add(PR_ENTRYID, sShape::FL_FIELD).add(PR_CHANGE_KEY, sShape::FL_FIELD).add(PR_MESSAGE_CLASS);
+			/* The CalendarItemType of a series is derived from these */
+			calShape.add(NtAppointmentRecur, PT_BINARY, sShape::FL_FIELD)
+			        .add(NtRecurring, PT_BOOLEAN, sShape::FL_FIELD)
+			        .add(NtExceptionReplaceTime, PT_SYSTIME, sShape::FL_FIELD);
+			msg.Items.emplace_back(ctx.loadItem(calItem->first,
+				calFid, calItem->second, calShape));
 		}
 		/* Exchange moves an answered request to Deleted Items */
 		if (refMid)
@@ -1233,8 +1600,19 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 				*flags &= ~(MSGFLAG_SUBMITTED | MSGFLAG_UNSENT);
 			content->proplist.set(PR_READ, &byte_value_one);
 		}
-		if (persist)
-			msg.Items.emplace_back(ctx.create(dir, *targetFolder, *content));
+		/* Send first so that a failed send leaves no copy behind */
+		if (isMessageLike && !isResponse && send_message)
+			ctx.send(dir, 0, *content);
+		if (persist) {
+			/* Exchange returns the IDs of attachments it was given */
+			bool atts = std::visit([](const auto &i) {
+				if constexpr (std::is_base_of_v<tItem, std::decay_t<decltype(i)>>)
+					return i.Attachments.has_value();
+				else
+					return false;
+			}, item);
+			msg.Items.emplace_back(ctx.create(dir, *targetFolder, *content, atts));
+		}
 		if (std::holds_alternative<tCalendarItem>(item) &&
 		    request.SendMeetingInvitations == Enum::SendToAllAndSaveCopy) {
 			sFolderSpec sentitems = ctx.resolveFolder(tDistinguishedFolderId(Enum::sentitems));
@@ -1267,9 +1645,16 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 				|| sendcontent == nullptr)
 				throw EWSError::ItemNotFound(E3391);
 			ctx.send(dir, messageId, *sendcontent);
+			/* Exchange reports MeetingRequestWasSent from now on */
+			auto invited = ctx.getNamedPropId(dir, NtFInvited, true);
+			const TAGGED_PROPVAL ival = {PROP_TAG(PT_BOOLEAN, invited), deconst(&byte_value_one)};
+			const TPROPVAL_ARRAY ilist = {1, deconst(&ival)};
+			if (invited == 0 ||
+			    !ctx.plugin().exmdb.set_message_properties(dir.c_str(),
+			    ctx.effectiveUser(*targetFolder), CP_ACP, messageId,
+			    &ilist, &problems))
+				mlog(LV_ERR, "[ews] %s: cannot set PidLidFInvited", dir.c_str());
 		}
-		if (std::holds_alternative<tMessage>(item) && send_message)
-			ctx.send(dir, 0, *content);
 		if (std::holds_alternative<tCalendarItem>(item) &&
 		    request.SendMeetingInvitations == Enum::SendOnlyToAll) {
 			auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
@@ -1307,8 +1692,10 @@ void process(mCreateAttachmentRequest &&request, XMLElement *response,
 		std::string dir = ctx.getDir(parentFolder);
 		ctx.validate(dir, mid);
 		// XXX: Permission check is wrong; we must check whether message can be modified
-		if (!(ctx.permissions(dir, parentFolder.folderId) & frightsEditAny))
+		auto rights = ctx.permissions(dir, parentFolder.folderId);
+		if (!(rights & frightsEditAny))
 			throw EWSError::AccessDenied(E3190);
+		ctx.assertCanReadPrivate(dir, parentFolder, rights, mid.messageId());
 
 		for (const tFileAttachment &att : request.Attachments) try {
 			auto mInst = ctx.plugin().loadMessageInstance(dir,
@@ -1333,26 +1720,7 @@ void process(mCreateAttachmentRequest &&request, XMLElement *response,
 				throw EWSError::ItemSave(E3429);
 
 			ATTACHMENT_CONTENT ac{};
-			std::vector<TAGGED_PROPVAL> props;
-			if (att.Name) {
-				props.push_back({PR_ATTACH_LONG_FILENAME, EWSContext::cpystr(*att.Name)});
-				props.push_back({PR_ATTACH_FILENAME, EWSContext::cpystr(*att.Name)});
-				props.push_back({PR_DISPLAY_NAME, EWSContext::cpystr(*att.Name)});
-			}
-			static constexpr uint32_t method = ATTACH_BY_VALUE;
-			props.push_back({PR_ATTACH_METHOD, EWSContext::construct<uint32_t>(method)});
-			if (att.IsInline && *att.IsInline) {
-				static constexpr uint32_t flags = ATT_MHTML_REF;
-				props.push_back({PR_ATTACH_FLAGS, EWSContext::construct<uint32_t>(flags)});
-			}
-			if (att.IsContactPhoto && *att.IsContactPhoto)
-				props.push_back({PR_ATTACHMENT_CONTACTPHOTO, EWSContext::construct<uint8_t>(1)});
-			if (att.Content) {
-				auto bin = EWSContext::construct<BINARY>(BINARY{static_cast<uint32_t>(att.Content->size()), {EWSContext::alloc<char>(att.Content->size())}});
-				memcpy(bin->pc, att.Content->data(), bin->cb);
-				props.push_back({PR_ATTACH_DATA_BIN, bin});
-				props.push_back({PR_ATTACH_SIZE, EWSContext::construct<int32_t>(bin->cb)});
-			}
+			auto props = att.props();
 			ac.proplist.count = props.size();
 			ac.proplist.ppropval = props.data();
 			ac.pembedded = nullptr;
@@ -1413,8 +1781,10 @@ void process(mDeleteAttachmentRequest &&request, XMLElement *response, const EWS
 		std::string dir = ctx.getDir(parentFolder);
 		ctx.validate(dir, aid);
 		// XXX: Permission check is wrong; we must check whether message can be modified
-		if (!(ctx.permissions(dir, parentFolder.folderId) & frightsEditAny))
+		auto rights = ctx.permissions(dir, parentFolder.folderId);
+		if (!(rights & frightsEditAny))
 			throw EWSError::AccessDenied(E3444);
+		ctx.assertCanReadPrivate(dir, parentFolder, rights, aid.messageId());
 
 		auto mInst = ctx.plugin().loadMessageInstance(dir,
 		             parentFolder.folderId, aid.messageId());
@@ -1425,6 +1795,12 @@ void process(mDeleteAttachmentRequest &&request, XMLElement *response, const EWS
 		if (!ctx.plugin().exmdb.flush_instance(dir.c_str(),
 		    mInst->instanceId, &err) || err != ecSuccess)
 			throw EWSError::ItemSave(E3433);
+		/*
+		 * Keep the message instance. A reload would renumber the
+		 * attachments and shift the AttachmentIds the client holds.
+		 */
+		ctx.plugin().unloadAttachmentInstance(dir, aid.messageId(),
+			aid.attachment_num);
 
 		sShape shape;
 		ctx.updated(dir, aid, shape);
@@ -1537,8 +1913,10 @@ void process(mDeleteItemRequest &&request, XMLElement *response, const EWSContex
 		sFolderSpec parent = ctx.resolveFolder(meid);
 		std::string dir = ctx.getDir(parent);
 		ctx.validate(dir, meid);
-		if (!(ctx.permissions(dir, parent.folderId) & frightsDeleteAny))
+		auto rights = ctx.permissions(dir, parent.folderId);
+		if (!(rights & frightsDeleteAny))
 			throw EWSError::AccessDenied(E3131);
+		ctx.assertCanReadPrivate(dir, parent, rights, meid.messageId());
 
 		std::optional<uint32_t> basedate;
 		if (auto occ = std::get_if<tOccurrenceItemId>(&id.asVariant())) {
@@ -1662,7 +2040,7 @@ void process(mFindFolderRequest &&request, XMLElement *response, const EWSContex
 	for (const sFolderId &folderId : request.ParentFolderIds) try {
 		sFolderSpec folder = ctx.resolveFolder(folderId);
 		std::string dir = ctx.getDir(folder);
-		if (!(ctx.permissions(dir, folder.folderId) & frightsVisible))
+		if (!(itemRights(ctx, dir, folder.folderId) & (frightsVisible | fbRights)))
 			throw EWSError::AccessDenied(E3218);
 		if (dir != lastDir) {
 			auto getId = [&](const PROPERTY_NAME& name){return ctx.getNamedPropId(dir, name);};
@@ -1757,13 +2135,18 @@ void process(mFindItemRequest &&request, XMLElement *response, const EWSContext 
 	response->SetName("m:FindItemResponse");
 
 	sShape shape(request.ItemShape);
-	shape.recurrenceFrame = ctx.get_recurrence_frame();
+	shape.x500Org = ctx.plugin().x500_org_name.c_str();
 	uint8_t tableFlags = request.Traversal == Enum::SoftDeleted ? TABLE_FLAG_SOFTDELETES :
 	                     request.Traversal == Enum::Associated ? TABLE_FLAG_ASSOCIATED :
 	                     request.Traversal == Enum::Shallow ? 0 : TABLE_FLAG_DEPTH;
 	const RESTRICTION* res = nullptr; // Must be built for every store individually (named properties)
 	const SORTORDER_SET* sort = nullptr; // Lol same
+	/* Table of the private items, see limitQuery */
+	const RESTRICTION *privRes = nullptr;
+	const SORTORDER_SET *privSort = nullptr;
+	bool split = false;
 	std::string lastDir; // Simple restriction caching
+	uint32_t lastRights = 0;
 
 	auto& exmdb = ctx.plugin().exmdb;
 	mFindItemResponse data;
@@ -1792,21 +2175,53 @@ void process(mFindItemRequest &&request, XMLElement *response, const EWSContext 
 	for (const sFolderId &folderId : request.ParentFolderIds) try {
 		sFolderSpec folder = ctx.resolveFolder(folderId);
 		std::string dir = ctx.getDir(folder);
-		if (!(ctx.permissions(dir, folder.folderId) & frightsVisible))
+		auto rights = itemRights(ctx, dir, folder.folderId);
+		if (!(rights & itemReadRights))
 			throw EWSError::AccessDenied(E3244);
-		if (dir != lastDir) {
+		ctx.restrictShape(dir, folder, rights, shape);
+		if (dir != lastDir || rights != lastRights) {
 			auto getId = [&](const PROPERTY_NAME& name){return ctx.getNamedPropId(dir, name);};
-			auto res1 = request.Restriction ? request.Restriction->build(getId) : nullptr;
+			auto getEssdn = [&](const char *addr) {
+				std::string essdn;
+				if (cvt_username_to_essdn(addr, ctx.plugin().x500_org_name.c_str(),
+				    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
+				    essdn) != ecSuccess)
+					essdn.clear();
+				return essdn;
+			};
+			auto res1 = request.Restriction ? request.Restriction->build(getId, getEssdn) : nullptr;
 			auto res2 = paging ? paging->restriction(getId) : nullptr;
-			res = tRestriction::all(res1, res2);
-			sort = request.SortOrder ? tFieldOrder::build(*request.SortOrder, getId) : nullptr;
+			auto newRes = tRestriction::all(res1, res2);
+			auto newSort = request.SortOrder ? tFieldOrder::build(*request.SortOrder, getId) : nullptr;
+			SORTORDER_SET *newPrivSort;
+			split = limitQuery(shape, newRes, newSort, newPrivSort);
+			if (split) {
+				auto copy = newRes != nullptr ? EWSContext::construct<RESTRICTION>(*newRes) : nullptr;
+				privRes = tRestriction::all(copy, matchPrivate(true));
+				newRes = tRestriction::all(newRes, matchPrivate(false));
+			}
+			res = newRes;
+			sort = newSort;
+			privSort = newPrivSort;
 			lastDir = dir;
+			lastRights = rights;
 		}
-		uint32_t tableId, rowCount;
+		uint32_t tableId, rowCount, privTable = 0, privCount = 0;
 		if (!exmdb.load_content_table(dir.c_str(), CP_UTF8, folder.folderId,
 		    "", tableFlags, res, sort, &tableId, &rowCount))
 			throw EWSError::ItemPropertyRequestFailed(E3245);
 		auto unloadTable = HX::make_scope_exit([&, tableId]{exmdb.unload_table(dir.c_str(), tableId);});
+		if (split && !exmdb.load_content_table(dir.c_str(), CP_UTF8,
+		    folder.folderId, "", tableFlags, privRes, privSort,
+		    &privTable, &privCount))
+			throw EWSError::ItemPropertyRequestFailed(E3245);
+		auto unloadPriv = HX::make_scope_exit([&, privTable] {
+			if (split)
+				exmdb.unload_table(dir.c_str(), privTable);
+		});
+		/* Rows of the private table come after those of the other */
+		uint32_t pubCount = rowCount;
+		rowCount += privCount;
 		if (!rowCount) {
 			mFindItemResponseMessage msg;
 			msg.RootFolder.emplace();
@@ -1845,14 +2260,28 @@ void process(mFindItemRequest &&request, XMLElement *response, const EWSContext 
 		 */
 		uint32_t results = maxResults && calView == nullptr ?
 			std::min(maxResults, rowCount - offset) : rowCount - offset;
-		exmdb.query_table(dir.c_str(), ctx.auth_info().username,
-			CP_UTF8, tableId, tags, offset, results, &table);
+		TARRAY_SET privRows;
+		std::vector<TPROPVAL_ARRAY *> rows;
+		if (offset < pubCount)
+			exmdb.query_table(dir.c_str(), ctx.auth_info().username,
+				CP_UTF8, tableId, tags, offset,
+				std::min(results, pubCount - offset), &table);
+		if (offset + results > pubCount) {
+			uint32_t privOffset = offset > pubCount ? offset - pubCount : 0;
+			exmdb.query_table(dir.c_str(), ctx.auth_info().username,
+				CP_UTF8, privTable, tags, privOffset,
+				offset + results - pubCount - privOffset, &privRows);
+		}
+		rows.insert(rows.end(), table.pparray, table.pparray + table.count);
+		rows.insert(rows.end(), privRows.pparray, privRows.pparray + privRows.count);
+
 		mFindItemResponseMessage msg;
 		auto &items = msg.RootFolder.emplace().Items;
 		items.reserve(rowCount);
 		/* CalendarView: items keyed by start, to be ordered later */
 		std::vector<std::pair<uint64_t, sItem>> calItems;
-		for (TPROPVAL_ARRAY &props : table) {
+		for (auto row : rows) {
+			TPROPVAL_ARRAY &props = *row;
 			unclamp_binaries(ctx, dir, props);
 			shape.clean();
 			shape.properties(props);
@@ -1871,9 +2300,9 @@ void process(mFindItemRequest &&request, XMLElement *response, const EWSContext 
 				}
 				sItem child = tItem::create(shape);
 				const auto &iid = std::visit([](auto &&i) STATIC_IN_CXX23 -> std::optional<tItemId> & { return i.ItemId; }, child);
-				if (shape.special && iid) {
+				if (shape.specials() && iid) {
 					sMessageEntryId meid(iid->Id.data(), iid->Id.size());
-					std::visit([&](auto& i) {ctx.loadSpecial(dir, meid.folderId(), meid.messageId(), i, shape.special);}, child);
+					std::visit([&](auto& i) {ctx.loadSpecial(dir, meid.folderId(), meid.messageId(), i, shape.specials());}, child);
 				}
 				if (calView != nullptr) {
 					auto start = props.get<const uint64_t>(startTag);
@@ -1977,8 +2406,10 @@ void process(mGetAttachmentRequest &&request, XMLElement *response, const EWSCon
 		sFolderSpec parentFolder = ctx.resolveFolder(aid);
 		std::string dir = ctx.getDir(parentFolder);
 		ctx.validate(dir, aid);
-		if (!(ctx.permissions(dir, parentFolder.folderId) & frightsReadAny))
+		auto rights = ctx.permissions(dir, parentFolder.folderId);
+		if (!(rights & frightsReadAny))
 			throw EWSError::AccessDenied(E3135);
+		ctx.assertCanReadPrivate(dir, parentFolder, rights, aid.messageId());
 		mGetAttachmentResponseMessage msg;
 		msg.Attachments.emplace_back(ctx.loadAttachment(dir, aid));
 		msg.success();
@@ -2043,7 +2474,7 @@ void process(mGetFolderRequest &&request, XMLElement *response, const EWSContext
 			folder.target = ctx.auth_info().username;
 		folder.normalize();
 		std::string dir = ctx.getDir(folder);
-		if (!(ctx.permissions(dir, folder.folderId) & frightsVisible))
+		if (!(itemRights(ctx, dir, folder.folderId) & (frightsVisible | fbRights)))
 			throw EWSError::AccessDenied(E3136);
 		mGetFolderResponseMessage msg;
 		msg.Folders.emplace_back(ctx.loadFolder(dir, folder.folderId, shape));
@@ -2294,8 +2725,20 @@ void process(mGetUserAvailabilityRequest &&request, XMLElement *response, const 
 	auto end   = clock::to_time_t(windowEnd);
 
 	for (const tMailboxData &MailboxData : request.MailboxDataArray) try {
-		std::string maildir = ctx.get_maildir(MailboxData.Email);
-		tFreeBusyView fbv(ctx.auth_info().username, maildir.c_str(), start, end);
+		std::string maildir;
+		try {
+			maildir = ctx.get_maildir(MailboxData.Email);
+		} catch (const EWSError &) {
+			/* Not a local mailbox: report an empty view like Exchange */
+			auto &fbr = data.FreeBusyResponseArray->emplace_back();
+			fbr.FreeBusyView.emplace();
+			fbr.ResponseMessage.emplace(EWSError::MailRecipientNotFound(E3499));
+			continue;
+		}
+		/* No user means the owner, see get_freebusy() */
+		tFreeBusyView fbv(maildir == ctx.auth_info().maildir ? nullptr :
+			ctx.auth_info().username, maildir.c_str(),
+			ctx.plugin().x500_org_name.c_str(), start, end);
 		mFreeBusyResponse& fbr = data.FreeBusyResponseArray->emplace_back(std::move(fbv));
 		if (fbr.FreeBusyView && fbr.FreeBusyView->CalendarEventArray) {
 			for (auto &event : *fbr.FreeBusyView->CalendarEventArray) {
@@ -2930,8 +3373,10 @@ void process(const mBaseMoveCopyItem &request, XMLElement *response, const EWSCo
 		if (sourceFolder.target != dstFolder.target)
 			throw EWSError::CrossMailboxMoveCopy(E3186);
 		ctx.validate(dir, meid);
-		if (!(ctx.permissions(dir, sourceFolder.folderId) & frightsReadAny))
+		auto rights = ctx.permissions(dir, sourceFolder.folderId);
+		if (!(rights & frightsReadAny))
 			throw EWSError::AccessDenied(E3185);
+		ctx.assertCanReadPrivate(dir, sourceFolder, rights, meid.messageId());
 		uint64_t newItemId = ctx.moveCopyItem(dir, meid, dstFolder.folderId, request.copy);
 		auto& msg = std::visit([&](auto& d) -> mItemInfoResponseMessage&
 			                   {return static_cast<mItemInfoResponseMessage&>(d.ResponseMessages.emplace_back());}, data);
@@ -2975,8 +3420,10 @@ void process(mMarkAsJunkRequest &&request, XMLElement *response, const EWSContex
 		sFolderSpec sourceFolder = ctx.resolveFolder(meid);
 		std::string dir = ctx.getDir(sourceFolder);
 		ctx.validate(dir, meid);
-		if (!(ctx.permissions(dir, sourceFolder.folderId) & frightsReadAny))
+		auto rights = ctx.permissions(dir, sourceFolder.folderId);
+		if (!(rights & frightsReadAny))
 			throw EWSError::AccessDenied(E3472);
+		ctx.assertCanReadPrivate(dir, sourceFolder, rights, meid.messageId());
 
 		auto &msg = data.ResponseMessages.emplace_back();
 		if (request.MoveItem) {
@@ -3157,7 +3604,8 @@ void process(mSyncFolderItemsRequest &&request, XMLElement *response, const EWSC
 	std::string dir = ctx.getDir(folder.normalize());
 
 	mSyncFolderItemsResponse data;
-	if (!(ctx.permissions(dir, folder.folderId) & frightsReadAny)) {
+	auto rights = itemRights(ctx, dir, folder.folderId);
+	if (!(rights & itemReadRights)) {
 		data.ResponseMessages.emplace_back(EWSError::AccessDenied(E3138));
 		data.serialize(response);
 		return;
@@ -3178,6 +3626,7 @@ void process(mSyncFolderItemsRequest &&request, XMLElement *response, const EWSC
 		throw DispatchError(E3031);
 
 	sShape shape(request.ItemShape);
+	ctx.restrictShape(dir, folder, rights, shape);
 	sMailboxInfo mbinfo = ctx.getMailboxInfo(dir, folder.location == folder.PUBLIC);
 	// Generate message entry IDs on the fly as we have all necessary information
 	// Use template entry ID and fill in the message Id as needed
@@ -3289,8 +3738,10 @@ void process(mGetItemRequest &&request, XMLElement *response, const EWSContext &
 		sFolderSpec parentFolder = ctx.resolveFolder(eid);
 		std::string dir = ctx.getDir(parentFolder);
 		ctx.validate(dir, eid);
-		if (!(ctx.permissions(dir, parentFolder.folderId) & frightsReadAny))
+		auto rights = itemRights(ctx, dir, parentFolder.folderId);
+		if (!(rights & itemReadRights))
 			throw EWSError::AccessDenied(E3139);
+		ctx.restrictShape(dir, parentFolder, rights, shape);
 		mGetItemResponseMessage msg;
 		auto mid = eid.messageId();
 		if (id.holds_alternative<tOccurrenceItemId>()) {
@@ -3303,7 +3754,7 @@ void process(mGetItemRequest &&request, XMLElement *response, const EWSContext &
 		} else {
 			msg.Items.emplace_back(ctx.loadItem(dir, parentFolder.folderId, mid, shape));
 		}
-		if (shape.special & sShape::Conflicts && parentFolder.location == sFolderSpec::PRIVATE)
+		if (shape.specials() & sShape::Conflicts && parentFolder.location == sFolderSpec::PRIVATE)
 			std::visit([&](auto &item) {
 				if constexpr (std::is_base_of_v<sCalendarMeetingRequestCommon, std::decay_t<decltype(item)>>) {
 					auto s = shape.get<uint64_t>(NtCommonStart, sShape::FL_ANY);
@@ -3314,7 +3765,9 @@ void process(mGetItemRequest &&request, XMLElement *response, const EWSContext &
 					             e != nullptr ? rop_util_nttime_to_unix(*e) : 0;
 					if (start == 0 || end == 0)
 						return;
-					item.loadConflicts(ctx.auth_info().username, dir.c_str(),
+					item.loadConflicts(dir == ctx.auth_info().maildir ? nullptr :
+						ctx.auth_info().username, dir.c_str(),
+						ctx.plugin().x500_org_name.c_str(),
 						shape.get<BINARY>(NtCleanGlobalObjectId, sShape::FL_ANY), start, end);
 					if (item.ConflictingMeetings)
 						ctx.conflictItemIds(parentFolder, dir, *item.ConflictingMeetings);
@@ -3562,19 +4015,58 @@ void process(mSendItemRequest &&request, XMLElement *response, const EWSContext 
 		sMessageEntryId meid(itemId.Id.data(), itemId.Id.size());
 		sFolderSpec folder = ctx.resolveFolder(meid);
 		std::string dir = ctx.getDir(folder);
-		if (!(ctx.permissions(dir, folder.folderId) & frightsReadAny))
+		auto rights = ctx.permissions(dir, folder.folderId);
+		if (!(rights & frightsReadAny))
 			throw EWSError::AccessDenied(E3142);
+		ctx.assertCanReadPrivate(dir, folder, rights, meid.messageId());
 
-		MESSAGE_CONTENT *content = nullptr;
+		MESSAGE_CONTENT *rdcontent = nullptr;
 		if (!ctx.plugin().exmdb.read_message(dir.c_str(),
 		    ctx.effectiveUser(folder), CP_ACP, meid.messageId(),
-		    &content) || content == nullptr)
+		    &rdcontent) || rdcontent == nullptr)
 			throw EWSError::ItemNotFound(E3403);
+		/* read_message memory is ndr_stack backed, so dup() before editing */
+		message_content_ptr content(rdcontent->dup());
+		if (content == nullptr)
+			throw EWSError::NotEnoughMemory(E3532);
+		ctx.stampSubmitIdentity(dir, *content);
 		ctx.validate_sendas_perms(*content);
+		uint64_t saveFid = 0;
+		if (request.SavedItemFolderId) {
+			if (saveFolder.target != folder.target)
+				throw EWSError::CrossMailboxMoveCopy(E3496);
+			saveFid = saveFolder.folderId;
+		} else if (folder.location == sFolderSpec::PRIVATE) {
+			saveFid = eid_t(1, PRIVATE_FID_SENT_ITEMS);
+		}
 		ctx.send(dir, rop_util_get_gc_value(meid.messageId()), *content);
 
-		if (request.SaveItemToFolder)
-			ctx.create(dir, folder, *content);
+		/* Exchange moves the sent item to the save folder or drops it */
+		auto username = ctx.effectiveUser(folder);
+		if (!request.SaveItemToFolder) {
+			auto eid = meid.messageId();
+			EID_ARRAY eids{1, &eid};
+			BOOL partial = false;
+			if (!ctx.plugin().exmdb.delete_messages(dir.c_str(),
+			    CP_ACP, username, folder.folderId, &eids, false,
+			    &partial) || partial)
+				throw EWSError::CannotDeleteObject(E3497);
+		} else {
+			auto flags = content->proplist.get<const uint32_t>(PR_MESSAGE_FLAGS);
+			uint32_t newFlags = (flags != nullptr ? *flags : 0) &
+			                    ~(MSGFLAG_SUBMITTED | MSGFLAG_UNSENT);
+			const TAGGED_PROPVAL sprops[] = {
+				{PR_MESSAGE_FLAGS, &newFlags},
+				{PR_READ, deconst(&byte_value_one)},
+			};
+			const TPROPVAL_ARRAY proplist = {std::size(sprops), deconst(sprops)};
+			PROBLEM_ARRAY problems;
+			if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
+			    username, CP_ACP, meid.messageId(), &proplist, &problems))
+				throw EWSError::ItemSave(E3498);
+			if (saveFid != 0 && saveFid != folder.folderId)
+				ctx.moveCopyItem(dir, meid, saveFid, false);
+		}
 
 		data.ResponseMessages.emplace_back().success();
 	} catch (const EWSError &err) {
@@ -3691,6 +4183,55 @@ void process(mUnsubscribeRequest &&request, XMLElement *response, const EWSConte
 	data.serialize(response);
 }
 
+/**
+ * @brief      Apply DeleteItemField to a meeting attendee list
+ *
+ * An attendee list without Attendee children clears that kind, so
+ * updateAttendees drops the rows and cancels the meeting for them.
+ */
+static void delete_attendees(const sItemChangeDescription &update,
+    sShape &shape)
+{
+	static const XMLElement *const empty = [] {
+		static XMLDocument doc;
+		return doc.NewElement("Attendees");
+	}();
+	auto del = std::get_if<tDeleteItemField>(&update);
+	if (del == nullptr)
+		return;
+	auto uri = std::get_if<tFieldURI>(&del->fieldURI.asVariant());
+	if (uri == nullptr)
+		return;
+	if (uri->FieldURI == "calendar:RequiredAttendees")
+		shape.requiredAttendees = empty;
+	else if (uri->FieldURI == "calendar:OptionalAttendees")
+		shape.optionalAttendees = empty;
+	else if (uri->FieldURI == "calendar:Resources")
+		shape.resourceAttendees = empty;
+}
+
+/**
+ * @brief      Check whether an ItemChange only edits attendee lists
+ *
+ * MS-OXOCAL v22.1 §3.1.4.7.3.4: only such an update can go to the added
+ * attendees alone. Any other change concerns all attendees.
+ */
+static bool attendees_only(const tItemChange &change)
+{
+	for (const auto &update : change.Updates) {
+		auto &path = std::visit([](const auto &u) -> const tPath & {
+		             	return u.fieldURI;
+		             }, update);
+		auto uri = std::get_if<tFieldURI>(&path.asVariant());
+		if (uri == nullptr ||
+		    (uri->FieldURI != "calendar:RequiredAttendees" &&
+		    uri->FieldURI != "calendar:OptionalAttendees" &&
+		    uri->FieldURI != "calendar:Resources"))
+			return false;
+	}
+	return true;
+}
+
 static void process_upditem_2(mUpdateItemRequest &request, const EWSContext &ctx,
     const std::string &dir, const char *username, sMessageEntryId &mid)
 {
@@ -3712,28 +4253,18 @@ static void process_upditem_2(mUpdateItemRequest &request, const EWSContext &ctx
 		sprops.push_back({PR_MESSAGE_FLAGS,
 			EWSContext::construct<uint32_t>(*flags & ~MSGFLAG_UNSENT)});
 
-	std::string dispname;
-	auto smtpaddr = deconst(ctx.auth_info().username);
-	if (sendcontent->proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS) == nullptr &&
-	    mysql_adaptor_get_user_displayname(ctx.auth_info().username, dispname)) {
-		auto sName = deconst(dispname.empty() ?
-			     ctx.auth_info().username : dispname.c_str());
-		auto addrtype = deconst("SMTP");
-		sprops.push_back({PR_SENT_REPRESENTING_NAME, sName});
-		sprops.push_back({PR_SENDER_NAME, sName});
-		sprops.push_back({PR_SENT_REPRESENTING_SMTP_ADDRESS, smtpaddr});
-		sprops.push_back({PR_SENDER_SMTP_ADDRESS, smtpaddr});
-		sprops.push_back({PR_SENT_REPRESENTING_EMAIL_ADDRESS, smtpaddr});
-		sprops.push_back({PR_SENDER_EMAIL_ADDRESS, smtpaddr});
-		sprops.push_back({PR_SENT_REPRESENTING_ADDRTYPE, addrtype});
-		sprops.push_back({PR_SENDER_ADDRTYPE, addrtype});
-	}
+	std::vector<proptag_t> drop;
+	auto ident = ctx.submitIdentity(dir, sendcontent->proplist, drop);
+	sprops.insert(sprops.end(), ident.begin(), ident.end());
 
 	const TPROPVAL_ARRAY proplist = {static_cast<uint16_t>(sprops.size()), sprops.data()};
 	PROBLEM_ARRAY problems;
 	if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
 	    username, CP_ACP, mid.messageId(), &proplist, &problems))
 		throw EWSError::ItemSave(E3465);
+	if (!drop.empty() && !ctx.plugin().exmdb.remove_message_properties(
+	    dir.c_str(), CP_ACP, mid.messageId(), drop))
+		throw EWSError::ItemSave(E3531);
 	if (!ctx.plugin().exmdb.read_message(dir.c_str(),
 	    username, CP_ACP, mid.messageId(), &sendcontent) ||
 	    sendcontent == nullptr)
@@ -3773,6 +4304,112 @@ static void process_upditem_2(mUpdateItemRequest &request, const EWSContext &ctx
  *
  * @todo check whether instances should rathe be used
  */
+/**
+ * @brief      Whether the item is the organizer's copy of a meeting
+ */
+static bool upd_is_organizer_copy(const EWSContext &ctx,
+    const std::string &dir, uint64_t mid)
+{
+	void *cls = nullptr;
+	if (!ctx.plugin().exmdb.get_message_property(dir.c_str(), nullptr,
+	    CP_ACP, mid, PR_MESSAGE_CLASS, &cls) || cls == nullptr)
+		return false;
+	return class_match_prefix(static_cast<const char *>(cls),
+	       "IPM.Appointment") == 0 && ctx.isOrganizer(dir, mid);
+}
+
+/* Properties PidLidChangeHighlight looks at, in BIT_CH order */
+static std::vector<proptag_t> upd_highlight_tags(const EWSContext &ctx,
+    const std::string &dir)
+{
+	const PROPERTY_NAME pn[] = {
+		NtAppointmentStartWhole, NtAppointmentEndWhole,
+		NtAppointmentRecur, NtLocation,
+	};
+	const PROPNAME_ARRAY pna = {std::size(pn), deconst(pn)};
+	auto ids = ctx.getNamedPropIds(dir, pna, true);
+	if (ids.size() != std::size(pn) ||
+	    std::find(ids.cbegin(), ids.cend(), 0) != ids.cend())
+		throw EWSError::ItemSave(E3541);
+	return {PROP_TAG(PT_SYSTIME, ids[0]), PROP_TAG(PT_SYSTIME, ids[1]),
+	        PROP_TAG(PT_BINARY, ids[2]), PROP_TAG(PT_UNICODE, ids[3]),
+	        PR_SUBJECT, PR_BODY};
+}
+
+static std::vector<std::string> upd_attendees(const EWSContext &ctx,
+    const TARRAY_SET &rows, uint32_t type)
+{
+	std::vector<std::string> out;
+	for (const auto &row : rows) {
+		auto rtype = row.get<const uint32_t>(PR_RECIPIENT_TYPE);
+		auto flags = row.get<const uint32_t>(PR_RECIPIENT_FLAGS);
+		if (rtype == nullptr || (*rtype & 0xf) != type ||
+		    (flags != nullptr && *flags & recipOrganizer))
+			continue;
+		auto a = ctx.rcptAddress(row);
+		HX_strlower(a.data());
+		out.emplace_back(std::move(a));
+	}
+	std::sort(out.begin(), out.end());
+	return out;
+}
+
+/**
+ * @brief      Work out what an update changed in the item properties
+ *
+ * MS-OXOCAL v22.1 §2.2.6.2
+ *
+ * @param      before    Values of @tags before the update
+ *
+ * @return     PidLidChangeHighlight bits
+ */
+static uint32_t upd_highlight(const EWSContext &ctx, const std::string &dir,
+    uint64_t mid, const std::vector<proptag_t> &tags,
+    const TPROPVAL_ARRAY &before)
+{
+	static constexpr uint32_t bits[] = {
+		BIT_CH_START, BIT_CH_END, BIT_CH_RECUR, BIT_CH_LOCATION,
+		BIT_CH_SUBJECT, BIT_CH_BODY,
+	};
+	if (tags.empty())
+		return 0;
+	if (tags.size() != std::size(bits))
+		throw EWSError::ItemSave(E3541);
+	auto after = ctx.getItemProps(dir, mid, tags);
+	uint32_t ch = 0;
+	for (size_t i = 0; i < tags.size(); ++i)
+		if (!propval_compare_relop_nullok(RELOP_EQ, PROP_TYPE(tags[i]),
+		    before.getval(tags[i]), after.getval(tags[i])))
+			ch |= bits[i];
+	return ch;
+}
+
+/**
+ * @brief      Work out which attendee kinds an update added to
+ *
+ * MS-OXOCAL v22.1 §2.2.6.2: BIT_CH_REQATT and BIT_CH_OPTATT stand for
+ * added attendees, removed ones set no bit.
+ *
+ * @param      oldRcpts  Recipients before the update
+ *
+ * @return     PidLidChangeHighlight bits
+ */
+static uint32_t upd_added_attendees(const EWSContext &ctx,
+    const std::string &dir, uint64_t mid, const TARRAY_SET &oldRcpts)
+{
+	TARRAY_SET rcpts{};
+	if (!ctx.plugin().exmdb.get_message_rcpts(dir.c_str(), mid, &rcpts))
+		throw EWSError::ItemNotFound(E3494);
+	uint32_t ch = 0;
+	for (auto [type, bit] : {std::pair{MAPI_TO, BIT_CH_REQATT}, std::pair{MAPI_CC, BIT_CH_OPTATT}}) {
+		auto o = upd_attendees(ctx, oldRcpts, type);
+		auto n = upd_attendees(ctx, rcpts, type);
+		if (!std::includes(o.cbegin(), o.cend(), n.cbegin(), n.cend()))
+			ch |= bit;
+	}
+	return ch;
+}
+
 void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContext &ctx)
 {
 	response->SetName("m:UpdateItemResponse");
@@ -3793,8 +4430,22 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 		sFolderSpec parentFolder = ctx.resolveFolder(mid);
 		std::string dir = ctx.getDir(parentFolder);
 		ctx.validate(dir, mid);
-		if (!(ctx.permissions(dir, parentFolder.folderId) & frightsEditAny))
+		auto rights = ctx.permissions(dir, parentFolder.folderId);
+		if (!(rights & frightsEditAny))
 			throw EWSError::AccessDenied(E3445);
+		ctx.assertCanReadPrivate(dir, parentFolder, rights, mid.messageId());
+		/* The update goes out in the owner's name, check before writing */
+		bool orgCopy = request.SendMeetingInvitationsOrCancellations &&
+		    *request.SendMeetingInvitationsOrCancellations != Enum::SendToNone &&
+		    upd_is_organizer_copy(ctx, dir, mid.messageId());
+		if (orgCopy)
+			ctx.validate_sendas_perms(ctx.storeOwner(dir));
+		std::vector<proptag_t> hlTags;
+		TPROPVAL_ARRAY hlBefore{};
+		if (orgCopy && !change.ItemId.isOccurrence()) {
+			hlTags = upd_highlight_tags(ctx, dir);
+			hlBefore = ctx.getItemProps(dir, mid.messageId(), hlTags);
+		}
 		sShape shape(change);
 		/*
 		 * Pre-register timezone properties that setDatetimeFields may
@@ -3811,10 +4462,16 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 		shape.add(NtReminderTime, PT_SYSTIME);
 		shape.add(NtReminderSignalTime, PT_SYSTIME);
 		shape.add(NtRecurring, PT_BOOLEAN);
+		/* Written by applyRecurrence and moveRecurrence */
+		shape.add(NtAppointmentRecur, PT_BINARY);
+		shape.add(NtRecurrenceType, PT_LONG);
+		shape.add(NtClipStart, PT_SYSTIME);
+		shape.add(NtClipEnd, PT_SYSTIME);
 		ctx.getNamedTags(dir, shape, true);
 		for (const auto &update : change.Updates) {
 			if (std::holds_alternative<tSetItemField>(update))
 				std::get<tSetItemField>(update).put(shape);
+			delete_attendees(update, shape);
 		}
 		tContact::genFields(shape);
 		tCalendarItem::setDatetimeFields(shape);
@@ -3822,9 +4479,16 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 			throw EWSError::InvalidPropertySet(E3484);
 		if (shape.recurrence)
 			ctx.applyRecurrence(dir, mid.messageId(), shape.recurrence, shape);
+		else if (!change.ItemId.isOccurrence())
+			ctx.moveRecurrence(dir, mid.messageId(), shape);
 		const char* username = ctx.effectiveUser(parentFolder);
 		mUpdateItemResponseMessage msg;
 		uint32_t occ_basedate = 0;
+		Enum::CalendarItemUpdateOperationType mode =
+			request.SendMeetingInvitationsOrCancellations.value_or(
+			Enum::SendToNone);
+		std::optional<TARRAY_SET> oldRcpts;
+		bool organizer = false;
 		if (change.ItemId.holds_alternative<tOccurrenceItemId>()) {
 			const auto& occurrence  = std::get<tOccurrenceItemId>(change.ItemId.asVariant());
 			occ_basedate = ctx.resolveOccurrenceIndex(dir,
@@ -3897,9 +4561,24 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 			msg.ConflictResults.Count = problems.count;
 			ctx.plugin().unloadMessageInstance(dir, mid.messageId());
 			if (shape.requiredAttendees || shape.optionalAttendees ||
-			    shape.resourceAttendees)
+			    shape.resourceAttendees) {
+				oldRcpts.emplace();
+				if (!ctx.plugin().exmdb.get_message_rcpts(
+				    dir.c_str(), mid.messageId(), &*oldRcpts))
+					throw EWSError::ItemNotFound(E3494);
+				/* updateAttendees marks it as organized */
+				organizer = ctx.isOrganizer(dir,
+				            mid.messageId());
+				/*
+				 * MS-OXOCAL v22.1 §3.1.4.7.3.2: responses stay
+				 * unless the update is a significant change
+				 */
+				auto ch = upd_highlight(ctx, dir,
+				          mid.messageId(), hlTags, hlBefore);
 				ctx.updateAttendees(dir, parentFolder,
-				    mid.messageId(), shape);
+				    mid.messageId(), shape, *oldRcpts,
+				    !(ch & (BIT_CH_START | BIT_CH_END | BIT_CH_RECUR)));
+			}
 			if (shape.toRecipients || shape.ccRecipients ||
 			    shape.bccRecipients)
 				ctx.updateMessageRecipients(dir, parentFolder,
@@ -3909,68 +4588,43 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 			msg.Items.emplace_back(ctx.loadOccurrence(dir, parentFolder.folderId, mid.messageId(), occ_basedate, idOnly));
 		else
 			msg.Items.emplace_back(ctx.loadItem(dir, mid.folderId(), mid.messageId(), idOnly));
-		if (occ_basedate == 0 &&
-		    request.SendMeetingInvitationsOrCancellations &&
-		    *request.SendMeetingInvitationsOrCancellations != Enum::SendToNone) {
-			MESSAGE_CONTENT *sendcontent = nullptr;
-			if (!ctx.plugin().exmdb.read_message(dir.c_str(),
-			    username, CP_ACP, mid.messageId(), &sendcontent) ||
-			    sendcontent == nullptr)
-				throw EWSError::ItemNotFound(E3404);
-			auto cls = sendcontent->proplist.get<const char>(PR_MESSAGE_CLASS);
-			if (cls != nullptr &&
-			    class_match_prefix(cls, "IPM.Appointment") == 0 &&
-			    sendcontent->children.prcpts != nullptr &&
-			    sendcontent->children.prcpts->count > 0) {
-				if (*request.SendMeetingInvitationsOrCancellations == Enum::SendToAllAndSaveCopy ||
-				    *request.SendMeetingInvitationsOrCancellations == Enum::SendToChangedAndSaveCopy) {
-					sFolderSpec sentitems = ctx.resolveFolder(tDistinguishedFolderId(Enum::sentitems));
-					uint64_t newMid = 0;
-					if (!ctx.plugin().exmdb.allocate_message_id(dir.c_str(),
-					    sentitems.folderId, &newMid))
-						throw EWSError::InternalServerError(E3426);
-					BOOL result = false;
-					if (!ctx.plugin().exmdb.movecopy_message(dir.c_str(), CP_ACP,
-					    mid.messageId(), sentitems.folderId, newMid, false, &result) ||
-					    !result)
-						throw EWSError::InternalServerError(E3428);
-					const char *sentuser = ctx.effectiveUser(sentitems);
-					auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
-					const TAGGED_PROPVAL sprops[] = {
-						{PR_MESSAGE_CLASS, deconst("IPM.Schedule.Meeting.Request")},
-						{PR_RESPONSE_REQUESTED, deconst(&byte_value_one)},
-						{PR_CLIENT_SUBMIT_TIME, now},
-						{PR_MESSAGE_DELIVERY_TIME, now},
-					};
-					const TPROPVAL_ARRAY sproplist = {std::size(sprops), deconst(sprops)};
-					PROBLEM_ARRAY sproblems;
-					if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
-					    sentuser, CP_ACP, newMid, &sproplist, &sproblems))
-						throw EWSError::ItemSave(E3419);
-					MESSAGE_CONTENT *sentcontent = nullptr;
-					if (!ctx.plugin().exmdb.read_message(dir.c_str(),
-					    sentuser, CP_ACP, newMid, &sentcontent) ||
-					    sentcontent == nullptr)
-						throw EWSError::ItemNotFound(E3405);
-					ctx.send(dir, mid.messageId(), *sentcontent);
-				} else {
-					/*
-					 * read_message returns pointers backed by ndr_stack
-					 * regions. Calling cancelcontent->set() invokes
-					 * propval_free() and tpropval_array_append(), which use
-					 * incompatible malloc/realloc/free. Thus, dup() first.
-					 */
-					message_content_ptr dupcontent(sendcontent->dup());
-					if (!dupcontent)
-						throw EWSError::NotEnoughMemory(E3408);
-					dupcontent->proplist.set(PR_MESSAGE_CLASS, "IPM.Schedule.Meeting.Request");
-					auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
-					dupcontent->proplist.set(PR_CLIENT_SUBMIT_TIME, now);
-					dupcontent->proplist.set(PR_MESSAGE_DELIVERY_TIME, now);
-					ctx.send(dir, mid.messageId(), *dupcontent);
-				}
-			}
+		/* An attendee's copy sends nothing, like in Exchange */
+		if (orgCopy && occ_basedate != 0) {
+			ctx.sendOccurrenceUpdate(dir, mid, parentFolder,
+				mode == Enum::SendToAllAndSaveCopy ||
+				mode == Enum::SendToChangedAndSaveCopy, occ_basedate);
+		} else if (orgCopy) {
+			/*
+			 * A change other than to the attendee lists affects
+			 * every attendee, so it goes to all of them.
+			 */
+			bool addedOnly = oldRcpts && attendees_only(change) &&
+			                 (mode == Enum::SendOnlyToChanged ||
+			                 mode == Enum::SendToChangedAndSaveCopy);
+			/*
+			 * MS-OXOCAL v22.1 §2.2.6.5, §3.1.4.7.3.1: a new start,
+			 * end or recurrence, or added attendees, make a full
+			 * update, everything else an informational one.
+			 */
+			auto hl = upd_highlight(ctx, dir, mid.messageId(),
+			          hlTags, hlBefore);
+			if (oldRcpts)
+				hl |= upd_added_attendees(ctx, dir,
+				      mid.messageId(), *oldRcpts);
+			bool full = hl & (BIT_CH_START | BIT_CH_END |
+			            BIT_CH_RECUR | BIT_CH_REQATT | BIT_CH_OPTATT);
+			ctx.sendMeetingUpdate(dir, parentFolder,
+			    mid.messageId(), addedOnly ? &*oldRcpts : nullptr,
+			    mode == Enum::SendToAllAndSaveCopy ||
+			    mode == Enum::SendToChangedAndSaveCopy, hl,
+			    full || addedOnly);
 		}
+		if (orgCopy && oldRcpts && organizer)
+			/* MS-OXWSMTGS v14.0 §2.2.5.3 */
+			ctx.cancelRemovedAttendees(dir, parentFolder,
+			    mid.messageId(), *oldRcpts,
+			    mode == Enum::SendToAllAndSaveCopy ||
+			    mode == Enum::SendToChangedAndSaveCopy);
 		if (occ_basedate == 0 && request.MessageDisposition &&
 		    (*request.MessageDisposition == Enum::SendOnly ||
 		    *request.MessageDisposition == Enum::SendAndSaveCopy))

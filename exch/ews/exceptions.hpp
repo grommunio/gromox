@@ -108,6 +108,7 @@ class EWSError : public DispatchError {
 	ERR(NameResolutionNoResults) ///< Name resolution failed / no results
 	ERR(NotEnoughMemory) ///< Out of memory
 	ERR(SchemaValidation) ///< XML value is does not confirm to schema
+	ERR(SendAsDenied) ///< Caller may not send as or on behalf of the claimed sender
 	ERR(ServerBusy) ///< Server declined to process the request (e.g. batch exceeds a configured limit)
 	ERR(SubscriptionAccessDenied) ///< Trying to access subscription from another user
 	ERR(TimeZone) ///< Invalid or missing time zone
@@ -623,15 +624,48 @@ E(3488, "occurrence has been deleted from the series");
 E(3489, "item is not a recurring master");
 E(3490, "failed to write cancellation copy to Sent Items");
 E(3491, "failed to build occurrence message");
-E(3492, "failed to build occurrence cancellation");
+E(3492, "failed to build occurrence meeting message");
+inline std::string E3493(std::string_view val) {return fmt::format("E-3493: invalid binary value '{}'", val);}
+E(3494, "failed to load meeting recipients");
+E(3495, "failed to resolve meeting cancellation properties");
+E(3496, "cannot save the sent item in another store");
+E(3497, "failed to delete sent item");
+E(3498, "failed to mark sent item as sent");
+E(3499, "no availability data for this email address");
+E(3501, "private item");
+E(3515, "no read access to the item replied to or forwarded");
+E(3516, "failed to load the item replied to or forwarded");
+E(3517, "failed to allocate reply recipients");
+E(3518, "failed to copy the attachments to forward");
+E(3520, "failed to load the LocalFreebusy table");
+E(3521, "failed to query the LocalFreebusy table");
+E(3522, "failed to build the delegate entry ID");
+E(3523, "failed to create the LocalFreebusy message");
+E(3524, "failed to update the LocalFreebusy message");
 E(3525, "cannot write to the folder of the referenced occurrence");
 E(3526, "cannot write to the folder of the referenced item");
 E(3527, "cannot write to the folder of the item to suppress the read receipt for");
+E(3530, "failed to set the sender identity");
+E(3531, "failed to remove a stale sender identity");
+E(3532, "failed to copy the message to submit");
+E(3535, "failed to copy the exception body");
+E(3536, "failed to build occurrence meeting request");
+E(3537, "failed to read series master for occurrence update");
+E(3540, "failed to write meeting request copy to Sent Items");
+E(3541, "failed to resolve meeting sequence properties");
+E(3542, "failed to store meeting sequence number");
+E(3570, "out of memory adding an attachment");
+E(3571, "failed to add an attachment");
+E(3572, "only file attachments can be created with an item");
 E(3573, "no permission to delete folder");
 E(3574, "failed to delete the content of a folder");
+inline std::string E3580(std::string_view val) {return fmt::format("E-3580: invalid base64 constant '{}'", val);}
+inline std::string E3581(std::string_view val) {return fmt::format("E-3581: invalid GUID constant '{}'", val);}
+E(3582, "failed to set response properties on the calendar item");
 E(3600, "cannot write to the calendar of the referenced item");
 E(3601, "cannot modify the existing calendar item of the meeting");
 E(3602, "no read access to the referenced item");
+E(3603, "cannot write to the calendar item of the declined meeting");
 E(3604, "no read access to the meeting to cancel");
 
 #undef E

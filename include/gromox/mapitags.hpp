@@ -720,7 +720,7 @@ enum {
 	PR_SENT_REPRESENTING_SMTP_ADDRESS = PROP_TAG(PT_UNICODE, 0x5D02), /* PidTagSentRepresentingSmtpAddress */
 	PidTagReadReceiptSmtpAddress = PROP_TAG(PT_UNICODE, 0x5D05),
 	PR_RECEIVED_BY_SMTP_ADDRESS = PROP_TAG(PT_UNICODE, 0x5D07), /* PidTagReceivedBySmtpAddress */
-	// PidTagReceivedRepresentingSmtpAddress = PROP_TAG(PT_UNICODE, 0x5D08),
+	PR_RCVD_REPRESENTING_SMTP_ADDRESS = PROP_TAG(PT_UNICODE, 0x5D08), /* PidTagReceivedRepresentingSmtpAddress */
 	// PR_RECIPIENT_ORDER = PROP_TAG(PT_LONG, 0x5FDF), /* PidTagRecipientOrder */
 	// PR_RECIPIENT_PROPOSED = PROP_TAG(PT_BOOLEAN, 0x5FE1), /* PidTagRecipientProposed */
 	// PR_RECIPIENT_PROPOSEDSTARTTIME = PROP_TAG(PT_SYSTIME, 0x5FE3), /* PidTagRecipientProposedStartTime */
@@ -933,11 +933,11 @@ enum {
 	// PR_WB_SF_LAST_USED = PROP_TAG(PT_LONG, 0x6834), /* PidTagSearchFolderLastUsed */
 	// PR_WB_SF_EXPIRATION = PROP_TAG(PT_LONG, 0x683A), /* PidTagSearchFolderExpiration */
 	// PR_WB_SF_TEMPLATE_ID = PROP_TAG(PT_LONG, 0x6841), /* PidTagSearchFolderTemplateId */
-	// PR_SCHDINFO_BOSS_WANTS_COPY = PROP_TAG(PT_BOOLEAN, 0x6842), /* PidTagScheduleInfoDelegatorWantsCopy */
+	PR_SCHDINFO_BOSS_WANTS_COPY = PROP_TAG(PT_BOOLEAN, 0x6842), /* PidTagScheduleInfoDelegatorWantsCopy */
 	// PR_WB_SF_ID = PROP_TAG(PT_BINARY, 0x6842), /* PidTagSearchFolderId */
 	// PidTagWlinkGroupHeaderID = PROP_TAG(PT_CLSID, 0x6842), /* OXPROPS v27 §2.1071 says it is binary(!?) */
 	// PR_SCHDINFO_DONT_MAIL_DELEGATES = PROP_TAG(PT_BOOLEAN, 0x6843), /* PidTagScheduleInfoDontMailDelegates */
-	// PR_SCHDINFO_DELEGATE_NAMES = PROP_TAG(PT_MV_UNICODE, 0x6844), /* PidTagScheduleInfoDelegateNames */
+	PR_SCHDINFO_DELEGATE_NAMES = PROP_TAG(PT_MV_UNICODE, 0x6844), /* PidTagScheduleInfoDelegateNames */
 	// PR_WB_SF_RECREATE_INFO = PROP_TAG(PT_BINARY, 0x6844), /* PidTagSearchFolderRecreateInfo */
 	PR_SCHDINFO_DELEGATE_ENTRYIDS = PROP_TAG(PT_MV_BINARY, 0x6845), /* PidTagScheduleInfoDelegateEntryIds */
 	// PR_WB_SF_DEFINITION = PROP_TAG(PT_BINARY, 0x6845), /* PidTagSearchFolderDefinition */
@@ -949,7 +949,7 @@ enum {
 	// PR_WLINK_TYPE = PROP_TAG(PT_LONG, 0x6849), /* PidTagWlinkType */
 	// PR_SCHDINFO_DELEGATE_NAMES_W = PROP_TAG(PT_MV_UNICODE, 0x684A), /* PidTagScheduleInfoDelegateNamesW */
 	// PR_WLINK_FLAGS = PROP_TAG(PT_LONG, 0x684A), /* PidTagWlinkFlags */
-	// PR_SCHDINFO_BOSS_WANTS_INFO = PROP_TAG(PT_BOOLEAN, 0x684B), /* PidTagScheduleInfoDelegatorWantsInfo */
+	PR_SCHDINFO_BOSS_WANTS_INFO = PROP_TAG(PT_BOOLEAN, 0x684B), /* PidTagScheduleInfoDelegatorWantsInfo */
 	// PR_WLINK_ORDINAL = PROP_TAG(PT_BINARY, 0x684B), /* PidTagWlinkOrdinal */
 	// PR_WLINK_ENTRYID = PROP_TAG(PT_BINARY, 0x684C), /* PidTagWlinkEntryId */
 	// PR_WLINK_RECKEY = PROP_TAG(PT_BINARY, 0x684D), /* PidTagWlinkRecordKey */
@@ -971,7 +971,7 @@ enum {
 	// PR_FREEBUSY_RANGE_TIMESTAMP = PROP_TAG(PT_SYSTIME, 0x6868), /* PidTagFreeBusyRangeTimestamp */
 	// PR_FREEBUSY_COUNT_MONTHS = PROP_TAG(PT_LONG, 0x6869), /* PidTagFreeBusyCountMonths */
 	// PR_SCHDINFO_APPT_TOMBSTONE = PROP_TAG(PT_BINARY, 0x686A), /* PidTagScheduleInfoAppointmentTombstone */
-	// PR_DELEGATE_FLAGS = PROP_TAG(PT_MV_LONG, 0x686B), /* PidTagDelegateFlags */
+	PR_DELEGATE_FLAGS = PROP_TAG(PT_MV_LONG, 0x686B), /* PidTagDelegateFlags */
 	// PR_SCHDINFO_FREEBUSY = PROP_TAG(PT_BINARY, 0x686C), /* PidTagScheduleInfoFreeBusy */
 	PR_SCHDINFO_AUTO_ACCEPT_APPTS = PROP_TAG(PT_BOOLEAN, 0x686D), /* PidTagScheduleInfoAutoAcceptAppointments */
 	PR_SCHDINFO_DISALLOW_RECURRING_APPTS = PROP_TAG(PT_BOOLEAN, 0x686E), /* PidTagScheduleInfoDisallowRecurringAppts */
@@ -1142,6 +1142,8 @@ enum {
 	/* PSETID_Appointment */
 	PidLidSendMeetingAsIcal = 0x8200,
 	PidLidAppointmentSequence = 0x8201,
+	PidLidAppointmentSequenceTime = 0x8202,
+	PidLidAppointmentLastSequence = 0x8203,
 	PidLidChangeHighlight = 0x8204,
 	PidLidBusyStatus = 0x8205,
 	PidLidLocation = 0x8208,
@@ -1175,6 +1177,7 @@ enum {
 	PidLidAppointmentProposedEndWhole = 0x8251,
 	PidLidAppointmentCounterProposal = 0x8257,
 	PidLidAppointmentNotAllowPropose = 0x825A,
+	PidLidAppointmentUnsendableRecipients = 0x825D,
 	PidLidAppointmentTimeZoneDefinitionStartDisplay = 0x825E,
 	PidLidAppointmentTimeZoneDefinitionEndDisplay = 0x825F,
 	PidLidAppointmentTimeZoneDefinitionRecur = 0x8260,

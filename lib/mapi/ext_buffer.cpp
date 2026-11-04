@@ -3134,6 +3134,73 @@ pack_result EXT_PUSH::p_goid(const GLOBALOBJECTID &r)
 	return p_bin_ex(r.data);
 }
 
+/*
+ * PidLidAppointmentUnsendableRecipients as MFCMAPI parses it: Version,
+ * RowCount, then per row cValues, a reserved DWORD and the tagged
+ * values. Variable-size values carry a 16-bit byte count, strings
+ * include the terminator.
+ */
+static pack_result rcpt_stream_val(EXT_PUSH &x, const TAGGED_PROPVAL &pv)
+{
+	switch (PROP_TYPE(pv.proptag)) {
+	case PT_SHORT:
+		return x.p_uint16(*static_cast<const uint16_t *>(pv.pvalue));
+	case PT_BOOLEAN:
+		return x.p_uint16(!!*static_cast<const uint8_t *>(pv.pvalue));
+	case PT_LONG:
+	case PT_ERROR:
+		return x.p_uint32(*static_cast<const uint32_t *>(pv.pvalue));
+	case PT_I8:
+	case PT_CURRENCY:
+	case PT_SYSTIME:
+		return x.p_uint64(*static_cast<const uint64_t *>(pv.pvalue));
+	case PT_CLSID:
+		return x.p_guid(*static_cast<const GUID *>(pv.pvalue));
+	case PT_BINARY:
+		return x.p_bin_s(*static_cast<const BINARY *>(pv.pvalue));
+	case PT_STRING8: {
+		auto s = static_cast<const char *>(pv.pvalue);
+		auto len = strlen(s) + 1;
+		if (len > UINT16_MAX)
+			return pack_result::format;
+		TRY(x.p_uint16(len));
+		return x.p_bytes(s, len);
+	}
+	case PT_UNICODE: {
+		auto s = static_cast<const char *>(pv.pvalue);
+		auto len = utf8_to_utf16_len(s);
+		std::unique_ptr<char[]> buf;
+		try {
+			buf = std::make_unique<char[]>(len);
+		} catch (const std::bad_alloc &) {
+			return pack_result::alloc;
+		}
+		auto ret = utf8_to_utf16le(s, buf.get(), len);
+		if (ret < 2 || ret > UINT16_MAX)
+			return pack_result::format;
+		TRY(x.p_uint16(ret));
+		return x.p_bytes(buf.get(), ret);
+	}
+	default:
+		return pack_result::format;
+	}
+}
+
+pack_result EXT_PUSH::p_rcpt_stream(const TARRAY_SET &set)
+{
+	TRY(p_uint32(1));
+	TRY(p_uint32(set.count));
+	for (const auto &row : set) {
+		TRY(p_uint32(row.count));
+		TRY(p_uint32(0));
+		for (const auto &pv : row) {
+			TRY(p_uint32(pv.proptag));
+			TRY(rcpt_stream_val(*this, pv));
+		}
+	}
+	return pack_result::ok;
+}
+
 static pack_result ext_buffer_push_attachment_list(EXT_PUSH *pext,
     const ATTACHMENT_LIST *r)
 {

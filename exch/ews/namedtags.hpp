@@ -18,6 +18,7 @@ static const PROPERTY_NAME NtTimeZone = {MNID_ID, PSETID_Meeting, PidLidTimeZone
 static const PROPERTY_NAME NtCleanGlobalObjectId = {MNID_ID, PSETID_Meeting, PidLidCleanGlobalObjectId};
 static const PROPERTY_NAME NtMeetingType = {MNID_ID, PSETID_Meeting, PidLidMeetingType};
 static const PROPERTY_NAME NtIsException = {MNID_ID, PSETID_Meeting, PidLidIsException};
+static const PROPERTY_NAME NtOwnerCriticalChange = {MNID_ID, PSETID_Meeting, PidLidOwnerCriticalChange};
 
 /* PSETID_Address */
 static const PROPERTY_NAME NtBusinessAddress = {MNID_ID, PSETID_Address, PidLidBusinessAddress};
@@ -61,6 +62,8 @@ static const PROPERTY_NAME NtTaskFRecurring = {MNID_ID, PSETID_Task, PidLidTaskF
 
 /* PSETID_Appointment */
 static const PROPERTY_NAME NtAppointmentSequence = {MNID_ID, PSETID_Appointment, PidLidAppointmentSequence};
+static const PROPERTY_NAME NtAppointmentSequenceTime = {MNID_ID, PSETID_Appointment, PidLidAppointmentSequenceTime};
+static const PROPERTY_NAME NtAppointmentLastSequence = {MNID_ID, PSETID_Appointment, PidLidAppointmentLastSequence};
 static const PROPERTY_NAME NtBusyStatus = {MNID_ID, PSETID_Appointment, PidLidBusyStatus};
 static const PROPERTY_NAME NtChangeHighlight = {MNID_ID, PSETID_Appointment, PidLidChangeHighlight};
 static const PROPERTY_NAME NtLocation = {MNID_ID, PSETID_Appointment, PidLidLocation};
@@ -86,6 +89,7 @@ static const PROPERTY_NAME NtConferencingCheck = {MNID_ID, PSETID_Appointment, P
 static const PROPERTY_NAME NtConferencingType = {MNID_ID, PSETID_Appointment, PidLidConferencingType};
 static const PROPERTY_NAME NtNetShowUrl = {MNID_ID, PSETID_Appointment, PidLidNetShowUrl};
 static const PROPERTY_NAME NtAppointmentNotAllowPropose = {MNID_ID, PSETID_Appointment, PidLidAppointmentNotAllowPropose};
+static const PROPERTY_NAME NtAppointmentUnsendableRecipients = {MNID_ID, PSETID_Appointment, PidLidAppointmentUnsendableRecipients};
 static const PROPERTY_NAME NtAppointmentTimeZoneDefinitionStartDisplay = {MNID_ID, PSETID_Appointment, PidLidAppointmentTimeZoneDefinitionStartDisplay};
 static const PROPERTY_NAME NtAppointmentTimeZoneDefinitionEndDisplay = {MNID_ID, PSETID_Appointment, PidLidAppointmentTimeZoneDefinitionEndDisplay};
 static const PROPERTY_NAME NtAppointmentTimeZoneDefinitionRecur = {MNID_ID, PSETID_Appointment, PidLidAppointmentTimeZoneDefinitionRecur};

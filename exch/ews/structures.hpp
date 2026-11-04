@@ -15,6 +15,7 @@
 #include <gromox/freebusy.hpp>
 #include <gromox/idset.hpp>
 #include <gromox/mapidefs.h>
+#include <gromox/rop_util.hpp>
 
 #include "enums.hpp"
 
@@ -32,7 +33,32 @@ using SubscriptionKey = uint32_t;
 }
 
 class EWSContext;
-using clock = std::chrono::system_clock;
+/**
+ * @brief      System clock with mapitime_t resolution
+ *
+ * Nanoseconds cannot hold MAPI dates past 2262, such as the 4500-08-31
+ * end of a series without end.
+ */
+struct clock {
+	using time_point = mapitime_point;
+	using duration = time_point::duration;
+	using rep = duration::rep;
+	using period = duration::period;
+	static constexpr bool is_steady = false;
+
+	static time_point now() noexcept
+	{
+		return std::chrono::time_point_cast<duration>(std::chrono::system_clock::now());
+	}
+	static time_t to_time_t(time_point t) noexcept
+	{
+		return std::chrono::floor<std::chrono::seconds>(t).time_since_epoch().count();
+	}
+	static time_point from_time_t(time_t t) noexcept
+	{
+		return time_point(std::chrono::seconds(t));
+	}
+};
 using time_point = clock::time_point;
 
 }
@@ -176,6 +202,9 @@ using sFolderId = std::variant<tFolderId, tDistinguishedFolderId>;
 
 /// Function to get tag id from property name
 using sGetNameId = std::function<propid_t (const PROPERTY_NAME &)>;
+
+/// Function to get the ESSDN of an SMTP address, empty if unknown
+using sGetEssdn = std::function<std::string (const char *)>;
 
 /**
  * @brief     Message entry ID extension
@@ -336,12 +365,32 @@ class sShape {
 	std::vector<proptag_t> dTags; ///< List of tags to remove
 
 	std::unordered_map<proptag_t, PropInfo> props; ///< Tag -> Property mapping
+	TAGGED_PROPVAL smtpProps[4]{}; ///< SMTP addresses derived from EX ones
+	std::unordered_map<std::string, std::string> smtpCache; ///< ESSDN -> SMTP
+
+	void deriveSmtp();
 
 	void collectExtendedProperty(const tExtendedFieldURI&);
 	void collectExtendedProperty(const tFieldURI&);
 	void collectExtendedProperty(const tIndexedFieldURI&);
 
 	static constexpr PROPERTY_NAME NONAME{KIND_NONE, {}, 0, nullptr};
+
+	enum class Access : uint8_t { fbsimple, fbdetail, full };
+
+	bool readable(proptag_t, Access) const;
+	void redact();
+
+	std::optional<uint32_t> rights; ///< Folder rights of a reader, unset for store owners
+	Access access = Access::full; ///< What the current item may reveal
+	Access seriesAccess = Access::full; ///< Access of the last series master
+	bool privateItem = false; ///< Current item has private sensitivity
+	bool seriesPrivate = false; ///< Last series master has private sensitivity
+	bool inException = false; ///< Current item is an exception of a series
+	bool seesPrivateItems = true; ///< Reader sees private items in full
+	std::vector<propid_t> fbIds; ///< Named properties readable without frightsReadAny
+	propid_t locationId = 0; ///< PidLidLocation in the store of the folder
+	propid_t recurId = 0; ///< PidLidAppointmentRecur in the store of the folder
 
 	public:
 	static constexpr uint8_t FL_ANY =   0;
@@ -368,6 +417,7 @@ class sShape {
 	static constexpr uint64_t Occurrences =       1 << 16;
 	static constexpr uint64_t UniqueBody =        1 << 17;
 	static constexpr uint64_t Conflicts =         1 << 18;
+	static constexpr uint64_t Redacted =          1 << 19; ///< Private item withheld from the reader
 
 	static constexpr uint64_t Recipients = ToRecipients | CcRecipients | BccRecipients | ReplyToRecipients;
 	static constexpr uint64_t Attendees = RequiredAttendees | OptionalAttendees | Resources;
@@ -385,7 +435,7 @@ class sShape {
 	sShape& operator=(const sShape&) = delete;
 	sShape& operator=(sShape&&) = delete;
 
-	void clean();
+	void clean(bool = false);
 	bool namedProperties(const PROPID_ARRAY&);
 	PROPNAME_ARRAY namedProperties() const;
 	void properties(const TPROPVAL_ARRAY&);
@@ -411,6 +461,20 @@ class sShape {
 	template<typename T> const T *get(proptag_t, uint8_t = FL_FIELD) const;
 	template<typename T> const T* get(const PROPERTY_NAME&, uint8_t=FL_FIELD) const;
 	void putExtended(std::vector<tExtendedProperty>&) const;
+	/**
+	 * In which items the reader may filter or sort by a property. Private
+	 * items have PR_SENSITIVITY set to SENSITIVITY_PRIVATE, public items
+	 * are all others.
+	 */
+	enum class Query : uint8_t { none, publicOnly, all };
+
+	void restrict(uint32_t, const PROPID_ARRAY &, bool);
+	bool allReadable() const;
+	Query queryable(proptag_t) const;
+	void applySeriesAccess();
+	uint64_t specials() const;
+
+	static const PROPNAME_ARRAY fbNames; ///< Names to resolve for restrict()
 
 
 	uint64_t special = 0; ///< Fields that are not directly accessible by properties
@@ -425,7 +489,7 @@ class sShape {
 	const tinyxml2::XMLElement *toRecipients = nullptr; ///< ToRecipients for update
 	const tinyxml2::XMLElement *ccRecipients = nullptr; ///< CcRecipients for update
 	const tinyxml2::XMLElement *bccRecipients = nullptr; ///< BccRecipients for update
-	const sRecurrenceFrame *recurrenceFrame = nullptr; ///< Time zone to return recurrences in
+	const char *x500Org = nullptr; ///< Organization for resolving EX addresses
 	std::vector<proptag_t> offsetProps; ///< Datetime related MAPI props which require timezone offset calculation
 };
 
@@ -490,7 +554,7 @@ struct sTimePoint {
 	bool needCalcOffset() const;
 
 	time_point time{};
-	gromox::time_duration offset = std::chrono::minutes(0);
+	std::chrono::minutes offset{0};
 	bool calcOffset = false;
 };
 
@@ -569,7 +633,7 @@ struct tAttachment : public NS_EWS_Types {
 	std::optional<std::string> AttachmentOriginalUrl;
 	std::optional<int32_t> Size;
 	std::optional<sTimePoint> LastModifiedTime; ///< PR_LAST_MODIFICATION_TIME
-	std::optional<bool> IsInline; ///< PR_ATTACHMENT_FLAGS & ATT_MHTML_REF
+	std::optional<bool> IsInline; ///< PR_ATTACH_FLAGS & ATT_MHTML_REF
 
 	void serialize(tinyxml2::XMLElement *) const;
 };
@@ -863,7 +927,7 @@ struct tPersona : public NS_EWS_Types {
 	std::optional<tEmailAddressType> EmailAddress;
 	std::optional<std::string> Title,
 		Nickname, BusinessPhoneNumber, MobilePhoneNumber, HomeAddress, Comment;
-	std::optional<uint32_t> RelevanceScore;
+	std::optional<int32_t> RelevanceScore;
 };
 
 /**
@@ -1080,6 +1144,7 @@ struct tFileAttachment : public tAttachment {
 	std::optional<bool> IsContactPhoto;
 	std::optional<sBase64Binary> Content;
 
+	std::vector<TAGGED_PROPVAL> props() const;
 	void serialize(tinyxml2::XMLElement *) const;
 };
 
@@ -1264,6 +1329,7 @@ struct tDelegateUser {
 
 	tUserId UserId;
 	std::optional<tDelegatePermissions> DelegatePermissions;
+	std::optional<bool> ViewPrivateItems;
 
 	void serialize(tinyxml2::XMLElement *) const;
 };
@@ -1880,16 +1946,17 @@ struct tRecurrenceType {
 
 	void shift(int);
 	std::optional<int32_t> startDateZone() const;
+	bool weeklyOn(int) const;
 	void zone(int32_t);
 };
 
 /**
  * @brief      Time zone that a request expresses recurrence patterns in
  *
- * Recurrence patterns and ranges carry no time zone of their own. Like
- * Exchange, they are taken relative to the request's TimeZoneContext,
- * or UTC if there is none, and converted from/to the time zone of the
- * calendar item.
+ * Recurrence patterns and ranges carry no time zone of their own. In a
+ * request, they are taken relative to the TimeZoneContext, or UTC if there
+ * is none, and converted to the time zone of the calendar item. Responses
+ * return them in the item's time zone.
  */
 struct sRecurrenceFrame {
 	std::optional<TZDEF> tz; ///< Zone from TimeZoneContext
@@ -2160,12 +2227,11 @@ struct sCalendarMeetingRequestCommon {
 	sCalendarMeetingRequestCommon() = default;
 	explicit sCalendarMeetingRequestCommon(const tinyxml2::XMLElement *);
 
-	void serialize(tinyxml2::XMLElement *) const;
 	void update(const sShape &);
 
 	void timezoneId(std::string_view, bool=true, bool=true);
 	void firstLastOccurrence(const TAGGED_PROPVAL &, const APPOINTMENT_RECUR_PAT &, const BINARY *, const uint64_t *);
-	void loadConflicts(const char *, const char *, const BINARY *, time_t, time_t);
+	void loadConflicts(const char *, const char *, const char *, const BINARY *, time_t, time_t);
 	const std::string &timezoneId() const;
 
 	//<!-- Single and Occurrence only -->
@@ -2829,10 +2895,10 @@ struct tCancelCalendarItem : public tMessage {
 };
 
 /**
- * Smart-reply/forward "wrapper" types (Types.xsd:2262 documents a flat
- * SmartResponseType instead, but the Outlook for Mac client sends a full
- * nested <t:Message> element alongside <t:ReferenceItemId> rather than flat
- * Subject/Body/ToRecipients fields.
+ * Smart-reply/forward types, Types.xsd:2262. Besides the flat
+ * SmartResponseType, the Outlook for Mac client sends a full nested
+ * <t:Message> element alongside <t:ReferenceItemId>. Both are read into
+ * Message.
  */
 struct tReplyToItem : public NS_EWS_Types {
 	static constexpr char NAME[] = "ReplyToItem";
@@ -2842,6 +2908,8 @@ struct tReplyToItem : public NS_EWS_Types {
 
 	tItemId ReferenceItemId;
 	tMessage Message;
+	std::optional<tBody> NewBodyContent;
+	bool Nested = false;
 };
 
 struct tReplyAllToItem : public NS_EWS_Types {
@@ -2852,7 +2920,9 @@ struct tReplyAllToItem : public NS_EWS_Types {
 
 	tItemId ReferenceItemId;
 	tMessage Message;
+	std::optional<tBody> NewBodyContent;
 	std::optional<bool> IsSpecificMessageReply;
+	bool Nested = false;
 };
 
 struct tForwardItem : public NS_EWS_Types {
@@ -2863,6 +2933,8 @@ struct tForwardItem : public NS_EWS_Types {
 
 	tItemId ReferenceItemId;
 	tMessage Message;
+	std::optional<tBody> NewBodyContent;
+	bool Nested = false;
 };
 
 /**
@@ -2973,7 +3045,7 @@ struct tFolderResponseShape {
  */
 struct tFreeBusyView {
 	tFreeBusyView() = default;
-	tFreeBusyView(const char*, const char*, time_t, time_t);
+	tFreeBusyView(const char*, const char*, const char*, time_t, time_t);
 
 	void serialize(tinyxml2::XMLElement *) const;
 
@@ -3257,20 +3329,21 @@ class tRestriction {
 	public:
 	explicit tRestriction(const tinyxml2::XMLElement *);
 
-	RESTRICTION* build(const sGetNameId&) const;
+	RESTRICTION *build(const sGetNameId &, const sGetEssdn & = {}) const;
 	static RESTRICTION* all(RESTRICTION*, RESTRICTION*);
 	static RESTRICTION* any(RESTRICTION*, RESTRICTION*);
 
 	private:
 	const tinyxml2::XMLElement *source = nullptr;  ///< XMLElement of the contained restriction
 
-	static void build_andor(RESTRICTION &, const tinyxml2::XMLElement *, const sGetNameId &);
+	static void build_andor(RESTRICTION &, const tinyxml2::XMLElement *, const sGetNameId &, const sGetEssdn &);
 	static void build_compare(RESTRICTION &, const tinyxml2::XMLElement *, relop, const sGetNameId &);
 	static void build_contains(RESTRICTION &, const tinyxml2::XMLElement *, const sGetNameId &);
 	static void build_excludes(RESTRICTION &, const tinyxml2::XMLElement *, const sGetNameId &);
 	static void build_exists(RESTRICTION &, const tinyxml2::XMLElement *, const sGetNameId &);
-	static void build_not(RESTRICTION &, const tinyxml2::XMLElement *, const sGetNameId &);
-	static void deserialize(RESTRICTION &, const tinyxml2::XMLElement *, const sGetNameId &);
+	static void build_not(RESTRICTION &, const tinyxml2::XMLElement *, const sGetNameId &, const sGetEssdn &);
+	static void deserialize(RESTRICTION &, const tinyxml2::XMLElement *, const sGetNameId &, const sGetEssdn &);
+	static void widen_addr(RESTRICTION &, const tinyxml2::XMLElement *, const sGetEssdn &);
 
 	static void *loadConstant(const tinyxml2::XMLElement *, proptype_t);
 	static proptag_t getTag(const tinyxml2::XMLElement *, const sGetNameId &);

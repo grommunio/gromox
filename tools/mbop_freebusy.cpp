@@ -1,14 +1,18 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2024–2026 grommunio GmbH
 // This file is part of Gromox.
+#include <cerrno>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <ctime>
 #include <vector>
 #include <libHX/ctype_helper.h>
 #include <libHX/option.h>
+#include <gromox/config_file.hpp>
 #include <gromox/freebusy.hpp>
 #include <gromox/mapidefs.h>
+#include <gromox/paths.h>
 #include "genimport.hpp"
 #include "mbop.hpp"
 
@@ -22,6 +26,11 @@ static constexpr struct HXoption g_options_table[] = {
 	{{}, 'x', HXTYPE_STRING, {}, {}, {}, 0, "Requestor account name (not the same as -d/-u)"},
 	MBOP_AUTOHELP,
 	HXOPT_TABLEEND,
+};
+
+static constexpr cfg_directive x500_defaults[] = {
+	{"x500_org_name", "Gromox default"},
+	CFG_TABLE_END,
 };
 
 static int xmktime(const char *str, time_t *out)
@@ -75,8 +84,14 @@ int main(int argc, char **argv)
 		return EXIT_PARAM;
 	if (g_end_txt != nullptr && xmktime(g_end_txt, &end_time) < 0)
 		return EXIT_PARAM;
+	auto cfg = config_file_initd("exmdb_provider.cfg", PKGSYSCONFDIR, x500_defaults);
+	if (cfg == nullptr) {
+		mbop_fprintf(stderr, "config_file_initd exmdb_provider.cfg: %s\n", strerror(errno));
+		return EXIT_FAILURE;
+	}
 	std::vector<freebusy_event> fbout;
-	auto err = get_freebusy(g_requestor, g_storedir, start_time, end_time, fbout);
+	auto err = get_freebusy(g_requestor, g_storedir, cfg->get_value("x500_org_name"),
+	           start_time, end_time, fbout);
 	if (err != ecSuccess) {
 		mbop_fprintf(stderr, "get_freebusy: %s\n", mapi_strerror(err));
 		return EXIT_FAILURE;

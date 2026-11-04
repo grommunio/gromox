@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2023–2025 grommunio GmbH
 // This file is part of Gromox.
+#include <algorithm>
 #include <cstdint>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 #include <openssl/ssl.h>
@@ -14,6 +16,7 @@
 #include <vmime/net/transport.hpp>
 #include <vmime/security/cert/certificateVerifier.hpp>
 #include <vmime/utility/inputStreamStringAdapter.hpp>
+#include <vmime/utility/outputStreamStringAdapter.hpp>
 #include <gromox/mail.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapierr.hpp>
@@ -123,6 +126,21 @@ static void transform_lf_to_crlf(std::string &str)
 	}
 }
 
+static bool has_8bit(std::string_view s)
+{
+	return std::any_of(s.cbegin(), s.cend(),
+	       [](unsigned char c) { return c >= 0x80; });
+}
+
+/* Same criterion vmime uses to add the SMTPUTF8 parameter to MAIL FROM */
+static bool envelope_needs_utf8(const char *sender,
+    const std::vector<std::string> &rcpt_list)
+{
+	return has_8bit(sender) ||
+	       std::any_of(rcpt_list.cbegin(), rcpt_list.cend(),
+	       [](const std::string &r) { return has_8bit(r); });
+}
+
 ec_error_t cu_send_mail(const MAIL &mail, const char *smtp_url, const char *sender,
     const std::vector<std::string> &rcpt_list) try
 {
@@ -208,7 +226,14 @@ ec_error_t cu_send_vmail(vmime::shared_ptr<vmime::message> msg,
 		return MAPI_W_NO_SERVICE;
 	}
 	try {
-		xprt->send(std::move(msg), vsender, vrcpt_list, nullptr, {}, {});
+		/* RFC 6532 headers only if the envelope goes SMTPUTF8 too */
+		auto ctx = vmail_default_genctx();
+		ctx.setInternationalizedEmailSupport(envelope_needs_utf8(sender, rcpt_list));
+		std::string content;
+		vmime::utility::outputStreamStringAdapter oadap(content);
+		msg->generate(ctx, oadap);
+		vmime::utility::inputStreamStringAdapter iadap(content);
+		xprt->send(vsender, vrcpt_list, iadap, content.size(), nullptr, {}, {});
 		xprt->disconnect();
 	} catch (const vmime::exceptions::command_error &e) {
 		mlog(LV_ERR, "vmime.send: %s: %s", e.command().c_str(), e.response().c_str());

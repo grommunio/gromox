@@ -187,7 +187,7 @@ void exmdb_parser_init(size_t max_threads, size_t max_routers)
  * errno for transient infrastructure failures (e.g. SQL unavailable), which
  * callers should not present as a permanent misconfiguration.
  */
-static errno_t exmdb_parser_is_local(const char *prefix, bool *pvt)
+errno_t exmdb_parser_is_local(const char *prefix, bool *pvt)
 {
 	if (*prefix == '\0')
 		return 0;
@@ -357,6 +357,35 @@ static int rqi_terminate(exmdb_connection &conn, exmdb_response resp_code)
 	if (HXio_fullwrite(conn.sockd, &resp_code, 1) != 1)
 		/* ignore */;
 	return -1;
+}
+
+/**
+ * Start @dir's worker without passing a client connection, so its
+ * startup can run due deferred sends. Used by the director's
+ * deferred-send scheduler.
+ */
+int exmdb_wake_worker(const char *dir)
+{
+	if (dir == nullptr || *dir == '\0')
+		return -1;
+	std::string prog;
+	if (auto s = getenv("ISTORE_WORKER")) {
+		prog = s;
+	} else {
+		prog = znul(service_get_prog_arg0());
+		if (!prog.empty())
+			prog = std::unique_ptr<char[], stdlib_delete>(HX_dirname(prog.c_str())).get();
+		prog += "/istore";
+	}
+	const char *args[] = {prog.c_str(), "-x", dir, nullptr};
+	std::lock_guard lk(spwork_lock);
+	auto err = spworkers.try_emplace(dir).first->second.start(prog.c_str(),
+	           const_cast<char **>(args));
+	if (err < 0) {
+		mlog(LV_ERR, "exmdb_wake_worker %s: %s", prog.c_str(), strerror(-err));
+		return -1;
+	}
+	return 0;
 }
 
 static bool handoff_just_one(const char *rq_dir)
@@ -864,7 +893,8 @@ static void *exmdb_pickup_loop(void *arg)
 		auto status = exmdb_pickup_one(STDIN_FILENO);
 		if (status < 0)
 			break; /* havetoend */
-		if (status == 0 && g_dbengine_wanttoend && !routers_active())
+		if (status == 0 && g_dbengine_wanttoend && !routers_active() &&
+		    !deferred_pending())
 			break;
 	}
 	g_exmdbpickup_running = false;

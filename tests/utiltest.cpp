@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
+#include <algorithm>
 #include <chrono>
 #include <climits>
 #include <cstdio>
@@ -14,6 +15,7 @@
 #include <gromox/element_data.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
+#include <gromox/freebusy.hpp>
 #include <gromox/ical.hpp>
 #include <gromox/idset.hpp>
 #include <gromox/mail_func.hpp>
@@ -112,6 +114,35 @@ static int t_extpp()
 #undef s_uid
 #undef s_vcal
 #undef s_date
+	return EXIT_SUCCESS;
+}
+
+static int t_rcpt_stream()
+{
+	char name[] = "Ab";
+	uint32_t type = MAPI_TO, flags = recipOriginal;
+	uint8_t resp = 1;
+	BINARY eid = {2, {deconst("\xde\xad")}};
+	TAGGED_PROPVAL pv[] = {
+		{PR_DISPLAY_NAME, name}, {PR_RECIPIENT_TYPE, &type},
+		{PR_RECIPIENT_FLAGS, &flags}, {PR_RESPONSIBILITY, &resp},
+		{PR_ENTRYID, &eid},
+	};
+	TPROPVAL_ARRAY row = {std::size(pv), pv};
+	TPROPVAL_ARRAY *rows[] = {&row};
+	TARRAY_SET set = {1, rows};
+	EXT_PUSH ep;
+	assert(ep.init(nullptr, 0, EXT_FLAG_UTF16));
+	assert(ep.p_rcpt_stream(set) == pack_result::ok);
+	assert(std::string_view(ep.m_cdata, ep.m_offset) == hex2bin(
+	       "0100000001000000" "0500000000000000"
+	       "1f0001300600410062000000" "0300150c01000000"
+	       "0300fd5f00010000" "0b000f0e0100" "0201ff0f0200dead"));
+	STRING_ARRAY mv{};
+	TAGGED_PROPVAL bad = {PR_EMS_AB_PROXY_ADDRESSES, &mv};
+	row = {1, &bad};
+	assert(ep.init(nullptr, 0, 0));
+	assert(ep.p_rcpt_stream(set) == pack_result::format);
 	return EXIT_SUCCESS;
 }
 
@@ -667,7 +698,7 @@ static int t_time()
 #define SYSTEMTIME_MAX 0x7fff35f4f06c7fffLL
 
 	printf("It is now approximately %lld (mapitime_t)\n",
-		static_cast<long long>(rop_util_unix_to_nttime(std::chrono::system_clock::now())));
+		static_cast<long long>(rop_util_unix_to_nttime(std::chrono::time_point_cast<mapitime_point::duration>(std::chrono::system_clock::now()))));
 
 	assert(rop_util_unix_to_nttime(INT_MAX) > 0);
 
@@ -696,6 +727,22 @@ static int t_time()
 	}
 	assert(rop_util_nttime_to_unix(TIME_FIXUP_CONSTANT_INT * 10000000) == 0);
 	assert(rop_util_nttime_to_unix(INT64_MAX) >= INT32_MAX);
+
+	/* PidLidClipEnd of a series without end, 4500-08-31 23:59 */
+	auto tp = rop_util_nttime_to_unix2(915045983400000000ULL);
+	assert(std::chrono::floor<std::chrono::seconds>(tp).time_since_epoch().count() == 79860124740);
+	assert(rop_util_unix_to_nttime(tp) == 915045983400000000ULL);
+	assert(rop_util_rtime_to_unix2(1525076639) == tp);
+	assert(rop_util_nttime_to_unix2(0).time_since_epoch() == -std::chrono::seconds(TIME_FIXUP_CONSTANT_INT));
+	assert(rop_util_unix_to_nttime(rop_util_nttime_to_unix2(0)) == 0);
+	assert(rop_util_unix_to_nttime(rop_util_nttime_to_unix2(0) - std::chrono::hours(24)) == 0);
+	assert(rop_util_unix_to_nttime(mapitime_point::max()) == INT64_MAX);
+
+	/* 4501-01-01, MS-OXORMDR v16 §3.1.4.6.2 */
+	static constexpr uint64_t nt4501 = 0x0CB34557A3DD4000;
+	tp = rop_util_nttime_to_unix2(nt4501);
+	assert(tp.time_since_epoch() == std::chrono::seconds(79870665600));
+	assert(rop_util_unix_to_nttime(tp) == nt4501);
 	return EXIT_SUCCESS;
 }
 
@@ -708,6 +755,66 @@ static int t_tzdef()
 	d.rules[1].year = 1972;
 	int64_t ofs;
 	tz_to_offset(d, 369 * 86400, ofs);
+	return EXIT_SUCCESS;
+}
+
+static std::vector<time_t> fb_starts(const APPOINTMENT_RECUR_PAT &apr,
+    time_t start_whole, time_t start, time_t end)
+{
+	std::vector<fb_instance> ev;
+	std::vector<time_t> out;
+	if (!fb_recur_times(nullptr, start_whole, apr, start, end, ev))
+		return {-1};
+	for (const auto &e : ev)
+		out.push_back(e.start_time);
+	std::sort(out.begin(), out.end());
+	return out;
+}
+
+static int t_fb_recur()
+{
+	/* Daily 08:00 to 09:00 UTC from 2026-11-02 */
+	static constexpr time_t day = 86400, nov2 = 1793577600, h8 = nov2 + 8 * 3600;
+	APPOINTMENT_RECUR_PAT apr;
+	auto &rp = apr.recur_pat;
+	rp.recurfrequency = IDC_RCEV_PAT_ORB_DAILY;
+	rp.patterntype = rptMinute;
+	rp.period = 1440;
+	rp.endtype = IDC_RCEV_PAT_ERB_NOEND;
+	rp.startdate = rop_util_unix_to_rtime(nov2);
+	apr.starttimeoffset = 480;
+	apr.endtimeoffset = 540;
+
+	/* Nothing that starts after the window */
+	auto v = fb_starts(apr, h8, nov2 + 3 * day, nov2 + 5 * day);
+	if (v != std::vector<time_t>{h8 + 3 * day, h8 + 4 * day}) {
+		printf("fb_recur: window end not honored\n");
+		return EXIT_FAILURE;
+	}
+	/* An occurrence that began before the window still overlaps it */
+	v = fb_starts(apr, h8, h8 + 3 * day + 1800, h8 + 3 * day + 3600);
+	if (v != std::vector<time_t>{h8 + 3 * day}) {
+		printf("fb_recur: overlapping occurrence missing\n");
+		return EXIT_FAILURE;
+	}
+
+	/* The 11-06 occurrence moved to 10:00 to 11:00 */
+	auto nov6 = rop_util_unix_to_rtime(nov2 + 4 * day);
+	rp.pdeletedinstancedates.push_back(nov6);
+	rp.pmodifiedinstancedates.push_back(nov6);
+	auto &ei = apr.pexceptioninfo.emplace_back();
+	ei.startdatetime = nov6 + 600;
+	ei.enddatetime = nov6 + 660;
+	ei.originalstartdate = nov6 + 480;
+	auto &xe = apr.pextendedexception.emplace_back();
+	xe.startdatetime = ei.startdatetime;
+	xe.enddatetime = ei.enddatetime;
+	xe.originalstartdate = ei.originalstartdate;
+	v = fb_starts(apr, h8, h8 + 4 * day + 9000, h8 + 4 * day + 9900);
+	if (v != std::vector<time_t>{h8 + 4 * day + 7200}) {
+		printf("fb_recur: overlapping exception missing\n");
+		return EXIT_FAILURE;
+	}
 	return EXIT_SUCCESS;
 }
 
@@ -802,6 +909,22 @@ static int t_essdn()
 	return EXIT_SUCCESS;
 }
 
+static int t_res_mvprop()
+{
+	char x[] = "X", y[] = "Y";
+	char *a1[] = {x}, *a2[] = {y}, *a3[] = {x, y};
+	STRING_ARRAY s1{1, a1}, s2{1, a2}, s3{2, a3}, s0{0, nullptr};
+	RESTRICTION_PROPERTY r{};
+	r.relop = RELOP_EQ;
+	r.proptag = PROP_TAG(PT_MV_UNICODE, 0x8000);
+	r.propval = {PROP_TAG(PT_UNICODE, 0x8000), x};
+	assert(r.comparable());
+	assert(r.eval(&s1) && !r.eval(&s2) && r.eval(&s3) && !r.eval(&s0));
+	r.relop = RELOP_NE;
+	assert(!r.eval(&s1) && r.eval(&s2) && !r.eval(&s3) && r.eval(&s0));
+	return EXIT_SUCCESS;
+}
+
 static int runner()
 {
 	if (t_cookie_jar() != 0)
@@ -814,12 +937,13 @@ static int runner()
 
 	using fpt = decltype(&t_interval);
 	static constexpr fpt fct[] = {
-		t_extpp, t_convert, t_emailaddr, t_mimefield, t_base64,
+		t_extpp, t_rcpt_stream, t_convert, t_emailaddr, t_mimefield, t_base64,
 		t_interval, t_id1, t_id2, t_id3, t_id4, t_id5, t_id6,
 		t_id7, t_id8, t_id9, t_seq,
 		t_cmp_binary, t_cmp_guid, t_cmp_svreid, t_cmp_icaltime,
 		t_wildcard, t_utf8_prefix, t_eidcvt, t_bin2cstr, t_log_escape,
-		t_string, t_time, t_tzdef, t_floating_dt, t_essdn,
+		t_string, t_time, t_tzdef, t_floating_dt, t_essdn, t_fb_recur,
+		t_res_mvprop,
 	};
 	for (auto f : fct) {
 		auto ret = f();

@@ -6,6 +6,7 @@
 #include <list>
 #include <optional>
 #include <unordered_map>
+#include <unordered_set>
 #include <variant>
 #include <vector>
 #include <gromox/clock.hpp>
@@ -104,8 +105,11 @@ class EWSPlugin {
 		const EWSPlugin& plugin; ///< Plugin used to release the instance
 		std::string dir; ///< Home directory of domain or user
 		uint32_t instanceId; ///< Instance ID
+		/* exmdb needs the parent instance to exist while this one is used */
+		std::shared_ptr<const ExmdbInstance> parent;
 
-		ExmdbInstance(const EWSPlugin&, const std::string&, uint32_t);
+		ExmdbInstance(const EWSPlugin &, const std::string &, uint32_t,
+		    std::shared_ptr<const ExmdbInstance> = {});
 		ExmdbInstance(const ExmdbInstance&) = delete;
 		ExmdbInstance& operator=(const ExmdbInstance&) = delete;
 		~ExmdbInstance();
@@ -124,18 +128,19 @@ class EWSPlugin {
 		Structures::sMailboxInfo mailboxInfo; ///< Target mailbox metadata
 		std::mutex lock; ///< I/O mutex
 		std::vector<detail::ExmdbSubscriptionKey> inner_subs; ///< Exmdb subscription keys
+		std::unordered_set<uint64_t> folders; ///< Subscribed folder GC values, empty for all
 		std::list<Structures::sNotificationEvent> events; ///< Events that occurred since last check
 		detail::ContextKey waitingContext = -1; ///< ID of context waiting for events
 		bool overflow = false; ///< Backlog hit ews_max_pending_events; faulted out so the client re-subscribes and resyncs
 	};
 
 	void event(const char*, BOOL, uint32_t, const DB_NOTIFY*) const;
-	void evictAttachmentInstances(const std::string &, uint64_t, uint32_t) const;
 	bool linkSubscription(const Structures::tSubscriptionId&, const EWSContext&) const;
 	std::shared_ptr<ExmdbInstance> loadAttachmentInstance(const std::string&, uint64_t, uint64_t, uint32_t) const;
-	std::shared_ptr<ExmdbInstance> loadEmbeddedInstance(const std::string&, uint32_t) const;
+	std::shared_ptr<ExmdbInstance> loadEmbeddedInstance(const std::string &, const std::shared_ptr<ExmdbInstance> &) const;
 	std::shared_ptr<ExmdbInstance> loadMessageInstance(const std::string&, uint64_t, uint64_t) const;
 	void unloadMessageInstance(const std::string&, uint64_t) const;
+	void unloadAttachmentInstance(const std::string &, uint64_t, uint32_t) const;
 	Structures::sFolderEntryId mkFolderEntryId(const Structures::sMailboxInfo&, uint64_t) const;
 	Structures::sMessageEntryId mkMessageEntryId(const Structures::sMailboxInfo&, uint64_t, uint64_t) const;
 	std::shared_ptr<SubManager> make_submgr(const Structures::tSubscriptionId &, const char *) const;
@@ -245,6 +250,20 @@ class EWSPlugin {
 		CacheObj get(const CacheKey &) const;
 		CacheObj get(const CacheKey &, gromox::time_duration);
 		void evict(const CacheKey &);
+
+		/**
+		 * @brief      Remove all objects whose key matches @pred
+		 */
+		template<typename F> void evict_if(F &&pred)
+		{
+			std::vector<node_t> del; /* destroyed after unlocking */
+			std::lock_guard guard(objectLock);
+			for (auto it = objects.begin(); it != objects.end(); )
+				if (pred(it->first))
+					del.emplace_back(objects.extract(it++));
+				else
+					++it;
+		}
 		void scan();
 		void periodicScan(gromox::time_duration);
 	};
@@ -273,17 +292,22 @@ class EWSContext {
 	NOMOVE(EWSContext);
 
 	Structures::sFolder create(const std::string&, const Structures::sFolderSpec&, const Structures::sFolder&) const;
-	Structures::sItem create(const std::string&, const Structures::sFolderSpec&, const MESSAGE_CONTENT&) const;
-	void createCalendarItemFromMeetingRequest(const Structures::tItemId&, uint32_t) const;
+	Structures::sItem create(const std::string&, const Structures::sFolderSpec&, const MESSAGE_CONTENT&, bool = false) const;
+	std::optional<uint64_t> createCalendarItemFromMeetingRequest(const Structures::tItemId&, uint32_t) const;
 	void disableEventStream();
 	const char* effectiveUser(const Structures::sFolderSpec&) const;
 	void enableEventStream(int);
 	std::string essdn_to_username(const std::string&) const;
 	std::string exportContent(const std::string&, const MESSAGE_CONTENT&, const std::string&) const;
+	std::optional<uint64_t> findMeetingObject(const Structures::tItemId &) const;
 	std::string get_maildir(const Structures::tMailbox&) const;
 	std::string get_maildir(const std::string&) const;
 	uint32_t getAccountId(const std::string&, bool) const;
 	std::string getDir(const Structures::sFolderSpec&) const;
+	std::string storeOwner(const std::string &) const;
+	bool actsAsOwner(const std::string &) const;
+	bool onSendAsList(const std::string &) const;
+	std::vector<TAGGED_PROPVAL> meetingIdentity(const std::string &) const;
 	TAGGED_PROPVAL getFolderEntryId(const std::string&, uint64_t) const;
 	template<typename T> const T *getFolderProp(const std::string &, uint64_t, proptag_t) const;
 	TPROPVAL_ARRAY getFolderProps(const std::string&, uint64_t, proptag_cspan) const;
@@ -303,7 +327,7 @@ class EWSContext {
 	Structures::sAttachment loadAttachment(const std::string&,const Structures::sAttachmentId&) const;
 	Structures::sFolder loadFolder(const std::string&, uint64_t, Structures::sShape&) const;
 	Structures::sItem loadItem(const std::string&, uint64_t, uint64_t, Structures::sShape&) const;
-	TARRAY_SET loadPermissions(const std::string&, uint64_t) const;
+	TARRAY_SET loadPermissions(const std::string&, uint64_t, bool freebusy = false) const;
 	Structures::sItem loadOccurrence(const std::string&, uint64_t, uint64_t, uint32_t, Structures::sShape&) const;
 	std::vector<Structures::sItem> expandOccurrences(const std::string &, uint64_t, uint64_t, time_t, time_t, Structures::sShape &) const;
 	uint32_t resolveOccurrenceIndex(const std::string &, uint64_t, uint32_t) const;
@@ -311,7 +335,8 @@ class EWSContext {
 	void deleteOccurrence(const std::string &, uint64_t, uint64_t, uint32_t) const;
 	void updateOccurrence(const std::string &, uint64_t, uint64_t, uint32_t, const TPROPVAL_ARRAY &, const proptag_cspan &) const;
 	void applyRecurrence(const std::string &, uint64_t, const tinyxml2::XMLElement *, Structures::sShape &) const;
-	void updateAttendees(const std::string&, const Structures::sFolderSpec&, uint64_t, const Structures::sShape&) const;
+	void moveRecurrence(const std::string &, uint64_t, Structures::sShape &) const;
+	void updateAttendees(const std::string&, const Structures::sFolderSpec&, uint64_t, const Structures::sShape&, const TARRAY_SET&, bool) const;
 	void updateMessageRecipients(const std::string&, const Structures::sFolderSpec&, uint64_t, const Structures::sShape&) const;
 	void loadSpecial(const std::string&, uint64_t, Structures::tBaseFolderType&, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, Structures::tCalendarFolderType&, uint64_t) const;
@@ -337,13 +362,25 @@ class EWSContext {
 	Structures::sFolderSpec resolveFolder(const Structures::tFolderId&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::sFolderId&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::sMessageEntryId&) const;
+	bool seesPrivateItems(const std::string &, const Structures::sFolderSpec &, uint32_t) const;
+	void assertCanReadPrivate(const std::string &, const Structures::sFolderSpec &, uint32_t, uint64_t) const;
+	void restrictShape(const std::string &, const Structures::sFolderSpec &, uint32_t, Structures::sShape &) const;
 	const BINARY *findContactPhoto(const std::string &dir, const std::string &email) const;
 	void send(const std::string &dir, uint64_t log_msg_id, const MESSAGE_CONTENT &) const;
+	std::vector<TAGGED_PROPVAL> submitIdentity(const std::string &dir, const TPROPVAL_ARRAY &, std::vector<proptag_t> &) const;
+	void stampSubmitIdentity(const std::string &dir, MESSAGE_CONTENT &) const;
 	void sendMeetingCancellation(const std::string&, const Structures::sMessageEntryId&, const Structures::sFolderSpec&, bool, std::optional<uint32_t> = std::nullopt) const;
+	void sendOccurrenceUpdate(const std::string &, const Structures::sMessageEntryId &, const Structures::sFolderSpec &, bool, uint32_t) const;
 	void suppressReadReceipt(const Structures::tItemId&) const;
 	void cancelCalendarItem(const Structures::tItemId&, bool) const;
-	void sendMeetingResponse(const Structures::tItemId&, const MESSAGE_CONTENT&) const;
+	void cancelRemovedAttendees(const std::string&, const Structures::sFolderSpec&, uint64_t, const TARRAY_SET&, bool) const;
+	void sendMeetingUpdate(const std::string&, const Structures::sFolderSpec&, uint64_t, const TARRAY_SET *, bool, uint32_t, bool) const;
+	static void setUnsendable(TPROPVAL_ARRAY &, proptag_t, const std::vector<TPROPVAL_ARRAY *> &);
+	uint32_t nextSequence(const std::string&, const Structures::sFolderSpec&, uint64_t, bool, uint64_t) const;
+	std::string rcptAddress(const TPROPVAL_ARRAY &) const;
+	bool sendMeetingResponse(const Structures::tItemId&, MESSAGE_CONTENT&, bool) const;
 	BINARY serialize(const XID&) const;
+	const char *culture() const;
 	bool streamEvents(const Structures::tSubscriptionId&) const;
 	void rcpt_add_unique(TARRAY_SET *, gromox::EWS::Structures::tEmailAddressType, uint32_t) const;
 	message_content_ptr toContent(const std::string &, std::string &) const;
@@ -357,6 +394,7 @@ class EWSContext {
 	void updateReminder(const std::string &, uint64_t, Structures::sShape &) const;
 	void validate(const std::string&, const Structures::sMessageEntryId&) const;
 	bool writeDelegatePermissions(const std::string&, const std::string&, const Structures::tDelegatePermissions&) const;
+	void writeDelegateFlags(const std::string &, const std::string &, std::optional<bool>, bool) const;
 	void writePermissions(const std::string&, uint64_t, const std::vector<PERMISSION_DATA>&) const;
 
 	gromox::time_duration age() const { return tp_now() - m_created; }
@@ -373,11 +411,11 @@ class EWSContext {
 	inline void log(bool l) {m_log = l;}
 	inline State state() const {return m_state;}
 	inline void state(State s) {m_state = s;}
-	inline const Structures::sRecurrenceFrame *get_recurrence_frame() const {return m_recurrence_frame ? &*m_recurrence_frame : nullptr;}
 
 	static void* alloc(size_t);
 	template<typename T> static T* alloc(size_t=1);
 	template<typename T, typename... Args> static T* construct(Args&&...);
+	static void addAttachment(MESSAGE_CONTENT &, const Structures::tFileAttachment &);
 	static char *cpystr(const std::string_view);
 
 	static void assertIdType(Structures::tBaseItemId::IdType, Structures::tBaseItemId::IdType);
@@ -391,6 +429,7 @@ private:
 	std::pair<proptag_t, APPOINTMENT_RECUR_PAT> loadRecurPat(const std::string &, uint64_t) const;
 	void deleteExceptionAttachment(const std::string &, uint64_t, uint64_t, uint32_t) const;
 	void toInstance(const std::string &, uint32_t, MESSAGE_CONTENT &) const;
+	void sendInstance(const std::string &, const Structures::sFolderSpec &, uint64_t, const MESSAGE_CONTENT &, uint32_t, const char *, bool) const;
 
 	/* State shared by the occurrences of one recurring series */
 	struct sOccurrenceSeries {
@@ -414,6 +453,7 @@ private:
 
 		void parse(const BINARY *, const uint64_t *, const BINARY *);
 		clock::time_point toUtc(uint32_t) const;
+		uint32_t toLocal(uint64_t) const;
 		times occurrenceTimes(uint32_t) const;
 		bool replaces(uint32_t, uint64_t) const;
 		bool replaces(uint32_t, clock::time_point, uint64_t) const;
@@ -454,7 +494,11 @@ private:
 	void toContent(const std::string &, Structures::tReplyToItem &, Structures::sShape &, message_content_ptr &) const;
 	void toContent(const std::string &, Structures::tReplyAllToItem &, Structures::sShape &, message_content_ptr &) const;
 	void toContent(const std::string &, Structures::tForwardItem &, Structures::sShape &, message_content_ptr &) const;
+	enum class smart_type { reply, reply_all, forward };
+	void smartResponse(const Structures::tItemId &, smart_type, const std::optional<Structures::tBody> &, bool, Structures::sShape &, message_content_ptr &) const;
 	std::optional<uint64_t> findExistingByGoid(const Structures::sFolderSpec&, const std::string&, const MESSAGE_CONTENT&) const;
+	std::optional<uint64_t> findDelegateMessage(const std::string &, std::optional<uint64_t>) const;
+	void stampDelegateMessage(const std::string &, const BINARY_ARRAY *, uint64_t) const;
 
 	inline void updateProps(Structures::tItem&, Structures::sShape&, const TPROPVAL_ARRAY&) const {}
 	void updateProps(Structures::tCalendarItem&, Structures::sShape&, const TPROPVAL_ARRAY&) const;
@@ -475,6 +519,7 @@ private:
 	gromox::time_point m_created{};
 	std::unique_ptr<NotificationContext> m_notify;
 	std::optional<Structures::sRecurrenceFrame> m_recurrence_frame; ///< Time zone of recurrences in the request
+	mutable std::unordered_map<std::string, bool> m_seesPrivateItems; ///< Whether the user sees private items, per store
 };
 
 /**

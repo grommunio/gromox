@@ -3409,7 +3409,6 @@ static ec_error_t rectify_message(message_object *pmessage,
 
 ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 {
-	int timer_id;
 	BOOL b_marked;
 	zs_objtype mapi_type;
 	uint16_t rcpt_num;
@@ -3524,15 +3523,7 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 			return ecAccessDenied;
 		auto deferred_time = props_to_defer_interval(tmp_propvals);
 		if (deferred_time > 0) {
-			timer_id = system_services_add_timer(actor,
-			           pmessage->get_id().gcv(), deferred_time);
-			if (0 == timer_id) {
-				exmdb_client->clear_submit(pstore->get_dir(),
-					pmessage->get_id(), b_unsent);
-				return ecError;
-			}
-			exmdb_client->set_message_timer(pstore->get_dir(),
-				pmessage->get_id(), timer_id);
+			/* try_mark_submit recorded the deferral; exmdb sends it later. */
 			pmessage->reload();
 			return ecSuccess;
 		}
@@ -5161,7 +5152,7 @@ ec_error_t zs_getuserfreebusy(GUID hsession, BINARY entryid,
 	auto actor = pinfo->get_username();
 	if (strcmp(actor, mres.username.c_str()) == 0)
 		actor = nullptr;
-	return get_freebusy(actor, mres.maildir.c_str(),
+	return get_freebusy(actor, mres.maildir.c_str(), g_org_name,
 	       starttime, endtime, *fb_data);
 }
 
@@ -5178,7 +5169,10 @@ ec_error_t zs_getuserfreebusyical(GUID hsession, BINARY entryid,
 	    mysql_adaptor_meta(username.c_str(), WANTPRIV_METAONLY, mres) != 0)
 		return ecSuccess;
 	std::vector<freebusy_event> fb_data;
-	auto err = get_freebusy(pinfo->get_username(), mres.maildir.c_str(),
+	auto actor = pinfo->get_username();
+	if (strcmp(actor, mres.username.c_str()) == 0)
+		actor = nullptr;
+	auto err = get_freebusy(actor, mres.maildir.c_str(), g_org_name,
 	           starttime, endtime, fb_data);
 	if (err != ecSuccess)
 		return err;
