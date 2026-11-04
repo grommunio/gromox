@@ -78,8 +78,10 @@ Makefile.in
 /tests/dnsbl_check
 /tests/epv_unpack
 /tests/exrpctest
+/tests/ewsrules
 /tests/gssauth
 /tests/gxl-383
+/tests/imapargs
 /tests/jsontest
 /tests/lzxpress
 /tests/oxcmail_ie
