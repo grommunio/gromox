@@ -2531,7 +2531,7 @@ mGetUserConfigurationRequest::mGetUserConfigurationRequest(const tinyxml2::XMLEl
 void mGetUserConfigurationResponseMessage::serialize(tinyxml2::XMLElement *xml) const
 {
 	mResponseMessageType::serialize(xml);
-	XMLDUMPT(UserConfiguration);
+	XMLDUMPM(UserConfiguration);
 }
 
 void mGetUserConfigurationResponse::serialize(XMLElement *xml) const

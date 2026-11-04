@@ -81,6 +81,10 @@ Changes:
 
 Fixes:
 
+* EWS: GetUserConfiguration returned the UserConfiguration element in the
+  types namespace and its folder id without a namespace. Clients built on
+  the EWS Managed API such as eM Client rejected the response and could not
+  sync their categories.
 * EWS: AcceptItem, TentativelyAcceptItem, DeclineItem, SuppressReadReceipt
   and CancelCalendarItem now refuse private items of others for users who
   are not allowed to see private items.
