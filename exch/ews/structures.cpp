@@ -3800,8 +3800,17 @@ void tEmailAddressType::mkRecipient(TPROPVAL_ARRAY* rcpt, uint32_t type) const
 {
 	if (rcpt == nullptr)
 		throw EWSError::NotEnoughMemory(E3289);
-	if (!EmailAddress)
-		throw EWSError::InvalidRecipients(E3290);
+	if (!addressable()) {
+		/* An unresolved recipient keeps only its name */
+		if (empty())
+			throw EWSError::InvalidRecipients(E3290);
+		auto name = Name->c_str();
+		if (rcpt->set(PR_DISPLAY_NAME, name) == ecServerOOM ||
+		    rcpt->set(PR_TRANSMITABLE_DISPLAY_NAME, name) == ecServerOOM ||
+		    rcpt->set(PR_RECIPIENT_TYPE, &type) == ecServerOOM)
+			throw EWSError::NotEnoughMemory(E3291);
+		return;
+	}
 	auto displayname = Name ? Name->c_str() : EmailAddress->c_str();
 	if (rcpt->set(PR_DISPLAY_NAME, displayname) == ecServerOOM ||
 	    rcpt->set(PR_TRANSMITABLE_DISPLAY_NAME, displayname) == ecServerOOM ||
