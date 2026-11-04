@@ -3089,7 +3089,7 @@ struct tMailbox {
 /**
  * Types.xsd:1847
  */
-struct tDistinguishedFolderId {
+struct tDistinguishedFolderId : public NS_EWS_Types {
 	static constexpr char NAME[] = "DistinguishedFolderId";
 
 	explicit tDistinguishedFolderId(const std::string_view&);
