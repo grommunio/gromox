@@ -5331,6 +5331,22 @@ void EWSContext::send(const std::string &dir, uint64_t log_msg_id,
 	if (msg.children.prcpts == nullptr ||
 	    msg.children.prcpts->count == 0)
 		throw EWSError::MissingRecipients(E3115);
+	/*
+	 * Like Exchange, refuse to submit mail with an unresolved recipient.
+	 * Meeting mail goes to the attendees that do resolve, see below.
+	 */
+	auto cls = msg.proplist.get<const char>(PR_MESSAGE_CLASS);
+	bool meeting = cls != nullptr &&
+	               class_match_prefix(cls, "IPM.Schedule.Meeting") == 0;
+	for (const auto &rcpt : *msg.children.prcpts) {
+		auto rflags = rcpt.get<const uint32_t>(PR_RECIPIENT_FLAGS);
+		if (meeting || (rflags != nullptr &&
+		    (*rflags & recipOrganizer || !(*rflags & recipSendable))) ||
+		    addressable(rcpt))
+			continue;
+		auto name = rcpt.get<const char>(PR_DISPLAY_NAME);
+		throw EWSError::InvalidRecipients(E3618(name != nullptr ? name : ""));
+	}
 	std::vector<proptag_t> drop;
 	auto ident = submitIdentity(dir, msg.proplist, drop);
 	for (const auto &prop : ident)
@@ -5346,9 +5362,7 @@ void EWSContext::send(const std::string &dir, uint64_t log_msg_id,
 	/* Attendees without an address would become <invalid@invalid> */
 	std::vector<TPROPVAL_ARRAY *> rows;
 	TARRAY_SET rcptset;
-	auto cls = msg.proplist.get<const char>(PR_MESSAGE_CLASS);
-	if (cls != nullptr &&
-	    class_match_prefix(cls, "IPM.Schedule.Meeting") == 0) {
+	if (meeting) {
 		for (auto &rcpt : *msg.children.prcpts)
 			if (is_organizer(rcpt) || addressable(rcpt))
 				rows.push_back(deconst(&rcpt));
