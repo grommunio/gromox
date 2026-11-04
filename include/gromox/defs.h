@@ -137,7 +137,6 @@ template<typename T, typename U> constexpr auto gx_capacity(T count, U step) -> 
 		return std::numeric_limits<R>::max();
 	return step * std::bit_ceil((c + step - 1) / step);
 }
-template<typename T, typename U> constexpr auto strange_roundup(T x, U y) -> decltype(x / y) { return (x / y + 1) * y; }
 #define SR_GROW_ATTACHMENT_CONTENT 20U
 #define SR_GROW_EID_ARRAY 100U
 #define SR_GROW_PROPTAG_ARRAY 100U
