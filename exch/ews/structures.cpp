@@ -3635,8 +3635,20 @@ void tEmailAddressType::mkRecipient(TPROPVAL_ARRAY* rcpt, uint32_t type) const
 {
 	if (rcpt == nullptr)
 		throw EWSError::NotEnoughMemory(E3289);
-	if (!EmailAddress)
-		throw EWSError::InvalidRecipients(E3290);
+	if (!EmailAddress || EmailAddress->empty()) {
+		/*
+		 * Exchange keeps an unresolved recipient (name only) on a
+		 * saved item and refuses it at submit time. Outlook saves
+		 * drafts while an address is still being typed.
+		 */
+		if (!Name || Name->empty())
+			throw EWSError::InvalidRecipients(E3290);
+		if (rcpt->set(PR_DISPLAY_NAME, Name->c_str()) == ecServerOOM ||
+		    rcpt->set(PR_TRANSMITABLE_DISPLAY_NAME, Name->c_str()) == ecServerOOM ||
+		    rcpt->set(PR_RECIPIENT_TYPE, &type) == ecServerOOM)
+			throw EWSError::NotEnoughMemory(E3291);
+		return;
+	}
 	auto displayname = Name ? Name->c_str() : EmailAddress->c_str();
 	if (rcpt->set(PR_DISPLAY_NAME, displayname) == ecServerOOM ||
 	    rcpt->set(PR_TRANSMITABLE_DISPLAY_NAME, displayname) == ecServerOOM ||
