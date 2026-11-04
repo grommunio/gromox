@@ -2730,7 +2730,8 @@ int pdu_processor::input(const char *pbuff, uint16_t length,
 					*ppcall = pcall;
 					return PDU_PROCESSOR_OUTPUT;
 				}
-				alloc_size = strange_roundup(alloc_size - 1, 16 * 1024);
+				alloc_size = std::min<size_t>(gx_capacity(alloc_size, 16 * 1024),
+				             g_max_request_mem);
 				try {
 					prequest->stub_and_verifier.reserve(alloc_size);
 				} catch (const std::bad_alloc &) {
@@ -2783,7 +2784,8 @@ int pdu_processor::input(const char *pbuff, uint16_t length,
 					*ppcall = pcall;
 					return PDU_PROCESSOR_OUTPUT;
 				}	
-				alloc_size = strange_roundup(alloc_size - 1, 16 * 1024);
+				alloc_size = std::min<size_t>(gx_capacity(alloc_size, 16 * 1024),
+				             g_max_request_mem);
 				try {
 					prequestx->stub_and_verifier.reserve(alloc_size);
 				} catch (const std::bad_alloc &) {
