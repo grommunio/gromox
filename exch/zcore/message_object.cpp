@@ -413,12 +413,19 @@ ec_error_t message_object::write_message(const MESSAGE_CONTENT &content)
 				sizeof(TAGGED_PROPVAL)*pmsgctnt->proplist.count);
 	for (auto t : trimtags)
 		common_util_remove_propvals(&msgctnt.proplist, t);
-	/* oxcical/oxvcard output lacks it */
+	/* oxcical/oxvcard output lacks it, keep the instance's value */
 	if (!msgctnt.proplist.has(PR_CREATION_TIME)) {
-		auto crtime = cu_alloc<uint64_t>();
-		if (crtime == nullptr)
-			return ecServerOOM;
-		*crtime = rop_util_current_nttime();
+		uint64_t *crtime = nullptr;
+		if (!exmdb_client_get_instance_property(pmessage->pstore->get_dir(),
+		    pmessage->instance_id, PR_CREATION_TIME,
+		    reinterpret_cast<void **>(&crtime)))
+			return ecRpcFailed;
+		if (crtime == nullptr) {
+			crtime = cu_alloc<uint64_t>();
+			if (crtime == nullptr)
+				return ecServerOOM;
+			*crtime = rop_util_current_nttime();
+		}
 		msgctnt.proplist.emplace_back(PR_CREATION_TIME, crtime);
 	}
 	if (!exmdb_client->clear_message_instance(pmessage->pstore->get_dir(),
