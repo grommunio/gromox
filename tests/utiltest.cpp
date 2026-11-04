@@ -986,6 +986,104 @@ static int t_srchkey_words()
 	return EXIT_SUCCESS;
 }
 
+static int t_array_growth()
+{
+	/* Append across several capacity doublings and read everything back */
+	tpropval_array_ptr pa(tpropval_array_init());
+	assert(pa != nullptr);
+	for (uint32_t i = 1; i <= 1500; ++i) {
+		assert(pa->set(PROP_TAG(PT_LONG, 0x1000 + i), &i) == ecSuccess);
+		assert(pa->count == i);
+	}
+	for (uint32_t i = 1; i <= 1500; ++i) {
+		auto v = pa->get<const uint32_t>(PROP_TAG(PT_LONG, 0x1000 + i));
+		assert(v != nullptr && *v == i);
+	}
+	pa->erase(PROP_TAG(PT_LONG, 0x1001));
+	tpropval_array_ptr pd(pa->dup());
+	assert(pd != nullptr && pd->count == 1499);
+
+	/* Deserialized arrays must take appends */
+	EXT_PUSH ep;
+	assert(ep.init(nullptr, 0, 0));
+	assert(ep.p_tpropval_a({pa->ppropval, pa->count}) == pack_result::ok);
+	EXT_PULL ex;
+	ex.init(ep.m_udata, ep.m_offset, malloc, 0);
+	TPROPVAL_ARRAY da{};
+	assert(ex.g_tpropval_a(&da) == pack_result::ok && da.count == 1499);
+	for (uint32_t i = 1; i <= 2000; ++i) {
+		uint32_t v = ~i;
+		assert(da.set(PROP_TAG(PT_LONG, 0x4000 + i), &v) == ecSuccess);
+	}
+	assert(da.count == 3499);
+	assert(*da.get<const uint32_t>(PROP_TAG(PT_LONG, 0x1002)) == 2);
+	assert(*da.get<const uint32_t>(PROP_TAG(PT_LONG, 0x4000 + 2000)) == ~2000U);
+	tpropval_array_free_internal(&da);
+
+	tarray_set_ptr ts(tarray_set_init());
+	assert(ts != nullptr);
+	for (uint32_t i = 0; i < 3000; ++i) {
+		auto row = ts->emplace();
+		assert(row != nullptr && row->set(PR_ROWID, &i) == ecSuccess);
+	}
+	assert(ts->count == 3000);
+	for (uint32_t i = 0; i < 3000; ++i) {
+		auto v = ts->pparray[i]->get<const uint32_t>(PR_ROWID);
+		assert(v != nullptr && *v == i);
+	}
+	assert(ep.init(nullptr, 0, 0));
+	assert(ep.p_tarray_set(*ts) == pack_result::ok);
+	ex.init(ep.m_udata, ep.m_offset, malloc, 0);
+	TARRAY_SET ds{};
+	assert(ex.g_tarray_set(&ds) == pack_result::ok && ds.count == 3000);
+	for (uint32_t i = 0; i < 500; ++i) {
+		tpropval_array_ptr row(tpropval_array_init());
+		assert(row != nullptr && ds.append_move(std::move(row)) == ecSuccess);
+	}
+	assert(ds.count == 3500);
+	assert(*ds.pparray[2999]->get<const uint32_t>(PR_ROWID) == 2999);
+	for (size_t i = 0; i < ds.count; ++i)
+		tpropval_array_free(ds.pparray[i]);
+	free(ds.pparray);
+
+	message_content_ptr mc(message_content_init());
+	assert(mc != nullptr);
+	mc->set_attachments_internal(attachment_list_init());
+	assert(mc->children.pattachments != nullptr);
+	for (uint32_t i = 0; i < 70; ++i) {
+		attachment_content_ptr ac(attachment_content_init());
+		assert(ac != nullptr && ac->proplist.set(PR_ATTACH_NUM, &i) == ecSuccess);
+		assert(mc->children.pattachments->append_internal(ac.release()));
+	}
+	assert(ep.init(nullptr, 0, 0));
+	assert(ep.p_msgctnt(*mc) == pack_result::ok);
+	ex.init(ep.m_udata, ep.m_offset, malloc, 0);
+	MESSAGE_CONTENT dm{};
+	assert(ex.g_msgctnt(&dm) == pack_result::ok);
+	auto dl = dm.children.pattachments;
+	assert(dl != nullptr && dl->count == 70);
+	for (uint32_t i = 70; i < 120; ++i) {
+		attachment_content_ptr ac(attachment_content_init());
+		assert(ac != nullptr && ac->proplist.set(PR_ATTACH_NUM, &i) == ecSuccess);
+		assert(dl->append_internal(ac.release()));
+	}
+	assert(dl->count == 120);
+	assert(*dl->pplist[69]->proplist.get<const uint32_t>(PR_ATTACH_NUM) == 69);
+	message_content_free_internal(&dm);
+
+	/* idset serialization grows its buffer beyond the initial 4K */
+	idset s(idset::type::id_loose);
+	for (uint64_t i = 1; i <= 30000; ++i)
+		assert(s.append_range(1, 20 * i, 20 * i));
+	binary_ptr bin(s.serialize());
+	assert(bin != nullptr && bin->cb > 8192);
+	idset d(idset::type::id_packed);
+	assert(d.deserialize(*bin));
+	assert(d.get_repl_list().size() == 1);
+	assert(d.get_repl_list().front().range_list.size() == 30000);
+	return EXIT_SUCCESS;
+}
+
 static int runner()
 {
 	if (t_cookie_jar() != 0)
@@ -1004,7 +1102,7 @@ static int runner()
 		t_cmp_binary, t_cmp_guid, t_cmp_svreid, t_cmp_icaltime,
 		t_wildcard, t_utf8_prefix, t_eidcvt, t_bin2cstr, t_log_escape,
 		t_string, t_unfold, t_time, t_tzdef, t_floating_dt, t_essdn, t_fb_recur,
-		t_res_mvprop, t_srchkey_words,
+		t_res_mvprop, t_srchkey_words, t_array_growth,
 	};
 	for (auto f : fct) {
 		auto ret = f();
