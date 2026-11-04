@@ -882,7 +882,9 @@ ec_error_t message_object::remove_properties(proptag_cspan pproptags) try
 	std::vector<uint16_t> poriginal_indices;
 	for (unsigned int i = 0; i < pproptags.size(); ++i) {
 		const auto tag = pproptags[i];
-		if (msgo_is_readonly_prop(pmessage, tag)) {
+		/* New messages may set PR_CREATION_TIME, but not lose it */
+		if (msgo_is_readonly_prop(pmessage, tag) ||
+		    tag == PR_CREATION_TIME) {
 			problems.pproblem[problems.count++].index = i;
 			continue;
 		}
