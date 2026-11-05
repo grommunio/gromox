@@ -3703,36 +3703,40 @@ void process(mUpdateUserConfigurationRequest &&request, XMLElement *response,
 		if (rowCount == 0)
 			throw EWSError::ItemNotFound(E3395);
 
-		static constexpr proptag_t midTag = PidTagMid;
+		static constexpr proptag_t rowTags[] = {PidTagMid, PR_ENTRYID};
 		TARRAY_SET rows;
 		if (!exmdb.query_table(dir.c_str(), username, CP_UTF8,
-		    tableId, {&midTag, 1}, 0, 1, &rows))
+		    tableId, {rowTags, std::size(rowTags)}, 0, 1, &rows))
 			throw EWSError::ItemNotFound(E3396);
 		if (rows.count == 0 || rows.pparray[0] == nullptr)
 			throw EWSError::ItemNotFound(E3397);
 		auto mid = rows.pparray[0]->get<const uint64_t>(PidTagMid);
 		if (mid == nullptr)
 			throw EWSError::ItemNotFound(E3398);
+		auto entryId = rows.pparray[0]->find(PR_ENTRYID);
+		if (entryId == nullptr)
+			throw EWSError::ItemNotFound(E3613);
 
-		std::vector<TAGGED_PROPVAL> props;
+		sShape shape;
 		auto& userConfiguration = request.UserConfiguration;
 		if (userConfiguration.XmlData) {
 			auto bin = EWSContext::construct<BINARY>(BINARY{
 			           static_cast<uint32_t>(userConfiguration.XmlData->size()),
 			           {EWSContext::alloc<char>(userConfiguration.XmlData->size())}});
 			memcpy(bin->pc, userConfiguration.XmlData->data(), bin->cb);
-			props.push_back({PR_ROAMING_XMLSTREAM, bin});
+			shape.write(TAGGED_PROPVAL{PR_ROAMING_XMLSTREAM, bin});
 		}
 		if (userConfiguration.BinaryData) {
 			auto bin = EWSContext::construct<BINARY>(BINARY{
 			           static_cast<uint32_t>(userConfiguration.BinaryData->size()),
 			           {EWSContext::alloc<char>(userConfiguration.BinaryData->size())}});
 			memcpy(bin->pc, userConfiguration.BinaryData->data(), bin->cb);
-			props.push_back({PR_ROAMING_BINARYSTREAM, bin});
+			shape.write(TAGGED_PROPVAL{PR_ROAMING_BINARYSTREAM, bin});
 		}
 
-		if (!props.empty()) {
-			const TPROPVAL_ARRAY propArray = {static_cast<uint16_t>(props.size()), props.data()};
+		if (userConfiguration.XmlData || userConfiguration.BinaryData) {
+			ctx.updated(dir, sMessageEntryId(*entryId), shape);
+			const TPROPVAL_ARRAY propArray = shape.write();
 			PROBLEM_ARRAY problems;
 			if (!exmdb.set_message_properties(dir.c_str(),
 			    username, CP_ACP, *mid, &propArray, &problems))
