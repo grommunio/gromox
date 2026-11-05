@@ -1,4 +1,5 @@
 #pragma once
+#include <bit>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
@@ -7,6 +8,7 @@
 #	include <stdexcept>
 #endif
 #include <iterator>
+#include <limits>
 #include <string>
 #include <type_traits>
 #define FMODE_PRIVATE 0660U
@@ -118,20 +120,23 @@ extern GX_EXPORT const char *mapi_strerror(ec_error_t);
 template<typename T> constexpr T *deconst(const T *x) { return const_cast<T *>(x); }
 
 /**
- * Computes the next multiple of x on a scale of y.
+ * Capacity of an untracked array holding @count elements.
  *
- * Background info: std:: containers track their capacity, and generally expand
- * in an exponential fashion to reach armortized O(1) time complexity. But a
- * number of old-style data types in Gromox do not track. Instead, capacity is
- * implicit in the allocation logic, governed by (hopefully consistent) calls
- * to strange_roundup. [Because of that, expansion is only linear and bounded by
- * O(n^2).]
- *
- * Returns 0 when the range of x would be exceeded. Most callers do not cope
- * with getting anything less than next_multiple_of(x), so it does not even
- * matter if this function tried to detect overflow :-/
+ * std:: containers track their capacity and grow it geometrically. A number of
+ * old-style data types in Gromox do not track. Instead, capacity is implicit
+ * in the element count, and every producer and consumer of such an array
+ * derives it with this function. Capacity starts at @step and doubles.
  */
-template<typename T, typename U> constexpr auto strange_roundup(T x, U y) -> decltype(x / y) { return (x / y + 1) * y; }
+template<typename T, typename U> constexpr auto gx_capacity(T count, U step) -> decltype(count / step)
+{
+	using R = decltype(count / step);
+	auto c = static_cast<R>(count);
+	if (c <= static_cast<R>(step))
+		return step;
+	if (c > std::numeric_limits<R>::max() / 2 - step)
+		return std::numeric_limits<R>::max();
+	return step * std::bit_ceil((c + step - 1) / step);
+}
 #define SR_GROW_ATTACHMENT_CONTENT 20U
 #define SR_GROW_EID_ARRAY 100U
 #define SR_GROW_PROPTAG_ARRAY 100U

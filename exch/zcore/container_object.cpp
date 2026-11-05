@@ -646,10 +646,10 @@ static bool container_object_get_specialtables_from_node(const ab_tree::ab_node 
     proptag_cspan pproptags, TARRAY_SET *pset)
 {
 	TPROPVAL_ARRAY **pparray;
-	auto count = strange_roundup(pset->count, SR_GROW_TPROPVAL_ARRAY);
-	if (pset->count + 1 >= count) {
-		count += SR_GROW_TPROPVAL_ARRAY;
-		pparray = cu_alloc<TPROPVAL_ARRAY *>(count);
+	auto cap = gx_capacity(pset->count, SR_GROW_TPROPVAL_ARRAY);
+	if (pset->count >= cap) {
+		cap = gx_capacity(pset->count + 1, SR_GROW_TPROPVAL_ARRAY);
+		pparray = cu_alloc<TPROPVAL_ARRAY *>(cap);
 		if (pparray == nullptr)
 			return FALSE;
 		memcpy(pparray, pset->pparray,
@@ -694,10 +694,10 @@ static ec_error_t container_object_query_folder_hierarchy(uint64_t folder_id,
 		auto cnclass = tmp_set.pparray[i]->get<const char>(PR_CONTAINER_CLASS);
 		if (class_match_prefix(cnclass, "IPF.Contact") != 0)
 			continue;
-		auto count = strange_roundup(pset->count, SR_GROW_TPROPVAL_ARRAY);
-		if (pset->count + 1 >= count) {
-			count += SR_GROW_TPROPVAL_ARRAY;
-			pparray = cu_alloc<TPROPVAL_ARRAY *>(count);
+		auto cap = gx_capacity(pset->count, SR_GROW_TPROPVAL_ARRAY);
+		if (pset->count >= cap) {
+			cap = gx_capacity(pset->count + 1, SR_GROW_TPROPVAL_ARRAY);
+			pparray = cu_alloc<TPROPVAL_ARRAY *>(cap);
 			if (pparray == nullptr)
 				return ecServerOOM;
 			memcpy(pparray, pset->pparray,
