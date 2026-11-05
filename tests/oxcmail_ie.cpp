@@ -9,6 +9,7 @@
 #include <vmime/contentTypeField.hpp>
 #include <vmime/mailboxList.hpp>
 #include <vmime/messageIdSequence.hpp>
+#include <vmime/relay.hpp>
 #include <vmime/utility/outputStreamStringAdapter.hpp>
 #include <gromox/element_data.hpp>
 #include <gromox/ext_buffer.hpp>
@@ -2774,6 +2775,127 @@ static int vexport_report(const char *msgclass, const char *rpttype,
 	return EXIT_SUCCESS;
 }
 
+static int vexport_sharing_class()
+{
+	/* MS-OXSHARE v10 §2.2.5.1 */
+	auto cvt = ve_converter();
+	message_content_ptr mct(message_content_init());
+	auto &props = mct->proplist;
+	props.set(PR_MESSAGE_CLASS, "IPM.Sharing");
+	props.set(PR_BODY, "x");
+	auto vmsg = vmime::make_shared<vmime::message>();
+	auto err = cvt.mapi_to_inet(*mct, vmsg);
+	assert(err == ecSuccess);
+	auto ostr = vmsg->generate();
+	assert(strstr(ostr.c_str(), "\r\nContent-Class: Sharing\r\n") != nullptr);
+
+	/* Subclasses count, look-alikes and other classes do not */
+	auto gen = [&](const char *cls) -> std::string {
+		props.set(PR_MESSAGE_CLASS, cls);
+		vmsg = vmime::make_shared<vmime::message>();
+		if (cvt.mapi_to_inet(*mct, vmsg) != ecSuccess)
+			return {};
+		return vmsg->generate();
+	};
+	assert(strstr(gen("IPM.Sharing.Custom").c_str(), "\r\nContent-Class: Sharing\r\n") != nullptr);
+	assert(strstr(gen("IPM.SharingX").c_str(), "Content-Class:") == nullptr);
+	assert(strstr(gen("IPM.Note").c_str(), "Content-Class:") == nullptr);
+
+	/* A stored PidNameContentClass does not produce a second header */
+	const PROPERTY_NAME pn[] = {
+		{MNID_STRING, PS_INTERNET_HEADERS, 0, deconst("Content-Class")},
+	};
+	const PROPNAME_ARRAY pna = {std::size(pn), deconst(pn)};
+	PROPID_ARRAY ids;
+	assert(ee_get_propids(&pna, &ids));
+	props.set(PROP_TAG(PT_UNICODE, ids[0]), "Sharing");
+	ostr = gen("IPM.Sharing");
+	auto first = strstr(ostr.c_str(), "\r\nContent-Class: Sharing\r\n");
+	assert(first != nullptr);
+	assert(strstr(first + 2, "\r\nContent-Class:") == nullptr);
+	return EXIT_SUCCESS;
+}
+
+static int vexport_opaque_headers()
+{
+	/*
+	 * GXL-865: X-Sharing-Remote-Uid is a 92-char entryid that the
+	 * reader compares byte for byte. Opaque tokens must come out as
+	 * stored and fold at whitespace only, never as encoded-words.
+	 */
+	auto cvt = ve_converter();
+	message_content_ptr mct(message_content_init());
+	auto &props = mct->proplist;
+	props.set(PR_BODY, "x");
+	const PROPERTY_NAME pn[] = {
+		{MNID_STRING, PS_INTERNET_HEADERS, 0, deconst("X-Sharing-Remote-Uid")},
+		{MNID_STRING, PS_INTERNET_HEADERS, 0, deconst("X-Spaced")},
+		{MNID_STRING, PS_INTERNET_HEADERS, 0, deconst("X-Umlaut")},
+		{MNID_STRING, PS_INTERNET_HEADERS, 0, deconst("X-Huge")},
+		{MNID_STRING, PS_INTERNET_HEADERS, 0, deconst("Received")},
+		{MNID_STRING, PS_INTERNET_HEADERS, 0, deconst("X-Literal")},
+	};
+	const PROPNAME_ARRAY pna = {std::size(pn), deconst(pn)};
+	PROPID_ARRAY ids;
+	assert(ee_get_propids(&pna, &ids));
+	std::string uid;
+	for (unsigned int i = 0; i < 92; ++i)
+		uid += "0123456789abcdef"[i % 16];
+	std::string spaced;
+	for (unsigned int i = 0; i < 12; ++i)
+		spaced += "word" + std::to_string(i) + " ";
+	spaced += uid;
+	std::string huge(1000, 'a');
+	props.set(PROP_TAG(PT_UNICODE, ids[0]), uid.c_str());
+	props.set(PROP_TAG(PT_UNICODE, ids[1]), spaced.c_str());
+	props.set(PROP_TAG(PT_UNICODE, ids[2]), "Gr\xc3\xbc\xc3\x9f" "e");
+	props.set(PROP_TAG(PT_UNICODE, ids[3]), huge.c_str());
+	props.set(PROP_TAG(PT_UNICODE, ids[4]), "from a.ex.de by b.ex.de; Mon, 1 Jul 2026 00:00:00 +0000");
+	props.set(PROP_TAG(PT_UNICODE, ids[5]), "=?utf-8?q?abc?=");
+
+	auto vmsg = vmime::make_shared<vmime::message>();
+	auto err = cvt.mapi_to_inet(*mct, vmsg);
+	assert(err == ecSuccess);
+	/* 78 columns like production, so that folding is exercised */
+	auto ostr = vmail_to_string(*vmsg);
+	auto needle = "\r\nX-Sharing-Remote-Uid: " + uid + "\r\n";
+	assert(strstr(ostr.c_str(), needle.c_str()) != nullptr);
+	/* Long value with spaces: folded at a space, the token stays whole */
+	auto p = strstr(ostr.c_str(), "\r\nX-Spaced: word0 ");
+	assert(p != nullptr);
+	/* up to the next line that does not continue this header */
+	auto q = p + 2;
+	do {
+		q = strstr(q, "\r\n");
+		assert(q != nullptr);
+		q += 2;
+	} while (*q == ' ' || *q == '\t');
+	std::string spaced_hdr(p + 2, q - p - 2);
+	assert(spaced_hdr.find("\r\n ") != spaced_hdr.npos);
+	assert(spaced_hdr.find("=?") == spaced_hdr.npos);
+	/* Unfolding gives back the stored value */
+	for (size_t i; (i = spaced_hdr.find("\r\n")) != spaced_hdr.npos; )
+		spaced_hdr.erase(i, 2);
+	assert(spaced_hdr == "X-Spaced: " + spaced);
+	/* Non-ASCII values are encoded, as UTF-8 and intact */
+	assert(strstr(ostr.c_str(), "\r\nX-Umlaut: =?utf-8?") != nullptr);
+	assert(strstr(ostr.c_str(), "X-Umlaut: =?utf-8?B?R3LDvMOfZQ==?=") != nullptr ||
+	       strstr(ostr.c_str(), "X-Umlaut: =?utf-8?Q?Gr=C3=BC=C3=9Fe?=") != nullptr);
+	/* A run that cannot fit a 998 column line falls back to encoding */
+	p = strstr(ostr.c_str(), "\r\nX-Huge: ");
+	assert(p != nullptr);
+	assert(strncmp(p + 10, "=?", 2) == 0);
+	assert(strstr(p, huge.c_str()) == nullptr);
+	/* What looks like an encoded-word is neither decoded nor encoded again */
+	assert(strstr(ostr.c_str(), "\r\nX-Literal: =?utf-8?q?abc?=\r\n") != nullptr);
+	/* Typed vmime fields keep their parser */
+	assert(strstr(ostr.c_str(), "Received: from a.ex.de") != nullptr);
+	auto rcvd = vmsg->getHeader()->findField("Received");
+	assert(rcvd != nullptr);
+	assert(vmime::dynamicCast<const vmime::relay>(rcvd->getValue()) != nullptr);
+	return EXIT_SUCCESS;
+}
+
 static int vexport_dsn()
 {
 	return vexport_report("REPORT.IPM.Note.NDR",
@@ -3609,6 +3731,7 @@ int main()
 		E(vexport_inline_image), E(vexport_recipients),
 		E(vexport_sched_delegate),
 		E(vexport_headers), E(vexport_internet_headers),
+		E(vexport_sharing_class), E(vexport_opaque_headers),
 		E(vexport_dsn), E(vexport_mdn), E(vexport_smime),
 		E(vexport_embedded), E(vexport_depth_cap), E(vexport_tnef),
 		E(vexport_dataless_attachment),
