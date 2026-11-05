@@ -680,6 +680,7 @@ E(3609, "Outlook rule blob present, set RemoveOutlookRuleBlob to replace it");
 E(3610, "failed to delete the Outlook rule blob");
 E(3611, "failed to write the inbox rules");
 E(3612, "the inbox rule limit has been reached");
+inline std::string E3613(std::string_view name) {return fmt::format("E-3613: Recipient '{}' isn't resolved. All recipients must be resolved before a message can be submitted.", name);}
 
 #undef E
 }

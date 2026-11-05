@@ -5056,6 +5056,16 @@ void EWSContext::send(const std::string &dir, uint64_t log_msg_id,
 	if (msg.children.prcpts == nullptr ||
 	    msg.children.prcpts->count == 0)
 		throw EWSError::MissingRecipients(E3115);
+	/* Like Exchange, refuse to submit with an unresolved recipient */
+	for (const auto &rcpt : *msg.children.prcpts) {
+		auto rflags = rcpt.get<const uint32_t>(PR_RECIPIENT_FLAGS);
+		if (rflags != nullptr &&
+		    (*rflags & recipOrganizer || !(*rflags & recipSendable)))
+			continue;
+		tEmailAddressType addr(rcpt);
+		if (!addr.EmailAddress || addr.EmailAddress->empty())
+			throw EWSError::InvalidRecipients(E3613(addr.Name ? *addr.Name : ""));
+	}
 	std::vector<proptag_t> drop;
 	auto ident = submitIdentity(dir, msg.proplist, drop);
 	for (const auto &prop : ident)
