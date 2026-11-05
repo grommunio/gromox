@@ -5830,9 +5830,7 @@ uint32_t EWSContext::nextSequence(const std::string &dir,
 	}
 	const TPROPVAL_ARRAY list = {static_cast<uint16_t>(vals.size()),
 	                            vals.data()};
-	PROBLEM_ARRAY problems;
-	if (!m_plugin.exmdb.set_message_properties(dir.c_str(),
-	    effectiveUser(parent), CP_ACP, mid, &list, &problems))
+	if (!setItemProps(dir, effectiveUser(parent), mid, list))
 		throw EWSError::ItemSave(E3542);
 	return val;
 }
@@ -5890,20 +5888,23 @@ void EWSContext::setUnsendable(TPROPVAL_ARRAY &props, proptag_t tag,
  * Sets PidLidFInvited, which EWS reports as MeetingRequestWasSent. Outlook
  * shows a meeting without it as not sent yet. The mail is out already, so
  * a failure is only logged.
+ *
+ * @param      dir     Store directory
+ * @param      parent  Parent folder of the meeting
+ * @param      mid     Message ID of the meeting
  */
-static void mark_invited(const EWSContext &ctx, const std::string &dir,
-    const sFolderSpec &parent, uint64_t mid)
+void EWSContext::markInvited(const std::string &dir,
+    const sFolderSpec &parent, uint64_t mid) const try
 {
-	auto propid = ctx.getNamedPropId(dir, NtFInvited, true);
-	if (propid == 0)
-		return;
+	auto propid = getNamedPropId(dir, NtFInvited, true);
 	const TAGGED_PROPVAL val = {PROP_TAG(PT_BOOLEAN, propid), deconst(&byte_value_one)};
 	const TPROPVAL_ARRAY list = {1, deconst(&val)};
-	PROBLEM_ARRAY problems;
-	if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
-	    ctx.effectiveUser(parent), CP_ACP, mid, &list, &problems))
+	if (propid == 0 || !setItemProps(dir, effectiveUser(parent), mid, list))
 		mlog(LV_ERR, "[ews] %s:m%llu: cannot set PidLidFInvited",
 			dir.c_str(), LLU{rop_util_get_gc_value(mid)});
+} catch (const DispatchError &e) {
+	mlog(LV_ERR, "[ews] %s:m%llu: cannot set PidLidFInvited: %s",
+		dir.c_str(), LLU{rop_util_get_gc_value(mid)}, e.what());
 }
 
 /**
@@ -6023,7 +6024,7 @@ void EWSContext::sendMeetingUpdate(const std::string &dir,
 	if (!stamp_exceptions(*req, ident))
 		throw EWSError::NotEnoughMemory(E3408);
 	send(dir, mid, *req);
-	mark_invited(*this, dir, parent, mid);
+	markInvited(dir, parent, mid);
 	if (!saveCopy)
 		return;
 	static constexpr proptag_t rmProps[] = {
