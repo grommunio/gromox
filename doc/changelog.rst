@@ -94,6 +94,9 @@ Fixes:
 * EWS: meeting responses, attendee and recipient changes, sent meeting
   updates and SendItem left the change number of the item alone, so cached
   Outlook and other syncing clients missed these changes.
+* EWS: CreateAttachment and DeleteAttachment could undo changes made to the
+  item during the previous 30 seconds, like the sequence number of a sent
+  meeting update or a save by another client.
 * EWS: AcceptItem, TentativelyAcceptItem, DeclineItem, SuppressReadReceipt
   and CancelCalendarItem now refuse private items of others for users who
   are not allowed to see private items.

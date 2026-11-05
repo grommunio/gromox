@@ -21,6 +21,7 @@
 #include <gromox/hpm_common.h>
 #include <gromox/notify_types.hpp>
 #include <gromox/paths.h>
+#include <gromox/propval.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/svc_loader.hpp>
 #include "exceptions.hpp"
@@ -1036,6 +1037,126 @@ std::shared_ptr<EWSPlugin::ExmdbInstance> EWSPlugin::loadMessageInstance(const s
 	std::shared_ptr<ExmdbInstance> instance(new ExmdbInstance(*this, dir, instanceId));
 	cache.emplace(cache_message_instance_lifetime, mkey, instance);
 	return instance;
+}
+
+/**
+ * @brief      Whether a message instance still matches the store
+ *
+ * Saves by other clients change the change number. Read flag changes do
+ * not, so the read flag is compared as well.
+ */
+static bool instance_current(const EWSPlugin &plugin, const std::string &dir,
+    uint32_t inst, uint64_t mid)
+{
+	static constexpr proptag_t tags[] = {PidTagChangeNumber, PR_READ};
+	TPROPVAL_ARRAY ip{}, sp{};
+	if (!plugin.exmdb.get_instance_properties(dir.c_str(), 0, inst,
+	    proptag_cspan{tags}, &ip) ||
+	    !plugin.exmdb.get_message_properties(dir.c_str(), "", CP_ACP, mid,
+	    proptag_cspan{tags}, &sp))
+		return false;
+	auto icn = ip.get<const uint64_t>(PidTagChangeNumber);
+	auto scn = sp.get<const uint64_t>(PidTagChangeNumber);
+	auto ird = ip.get<const uint8_t>(PR_READ);
+	auto srd = sp.get<const uint8_t>(PR_READ);
+	return icn != nullptr && scn != nullptr &&
+	       rop_util_get_gc_value(*icn) == rop_util_get_gc_value(*scn) &&
+	       (ird != nullptr && *ird != 0) == (srd != nullptr && *srd != 0);
+}
+
+/**
+ * @brief      Whether the AttachmentIds of one message instance name the
+ *             same attachments in another one
+ *
+ * An attachment with another number, or a new attachment with a number
+ * the first instance had used, would make an id name the wrong attachment.
+ */
+static bool same_numbering(const EWSPlugin &plugin, const std::string &dir,
+    uint32_t older, uint32_t newer)
+{
+	static constexpr proptag_t tags[] = {
+		PR_ATTACH_NUM, PR_ATTACH_METHOD, PR_ATTACH_SIZE,
+		PR_ATTACH_LONG_FILENAME, PR_DISPLAY_NAME, PR_ATTACH_CONTENT_ID,
+	};
+	TARRAY_SET ta{}, tb{};
+	if (!plugin.exmdb.query_message_instance_attachment_table(dir.c_str(),
+	    older, proptag_cspan{tags}, 0, INT32_MAX, &ta) ||
+	    !plugin.exmdb.query_message_instance_attachment_table(dir.c_str(),
+	    newer, proptag_cspan{tags}, 0, INT32_MAX, &tb))
+		return false;
+	std::unordered_map<uint32_t, const TPROPVAL_ARRAY *> rows;
+	uint32_t next = 0;
+	for (const auto &r : ta) {
+		auto n = r.get<const uint32_t>(PR_ATTACH_NUM);
+		if (n == nullptr)
+			return false;
+		rows.emplace(*n, &r);
+		next = std::max(next, *n + 1);
+	}
+	for (const auto &r : tb) {
+		auto n = r.get<const uint32_t>(PR_ATTACH_NUM);
+		if (n == nullptr)
+			return false;
+		auto it = rows.find(*n);
+		if (it == rows.end()) {
+			if (*n < next)
+				return false;
+			continue;
+		}
+		for (auto tag : tags) {
+			auto va = it->second->getval(tag), vb = r.getval(tag);
+			if (va == nullptr || vb == nullptr) {
+				if (va != vb)
+					return false;
+			} else if (!propval_compare_relop(RELOP_EQ, PROP_TYPE(tag), va, vb)) {
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
+/**
+ * @brief      Load a message instance that matches the store
+ *
+ * Flushing a cached instance that missed a later change of the message
+ * would undo that change, so such an instance is replaced. AttachmentIds
+ * name attachments by their number in the cached instance. With @keepIds,
+ * it is only replaced if those numbers still name the same attachments.
+ *
+ * @param      dir      Home directory of user or domain
+ * @param      fid      Parent folder ID
+ * @param      mid      Message ID
+ * @param      keepIds  Whether the caller resolves AttachmentIds of the client
+ *
+ * @return     Message instance information
+ */
+std::shared_ptr<EWSPlugin::ExmdbInstance>
+EWSPlugin::loadCurrentMessageInstance(const std::string &dir, uint64_t fid,
+    uint64_t mid, bool keepIds) const
+{
+	detail::MessageInstanceKey mkey{dir, mid};
+	std::shared_ptr<ExmdbInstance> cached;
+	try {
+		cached = std::get<std::shared_ptr<ExmdbInstance>>(cache.get(mkey,
+		         cache_message_instance_lifetime));
+	} catch (const std::out_of_range &) {
+		return loadMessageInstance(dir, fid, mid);
+	}
+	if (instance_current(*this, dir, cached->instanceId, mid))
+		return cached;
+	uint32_t instanceId;
+	if (!exmdb.load_message_instance(dir.c_str(), "", CP_ACP, false, fid,
+	    mid, &instanceId))
+		throw DispatchError(Exceptions::E3077);
+	auto fresh = std::make_shared<ExmdbInstance>(*this, dir, instanceId);
+	if (keepIds && !same_numbering(*this, dir, cached->instanceId,
+	    fresh->instanceId))
+		throw Exceptions::EWSError::ItemNotFound(Exceptions::E3585);
+	unloadMessageInstance(dir, mid);
+	if (!cache.emplace(cache_message_instance_lifetime, mkey, fresh))
+		return loadMessageInstance(dir, fid, mid);
+	return fresh;
 }
 
 /**
