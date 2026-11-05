@@ -1678,9 +1678,7 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 				{PR_MESSAGE_DELIVERY_TIME, now},
 			};
 			TPROPVAL_ARRAY proplist{std::size(props), props};
-			PROBLEM_ARRAY problems;
-			if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
-				username, CP_ACP, newMid, &proplist, &problems))
+			if (!ctx.setItemProps(dir, username, newMid, proplist))
 				throw EWSError::ItemSave(E3410);
 			MESSAGE_CONTENT *sendcontent = nullptr;
 			if (!ctx.plugin().exmdb.read_message(dir.c_str(),

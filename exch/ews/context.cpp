@@ -5580,11 +5580,9 @@ void EWSContext::sendMeetingCancellation(const std::string &dir, const sMessageE
 		auto subj = cancel_subject(cancelcontent->proplist, culture(), norm, full);
 		sprops.insert(sprops.end(), subj.begin(), subj.end());
 		const TPROPVAL_ARRAY sproplist{static_cast<uint16_t>(sprops.size()), sprops.data()};
-		PROBLEM_ARRAY sproblems;
-		if (!exmdb.set_message_properties(dir.c_str(), sentuser, CP_ACP,
-		    newMid, &sproplist, &sproblems) ||
-		    !exmdb.remove_message_properties(dir.c_str(), CP_ACP,
-		    newMid, staleKeys))
+		if (!exmdb.remove_message_properties(dir.c_str(), CP_ACP,
+		    newMid, staleKeys) ||
+		    !setItemProps(dir, sentuser, newMid, sproplist))
 			throw EWSError::ItemSave(E3092);
 		MESSAGE_CONTENT *sentcontent = nullptr;
 		if (!exmdb.read_message(dir.c_str(), sentuser, CP_ACP, newMid,
