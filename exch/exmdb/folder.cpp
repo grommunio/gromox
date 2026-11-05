@@ -8,6 +8,7 @@
 #include <cstring>
 #include <memory>
 #include <vector>
+#include <fmt/format.h>
 #include <libHX/string.h>
 #include <gromox/algorithm.hpp>
 #include <gromox/database.h>
@@ -482,6 +483,12 @@ BOOL exmdb_server::create_folder(const char *dir, cpid_t cpid,
 		PR_HIER_REV, &nt_time, &b_result);
 	cu_set_property(MAPI_FOLDER, folder_id, CP_ACP, pdb->psqlite,
 		PR_HIER_REV, &nt_time, &b_result);
+
+	auto ret = gx_sql_exec(pdb->psqlite, fmt::format("INSERT INTO permissions (folder_id, username, permission) "
+	           "SELECT {}, username, permission FROM permissions AS i WHERE i.folder_id={}",
+	           folder_id, parent_id));
+	if (ret != SQLITE_OK)
+		;
 
 	db_conn::NOTIFQ notifq;
 	auto dbase = pdb->lock_base_rd();
