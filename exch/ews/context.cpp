@@ -6291,6 +6291,8 @@ void EWSContext::suppressReadReceipt(const tItemId &refId) const
 	if (!m_plugin.exmdb.set_message_properties(dir.c_str(),
 	    effectiveUser(parent), CP_ACP, mid.messageId(), &propvals, &problems))
 		throw EWSError::ItemSave(E3409);
+	/* No new change number, so a cached instance cannot tell */
+	m_plugin.unloadMessageInstance(dir, mid.messageId());
 }
 
 /**
