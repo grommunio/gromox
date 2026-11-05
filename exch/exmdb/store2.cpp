@@ -372,6 +372,7 @@ BOOL exmdb_server::purge_softdelete(const char *dir, const char *username,
 	auto db = db_engine_get_db(dir);
 	if (!db)
 		return false;
+	folder_id = cu_resolve_folder(db->psqlite, folder_id);
 	auto fid_val = rop_util_get_gc_value(folder_id);
 	auto xact = gx_sql_begin(db->psqlite, txn_mode::write);
 	if (!xact)
