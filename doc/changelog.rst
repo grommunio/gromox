@@ -88,6 +88,9 @@ Fixes:
   types namespace and its folder id without a namespace. Clients built on
   the EWS Managed API such as eM Client rejected the response and could not
   sync their categories.
+* EWS: meeting responses, attendee and recipient changes, sent meeting
+  updates and SendItem left the change number of the item alone, so cached
+  Outlook and other syncing clients missed these changes.
 * EWS: AcceptItem, TentativelyAcceptItem, DeclineItem, SuppressReadReceipt
   and CancelCalendarItem now refuse private items of others for users who
   are not allowed to see private items.
