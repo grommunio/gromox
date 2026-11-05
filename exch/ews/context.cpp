@@ -1547,6 +1547,13 @@ std::optional<uint64_t> EWSContext::createCalendarItemFromMeetingRequest(const t
 		throw EWSError::AccessDenied(E3601);
 	if (existingMid && props.set(PidTagMid, construct<uint64_t>(*existingMid)) != ecSuccess)
 		throw EWSError::ItemSave(E3328);
+	if (existingMid) {
+		sShape stamp;
+		updated(calendarDir, *existingMid, stamp);
+		for (const auto &prop : stamp.write())
+			if (props.set(prop) != ecSuccess)
+				throw EWSError::ItemSave(E3583);
+	}
 
 	ec_error_t err = ecSuccess;
 	uint64_t newMid = 0, newCn = 0;
