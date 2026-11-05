@@ -192,13 +192,21 @@ static AWUR ec_error_t omv_export_sender(const message_content &mct,
  * @vhead: Output vmime object
  */
 static AWUR ec_error_t omv_export_fromsender(const message_content &mct,
-    vmime::header &vhead)
+    vmime::header &vhead, bool sched)
 {
-	/*
-	 * Scheduling mail is no different: a delegate answers in the mailbox
-	 * owner's name, so the owner goes to From and the delegate to Sender.
-	 */
 	auto mb = vmime::make_shared<vmime::mailbox>("");
+	if (sched) {
+		auto err = omv_export_address(mct, tags_sent_repr, *mb);
+		if (err == ecServerOOM || err == ecMAPIOOM)
+			return err;
+		if (err != ecSuccess) {
+			mb = vmime::make_shared<vmime::mailbox>("");
+			err = omv_export_address(mct, tags_sender, *mb);
+		}
+		if (err == ecSuccess)
+			vhead.From()->setValue(std::move(mb));
+		return err;
+	}
 	/* XXX: trace nullo/dstnull */
 	auto err = omv_export_address(mct, tags_sent_repr, *mb);
 	if (err == ecSuccess) {
@@ -512,7 +520,7 @@ static AWUR ec_error_t omv_export_mail_head(const message_content &mct,
 	auto err = omv_export_sender(mct, vhead);
 	if (err != ecSuccess && err != ecNullObject)
 		return err;
-	err = omv_export_fromsender(mct, vhead);
+	err = omv_export_fromsender(mct, vhead, sched);
 	if (err != ecSuccess && err != ecNullObject)
 		return err;
 	err = omv_export_rrt(mct, vhead, sched);
