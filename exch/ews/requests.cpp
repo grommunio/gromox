@@ -1266,6 +1266,29 @@ static void updateOccRef(const EWSContext &ctx, const tItemId &refId,
 		oid.basedate, proplist, {});
 }
 
+/**
+ * @brief      Put the current ChangeKey of a message into its response item
+ *
+ * @param      ctx   Request context
+ * @param      dir   Store directory
+ * @param      mid   Message ID
+ * @param      item  Response item of the message
+ */
+static void refresh_changekey(const EWSContext &ctx, const std::string &dir,
+    uint64_t mid, sItem &item) try
+{
+	auto ck = ctx.getItemProp<const BINARY>(dir, mid, PR_CHANGE_KEY);
+	if (ck == nullptr)
+		return;
+	std::visit([&](auto &i) {
+		if constexpr (std::is_base_of_v<tItem, std::decay_t<decltype(i)>>)
+			if (i.ItemId)
+				i.ItemId->ChangeKey.emplace(ck);
+	}, item);
+} catch (const DispatchError &) {
+	/* The mails are out, so keep the older ChangeKey rather than fail */
+}
+
 static void updateRef(const EWSContext &ctx, const tItemId &refId,
     uint32_t resp, std::string &refDir, std::optional<sMessageEntryId> &refMid,
     bool send_message, std::optional<sOccurrenceId> &declinedOcc,
@@ -1333,7 +1356,6 @@ static void updateRef(const EWSContext &ctx, const tItemId &refId,
 		{PR_PROCESSED, processed},
 	};
 	TPROPVAL_ARRAY proplist{std::size(props), props};
-	PROBLEM_ARRAY problems;
 	auto cls = ctx.getItemProp<char>(rdir, mid.messageId(), PR_MESSAGE_CLASS);
 	/*
 	 * A declined Meeting object leaves the calendar once the reply is out.
@@ -1363,8 +1385,7 @@ static void updateRef(const EWSContext &ctx, const tItemId &refId,
 		    !(calRights & frightsEditAny))
 			throw EWSError::AccessDenied(E3603);
 	}
-	if (!ctx.plugin().exmdb.set_message_properties(rdir.c_str(), username, CP_ACP,
-		mid.messageId(), &proplist, &problems))
+	if (!ctx.setItemProps(rdir, username, mid.messageId(), proplist))
 		throw EWSError::ItemSave(E3409);
 	if (resp == respAccepted || resp == respTentative) {
 		auto cal = ctx.createCalendarItemFromMeetingRequest(refId, resp,
@@ -1385,8 +1406,7 @@ static void updateRef(const EWSContext &ctx, const tItemId &refId,
 				{PROP_TAG(PT_LONG, cpid(NtBusyStatus)), bstat},
 			};
 			TPROPVAL_ARRAY calProps{std::size(cprops), cprops};
-			if (!ctx.plugin().exmdb.set_message_properties(calDir.c_str(),
-			    username, CP_ACP, *declinedCal, &calProps, &problems))
+			if (!ctx.setItemProps(calDir, username, *declinedCal, calProps))
 				throw EWSError::ItemSave(E3582);
 		}
 		calItem->emplace(calDir, *declinedCal);
@@ -1681,9 +1701,7 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 				{PR_MESSAGE_DELIVERY_TIME, now},
 			};
 			TPROPVAL_ARRAY proplist{std::size(props), props};
-			PROBLEM_ARRAY problems;
-			if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
-				username, CP_ACP, newMid, &proplist, &problems))
+			if (!ctx.setItemProps(dir, username, newMid, proplist))
 				throw EWSError::ItemSave(E3410);
 			MESSAGE_CONTENT *sendcontent = nullptr;
 			if (!ctx.plugin().exmdb.read_message(dir.c_str(),
@@ -1692,14 +1710,9 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 				throw EWSError::ItemNotFound(E3391);
 			ctx.send(dir, messageId, *sendcontent);
 			/* Exchange reports MeetingRequestWasSent from now on */
-			auto invited = ctx.getNamedPropId(dir, NtFInvited, true);
-			const TAGGED_PROPVAL ival = {PROP_TAG(PT_BOOLEAN, invited), deconst(&byte_value_one)};
-			const TPROPVAL_ARRAY ilist = {1, deconst(&ival)};
-			if (invited == 0 ||
-			    !ctx.plugin().exmdb.set_message_properties(dir.c_str(),
-			    ctx.effectiveUser(*targetFolder), CP_ACP, messageId,
-			    &ilist, &problems))
-				mlog(LV_ERR, "[ews] %s: cannot set PidLidFInvited", dir.c_str());
+			ctx.markInvited(dir, *targetFolder, messageId);
+			if (!msg.Items.empty())
+				refresh_changekey(ctx, dir, messageId, msg.Items.back());
 		}
 		if (std::holds_alternative<tCalendarItem>(item) &&
 		    request.SendMeetingInvitations == Enum::SendOnlyToAll) {
@@ -4738,11 +4751,16 @@ void process(mSendItemRequest &&request, XMLElement *response, const EWSContext 
 				{PR_READ, deconst(&byte_value_one)},
 			};
 			const TPROPVAL_ARRAY proplist = {std::size(sprops), deconst(sprops)};
+			/* The copy made by the move gets a change number of its own */
+			bool move = saveFid != 0 && saveFid != folder.folderId;
 			PROBLEM_ARRAY problems;
-			if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
-			    username, CP_ACP, meid.messageId(), &proplist, &problems))
+			bool ok = move ?
+			          ctx.plugin().exmdb.set_message_properties(dir.c_str(),
+			          username, CP_ACP, meid.messageId(), &proplist, &problems) :
+			          ctx.setItemProps(dir, username, meid.messageId(), proplist);
+			if (!ok)
 				throw EWSError::ItemSave(E3498);
-			if (saveFid != 0 && saveFid != folder.folderId)
+			if (move)
 				ctx.moveCopyItem(dir, meid, saveFid, false);
 		}
 
@@ -5262,10 +5280,6 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 				ctx.updateMessageRecipients(dir, parentFolder,
 				    mid.messageId(), shape);
 		}
-		if (occ_basedate != 0)
-			msg.Items.emplace_back(ctx.loadOccurrence(dir, parentFolder.folderId, mid.messageId(), occ_basedate, idOnly));
-		else
-			msg.Items.emplace_back(ctx.loadItem(dir, mid.folderId(), mid.messageId(), idOnly));
 		/* An attendee's copy sends nothing, like in Exchange */
 		if (orgCopy && occ_basedate != 0) {
 			ctx.sendOccurrenceUpdate(dir, mid, parentFolder,
@@ -5303,6 +5317,11 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 			    mid.messageId(), *oldRcpts,
 			    mode == Enum::SendToAllAndSaveCopy ||
 			    mode == Enum::SendToChangedAndSaveCopy);
+		/* The sends write to the meeting, so load it after them */
+		if (occ_basedate != 0)
+			msg.Items.emplace_back(ctx.loadOccurrence(dir, parentFolder.folderId, mid.messageId(), occ_basedate, idOnly));
+		else
+			msg.Items.emplace_back(ctx.loadItem(dir, mid.folderId(), mid.messageId(), idOnly));
 		if (occ_basedate == 0 && request.MessageDisposition &&
 		    (*request.MessageDisposition == Enum::SendOnly ||
 		    *request.MessageDisposition == Enum::SendAndSaveCopy))

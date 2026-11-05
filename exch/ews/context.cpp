@@ -1547,6 +1547,13 @@ std::optional<uint64_t> EWSContext::createCalendarItemFromMeetingRequest(const t
 		throw EWSError::AccessDenied(E3601);
 	if (existingMid && props.set(PidTagMid, construct<uint64_t>(*existingMid)) != ecSuccess)
 		throw EWSError::ItemSave(E3328);
+	if (existingMid) {
+		sShape stamp;
+		updated(calendarDir, *existingMid, stamp);
+		for (const auto &prop : stamp.write())
+			if (props.set(prop) != ecSuccess)
+				throw EWSError::ItemSave(E3583);
+	}
 
 	ec_error_t err = ecSuccess;
 	uint64_t newMid = 0, newCn = 0;
@@ -3794,6 +3801,23 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 }
 
 /**
+ * @brief      Give a message instance a new change number before its flush
+ *
+ * flush_instance keeps the change number loaded with the instance.
+ */
+static void stamp_instance(const EWSContext &ctx, const std::string &dir,
+    uint64_t mid, uint32_t instanceId)
+{
+	sShape stamp;
+	ctx.updated(dir, mid, stamp);
+	const auto props = stamp.write();
+	PROBLEM_ARRAY problems;
+	if (!ctx.plugin().exmdb.set_instance_properties(dir.c_str(),
+	    instanceId, &props, &problems))
+		throw EWSError::ItemSave(E3584);
+}
+
+/**
  * @brief      Update attendee recipients on existing calendar item
  *
  * Used by UpdateItem when the client sets RequiredAttendees,
@@ -3917,6 +3941,7 @@ void EWSContext::updateAttendees(const std::string &dir,
 		}
 	}
 
+	stamp_instance(*this, dir, mid, inst->instanceId);
 	ec_error_t err;
 	if (!exmdb.flush_instance(dir.c_str(),
 	    inst->instanceId, &err) || err != ecSuccess)
@@ -3998,6 +4023,7 @@ void EWSContext::updateMessageRecipients(const std::string &dir,
 	if (!exmdb.update_message_instance_rcpts(dir.c_str(),
 	    inst->instanceId, rcpts))
 		throw EWSError::ItemSave(E3462);
+	stamp_instance(*this, dir, mid, inst->instanceId);
 	ec_error_t err;
 	if (!exmdb.flush_instance(dir.c_str(),
 	    inst->instanceId, &err) || err != ecSuccess)
@@ -5532,11 +5558,9 @@ void EWSContext::sendMeetingCancellation(const std::string &dir, const sMessageE
 		auto subj = cancel_subject(cancelcontent->proplist, culture(), norm, full);
 		sprops.insert(sprops.end(), subj.begin(), subj.end());
 		const TPROPVAL_ARRAY sproplist{static_cast<uint16_t>(sprops.size()), sprops.data()};
-		PROBLEM_ARRAY sproblems;
-		if (!exmdb.set_message_properties(dir.c_str(), sentuser, CP_ACP,
-		    newMid, &sproplist, &sproblems) ||
-		    !exmdb.remove_message_properties(dir.c_str(), CP_ACP,
-		    newMid, staleKeys))
+		if (!exmdb.remove_message_properties(dir.c_str(), CP_ACP,
+		    newMid, staleKeys) ||
+		    !setItemProps(dir, sentuser, newMid, sproplist))
 			throw EWSError::ItemSave(E3092);
 		MESSAGE_CONTENT *sentcontent = nullptr;
 		if (!exmdb.read_message(dir.c_str(), sentuser, CP_ACP, newMid,
@@ -5782,9 +5806,7 @@ uint32_t EWSContext::nextSequence(const std::string &dir,
 	}
 	const TPROPVAL_ARRAY list = {static_cast<uint16_t>(vals.size()),
 	                            vals.data()};
-	PROBLEM_ARRAY problems;
-	if (!m_plugin.exmdb.set_message_properties(dir.c_str(),
-	    effectiveUser(parent), CP_ACP, mid, &list, &problems))
+	if (!setItemProps(dir, effectiveUser(parent), mid, list))
 		throw EWSError::ItemSave(E3542);
 	return val;
 }
@@ -5842,20 +5864,23 @@ void EWSContext::setUnsendable(TPROPVAL_ARRAY &props, proptag_t tag,
  * Sets PidLidFInvited, which EWS reports as MeetingRequestWasSent. Outlook
  * shows a meeting without it as not sent yet. The mail is out already, so
  * a failure is only logged.
+ *
+ * @param      dir     Store directory
+ * @param      parent  Parent folder of the meeting
+ * @param      mid     Message ID of the meeting
  */
-static void mark_invited(const EWSContext &ctx, const std::string &dir,
-    const sFolderSpec &parent, uint64_t mid)
+void EWSContext::markInvited(const std::string &dir,
+    const sFolderSpec &parent, uint64_t mid) const try
 {
-	auto propid = ctx.getNamedPropId(dir, NtFInvited, true);
-	if (propid == 0)
-		return;
+	auto propid = getNamedPropId(dir, NtFInvited, true);
 	const TAGGED_PROPVAL val = {PROP_TAG(PT_BOOLEAN, propid), deconst(&byte_value_one)};
 	const TPROPVAL_ARRAY list = {1, deconst(&val)};
-	PROBLEM_ARRAY problems;
-	if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
-	    ctx.effectiveUser(parent), CP_ACP, mid, &list, &problems))
+	if (propid == 0 || !setItemProps(dir, effectiveUser(parent), mid, list))
 		mlog(LV_ERR, "[ews] %s:m%llu: cannot set PidLidFInvited",
 			dir.c_str(), LLU{rop_util_get_gc_value(mid)});
+} catch (const DispatchError &e) {
+	mlog(LV_ERR, "[ews] %s:m%llu: cannot set PidLidFInvited: %s",
+		dir.c_str(), LLU{rop_util_get_gc_value(mid)}, e.what());
 }
 
 /**
@@ -5975,7 +6000,7 @@ void EWSContext::sendMeetingUpdate(const std::string &dir,
 	if (!stamp_exceptions(*req, ident))
 		throw EWSError::NotEnoughMemory(E3408);
 	send(dir, mid, *req);
-	mark_invited(*this, dir, parent, mid);
+	markInvited(dir, parent, mid);
 	if (!saveCopy)
 		return;
 	static constexpr proptag_t rmProps[] = {
@@ -7876,6 +7901,41 @@ void EWSContext::updated(const std::string& dir, const sMessageEntryId& mid, sSh
 	shape.write(TAGGED_PROPVAL{PR_PREDECESSOR_CHANGE_LIST, newPclContainer});
 
 	shape.write(TAGGED_PROPVAL{PidTagChangeNumber, construct<uint64_t>(changeNum)});
+}
+
+/**
+ * @brief      Add update tags to the shape
+ *
+ * @param      dir       Home directory of user or domain
+ * @param      mid       Message ID
+ * @param      shape     Shape to add the tags to
+ */
+void EWSContext::updated(const std::string &dir, uint64_t mid, sShape &shape) const
+{
+	updated(dir, sMessageEntryId(getItemEntryId(dir, mid)), shape);
+}
+
+/**
+ * @brief      Write properties of an existing message as a new change
+ *
+ * @param      dir       Home directory of user or domain
+ * @param      username  User to write the properties as
+ * @param      mid       Message ID
+ * @param      props     Properties to write
+ *
+ * @return     false if exmdb could not write the properties
+ */
+bool EWSContext::setItemProps(const std::string &dir, const char *username,
+    uint64_t mid, const TPROPVAL_ARRAY &props) const
+{
+	sShape shape;
+	for (const auto &prop : props)
+		shape.write(prop);
+	updated(dir, mid, shape);
+	const auto all = shape.write();
+	PROBLEM_ARRAY problems;
+	return m_plugin.exmdb.set_message_properties(dir.c_str(), username,
+	       CP_ACP, mid, &all, &problems);
 }
 
 
