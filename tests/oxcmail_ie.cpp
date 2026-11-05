@@ -1315,7 +1315,7 @@ static int import_autoforwarded()
 		auto v = mc->proplist.get<const uint8_t>(PR_AUTO_FORWARDED);
 		assert((v != nullptr && *v != 0) == want);
 		auto out = vmime::make_shared<vmime::message>();
-		assert(cvt.mapi_to_inet(*mc, out));
+		assert(cvt.mapi_to_inet(*mc, out) == ecSuccess);
 		auto text = vmail_to_string(*out);
 		assert((text.find("X-MS-Exchange-Organization-AutoForwarded: true") != text.npos) == want);
 	}
