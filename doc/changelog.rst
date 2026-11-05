@@ -84,6 +84,9 @@ Changes:
 
 Fixes:
 
+* EWS: UpdateUserConfiguration kept the old change number of the
+  configuration message, so cached Outlook never picked up categories added
+  in eM Client or Outlook for Mac.
 * EWS: GetUserConfiguration returned the UserConfiguration element in the
   types namespace and its folder id without a namespace. Clients built on
   the EWS Managed API such as eM Client rejected the response and could not

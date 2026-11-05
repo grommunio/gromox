@@ -680,6 +680,7 @@ E(3609, "Outlook rule blob present, set RemoveOutlookRuleBlob to replace it");
 E(3610, "failed to delete the Outlook rule blob");
 E(3611, "failed to write the inbox rules");
 E(3612, "the inbox rule limit has been reached");
+E(3613, "user configuration message has no entry id");
 
 #undef E
 }
