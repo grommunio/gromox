@@ -4722,11 +4722,16 @@ void process(mSendItemRequest &&request, XMLElement *response, const EWSContext 
 				{PR_READ, deconst(&byte_value_one)},
 			};
 			const TPROPVAL_ARRAY proplist = {std::size(sprops), deconst(sprops)};
+			/* The copy made by the move gets a change number of its own */
+			bool move = saveFid != 0 && saveFid != folder.folderId;
 			PROBLEM_ARRAY problems;
-			if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
-			    username, CP_ACP, meid.messageId(), &proplist, &problems))
+			bool ok = move ?
+			          ctx.plugin().exmdb.set_message_properties(dir.c_str(),
+			          username, CP_ACP, meid.messageId(), &proplist, &problems) :
+			          ctx.setItemProps(dir, username, meid.messageId(), proplist);
+			if (!ok)
 				throw EWSError::ItemSave(E3498);
-			if (saveFid != 0 && saveFid != folder.folderId)
+			if (move)
 				ctx.moveCopyItem(dir, meid, saveFid, false);
 		}
 
