@@ -6825,6 +6825,93 @@ message_content_ptr EWSContext::toContent(const std::string &dir,
 }
 
 /**
+ * @brief      Write a follow-up flag the way Exchange stores it
+ *
+ * Each flag replaces the previous one. Flagged and Complete also set
+ * the task properties of the flagged item, see MS-OXOFLAG. Outlook's
+ * To-Do search folder matches on the icon and the to-do flags.
+ *
+ * @param      flag        Flag to write
+ * @param      shape       Shape to write to
+ * @param      subject     Subject for the to-do title, may be null
+ * @param      unsent      Whether the item is still unsent
+ * @param      hasRequest  Whether the item has a flag request text
+ */
+void EWSContext::writeFlag(const tFlagType &flag, sShape &shape,
+    const char *subject, bool unsent, bool hasRequest)
+{
+	auto rm = [&](const PROPERTY_NAME &name) {
+		if (auto tag = shape.tag(name))
+			shape.remove(tag);
+	};
+	auto put = [&](const PROPERTY_NAME &name, uint16_t type, void *v) {
+		shape.write(name, TAGGED_PROPVAL{type, v});
+	};
+	auto u32 = [&](proptag_t tag, uint32_t v) {
+		shape.write(TAGGED_PROPVAL{tag, construct<uint32_t>(v)});
+	};
+	auto date = [&](const PROPERTY_NAME &n1, const PROPERTY_NAME &n2,
+	            const std::optional<time_point> &tp) {
+		if (!tp) {
+			rm(n1);
+			rm(n2);
+			return;
+		}
+		auto nt = construct<uint64_t>(toNT(*tp));
+		put(n1, PT_SYSTIME, nt);
+		put(n2, PT_SYSTIME, nt);
+	};
+	if (flag.FlagStatus == Enum::NotFlagged) {
+		shape.remove(PR_FLAG_STATUS);
+		shape.remove(PR_FOLLOWUP_ICON);
+		shape.remove(PR_FLAG_COMPLETE_TIME);
+		for (const auto *n : {&NtFlagRequest, &NtToDoTitle,
+		     &NtTaskStatus, &NtPercentComplete, &NtTaskComplete,
+		     &NtTaskStartDate, &NtTaskDueDate, &NtTaskDateCompleted,
+		     &NtCommonStart, &NtCommonEnd})
+			rm(*n);
+		u32(PR_TODO_ITEM_FLAGS, 0);
+		return;
+	}
+	/* Flagged replaces a custom text, Complete keeps it */
+	if (!hasRequest || flag.FlagStatus == Enum::Flagged)
+		put(NtFlagRequest, PT_UNICODE, deconst("Follow up"));
+	if (flag.FlagStatus == Enum::Flagged) {
+		u32(PR_FLAG_STATUS, followupFlagged);
+		u32(PR_FOLLOWUP_ICON, olRedFlagIcon);
+		u32(PR_TODO_ITEM_FLAGS, unsent ? todoRecipientFlagged :
+		    todoTimeFlaggged);
+		if (subject != nullptr && *subject != '\0')
+			put(NtToDoTitle, PT_UNICODE, deconst(subject));
+		put(NtTaskStatus, PT_LONG, construct<uint32_t>(tsvNotStarted));
+		put(NtPercentComplete, PT_DOUBLE, construct<double>(0));
+		put(NtTaskComplete, PT_BOOLEAN, construct<uint8_t>(0));
+		date(NtTaskStartDate, NtCommonStart, flag.StartDate);
+		date(NtTaskDueDate, NtCommonEnd, flag.DueDate);
+		shape.remove(PR_FLAG_COMPLETE_TIME);
+		rm(NtTaskDateCompleted);
+		return;
+	}
+	u32(PR_FLAG_STATUS, followupComplete);
+	shape.remove(PR_FOLLOWUP_ICON);
+	put(NtTaskStatus, PT_LONG, construct<uint32_t>(tsvComplete));
+	put(NtPercentComplete, PT_DOUBLE, construct<double>(1));
+	put(NtTaskComplete, PT_BOOLEAN, construct<uint8_t>(1));
+	if (!flag.CompleteDate) {
+		shape.remove(PR_FLAG_COMPLETE_TIME);
+		rm(NtTaskDateCompleted);
+		return;
+	}
+	/* The task keeps the day only */
+	static constexpr uint64_t day = 86400ULL * 10000000;
+	uint64_t nt = toNT(*flag.CompleteDate);
+	shape.write(TAGGED_PROPVAL{PR_FLAG_COMPLETE_TIME,
+		construct<uint64_t>(nt)});
+	put(NtTaskDateCompleted, PT_SYSTIME,
+		construct<uint64_t>(nt - nt % day));
+}
+
+/**
  * @brief      Add a file attachment to a new message
  *
  * @param      content  Message to add to
@@ -6899,6 +6986,23 @@ message_content_ptr EWSContext::toContent(const std::string &dir,
 	if (!content)
 		throw EWSError::NotEnoughMemory(E3217);
 	std::visit([&](auto& i){toContent(dir, i, shape, content);}, item);
+	const tItem &base = std::visit([](const auto &i) -> const tItem & {
+		if constexpr (std::is_base_of_v<tItem, std::decay_t<decltype(i)>>)
+			return i;
+		else
+			return i.Message;
+	}, item);
+	if (base.Flag) {
+		/* Exchange cannot flag these */
+		if (std::holds_alternative<tTask>(item) ||
+		    std::holds_alternative<tCalendarItem>(item))
+			throw EWSError::InternalServerError(E3626);
+		auto subject = shape.writes(PR_SUBJECT);
+		writeFlag(*base.Flag, shape, subject != nullptr ?
+			static_cast<const char *>(subject->pvalue) :
+			content->proplist.get<const char>(PR_SUBJECT),
+			!std::holds_alternative<tContact>(item), false);
+	}
 
 	if (!shape.writes(PR_LAST_MODIFICATION_TIME))
 		shape.write(TAGGED_PROPVAL{PR_LAST_MODIFICATION_TIME, EWSContext::construct<uint64_t>(rop_util_current_nttime())});
@@ -7697,25 +7801,6 @@ void EWSContext::toContent(const std::string &dir, tItem &item, sShape &shape,
 		shape.write(NtReminderSet, TAGGED_PROPVAL{PT_BOOLEAN, construct<uint8_t>(*item.ReminderIsSet ? 1 : 0)});
 	if (item.ReminderMinutesBeforeStart)
 		shape.write(NtReminderDelta, TAGGED_PROPVAL{PT_LONG, construct<int32_t>(*item.ReminderMinutesBeforeStart)});
-	if (item.Flag) {
-		uint32_t status = 0;
-		bool setStatus = false;
-		if (item.Flag->FlagStatus == Enum::Flagged) {
-			status = followupFlagged;
-			setStatus = true;
-		} else if (item.Flag->FlagStatus == Enum::Complete) {
-			status = followupComplete;
-			setStatus = true;
-		}
-		if (setStatus)
-			shape.write(TAGGED_PROPVAL{PR_FLAG_STATUS, construct<uint32_t>(status)});
-		if (item.Flag->StartDate)
-			shape.write(NtTaskStartDate, TAGGED_PROPVAL{PT_SYSTIME, construct<uint64_t>(toNT(*item.Flag->StartDate))});
-		if (item.Flag->DueDate)
-			shape.write(NtTaskDueDate, TAGGED_PROPVAL{PT_SYSTIME, construct<uint64_t>(toNT(*item.Flag->DueDate))});
-		if (item.Flag->CompleteDate)
-			shape.write(NtTaskDateCompleted, TAGGED_PROPVAL{PT_SYSTIME, construct<uint64_t>(toNT(*item.Flag->CompleteDate))});
-	}
 
 	auto now = EWSContext::construct<mapitime_t>(rop_util_current_nttime());
 	shape.write(TAGGED_PROPVAL{PR_CREATION_TIME, now});
