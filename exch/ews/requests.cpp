@@ -1266,6 +1266,29 @@ static void updateOccRef(const EWSContext &ctx, const tItemId &refId,
 		oid.basedate, proplist, {});
 }
 
+/**
+ * @brief      Put the current ChangeKey of a message into its response item
+ *
+ * @param      ctx   Request context
+ * @param      dir   Store directory
+ * @param      mid   Message ID
+ * @param      item  Response item of the message
+ */
+static void refresh_changekey(const EWSContext &ctx, const std::string &dir,
+    uint64_t mid, sItem &item) try
+{
+	auto ck = ctx.getItemProp<const BINARY>(dir, mid, PR_CHANGE_KEY);
+	if (ck == nullptr)
+		return;
+	std::visit([&](auto &i) {
+		if constexpr (std::is_base_of_v<tItem, std::decay_t<decltype(i)>>)
+			if (i.ItemId)
+				i.ItemId->ChangeKey.emplace(ck);
+	}, item);
+} catch (const DispatchError &) {
+	/* The mails are out, so keep the older ChangeKey rather than fail */
+}
+
 static void updateRef(const EWSContext &ctx, const tItemId &refId,
     uint32_t resp, std::string &refDir, std::optional<sMessageEntryId> &refMid,
     bool send_message, std::optional<sOccurrenceId> &declinedOcc,
@@ -1688,6 +1711,8 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 			ctx.send(dir, messageId, *sendcontent);
 			/* Exchange reports MeetingRequestWasSent from now on */
 			ctx.markInvited(dir, *targetFolder, messageId);
+			if (!msg.Items.empty())
+				refresh_changekey(ctx, dir, messageId, msg.Items.back());
 		}
 		if (std::holds_alternative<tCalendarItem>(item) &&
 		    request.SendMeetingInvitations == Enum::SendOnlyToAll) {
@@ -5251,10 +5276,6 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 				ctx.updateMessageRecipients(dir, parentFolder,
 				    mid.messageId(), shape);
 		}
-		if (occ_basedate != 0)
-			msg.Items.emplace_back(ctx.loadOccurrence(dir, parentFolder.folderId, mid.messageId(), occ_basedate, idOnly));
-		else
-			msg.Items.emplace_back(ctx.loadItem(dir, mid.folderId(), mid.messageId(), idOnly));
 		/* An attendee's copy sends nothing, like in Exchange */
 		if (orgCopy && occ_basedate != 0) {
 			ctx.sendOccurrenceUpdate(dir, mid, parentFolder,
@@ -5292,6 +5313,11 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 			    mid.messageId(), *oldRcpts,
 			    mode == Enum::SendToAllAndSaveCopy ||
 			    mode == Enum::SendToChangedAndSaveCopy);
+		/* The sends write to the meeting, so load it after them */
+		if (occ_basedate != 0)
+			msg.Items.emplace_back(ctx.loadOccurrence(dir, parentFolder.folderId, mid.messageId(), occ_basedate, idOnly));
+		else
+			msg.Items.emplace_back(ctx.loadItem(dir, mid.folderId(), mid.messageId(), idOnly));
 		if (occ_basedate == 0 && request.MessageDisposition &&
 		    (*request.MessageDisposition == Enum::SendOnly ||
 		    *request.MessageDisposition == Enum::SendAndSaveCopy))
