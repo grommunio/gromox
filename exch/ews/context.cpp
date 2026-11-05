@@ -3823,6 +3823,23 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 }
 
 /**
+ * @brief      Give a message instance a new change number before its flush
+ *
+ * flush_instance keeps the change number loaded with the instance.
+ */
+static void stamp_instance(const EWSContext &ctx, const std::string &dir,
+    uint64_t mid, uint32_t instanceId)
+{
+	sShape stamp;
+	ctx.updated(dir, mid, stamp);
+	const auto props = stamp.write();
+	PROBLEM_ARRAY problems;
+	if (!ctx.plugin().exmdb.set_instance_properties(dir.c_str(),
+	    instanceId, &props, &problems))
+		throw EWSError::ItemSave(E3584);
+}
+
+/**
  * @brief      Update attendee recipients on existing calendar item
  *
  * Used by UpdateItem when the client sets RequiredAttendees,
@@ -3946,6 +3963,7 @@ void EWSContext::updateAttendees(const std::string &dir,
 		}
 	}
 
+	stamp_instance(*this, dir, mid, inst->instanceId);
 	ec_error_t err;
 	if (!exmdb.flush_instance(dir.c_str(),
 	    inst->instanceId, &err) || err != ecSuccess)
@@ -4027,6 +4045,7 @@ void EWSContext::updateMessageRecipients(const std::string &dir,
 	if (!exmdb.update_message_instance_rcpts(dir.c_str(),
 	    inst->instanceId, rcpts))
 		throw EWSError::ItemSave(E3462);
+	stamp_instance(*this, dir, mid, inst->instanceId);
 	ec_error_t err;
 	if (!exmdb.flush_instance(dir.c_str(),
 	    inst->instanceId, &err) || err != ecSuccess)
