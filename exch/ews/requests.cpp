@@ -1757,7 +1757,7 @@ void process(mCreateAttachmentRequest &&request, XMLElement *response,
 		ctx.assertCanReadPrivate(dir, parentFolder, rights, mid.messageId());
 
 		for (const tFileAttachment &att : request.Attachments) try {
-			auto mInst = ctx.plugin().loadMessageInstance(dir,
+			auto mInst = ctx.plugin().loadCurrentMessageInstance(dir,
 			             parentFolder.folderId, mid.messageId());
 			uint32_t aInstId = 0, aNum = 0;
 			if (!ctx.plugin().exmdb.create_attachment_instance(dir.c_str(),
@@ -1837,8 +1837,8 @@ void process(mDeleteAttachmentRequest &&request, XMLElement *response, const EWS
 			throw EWSError::AccessDenied(E3444);
 		ctx.assertCanReadPrivate(dir, parentFolder, rights, aid.messageId());
 
-		auto mInst = ctx.plugin().loadMessageInstance(dir,
-		             parentFolder.folderId, aid.messageId());
+		auto mInst = ctx.plugin().loadCurrentMessageInstance(dir,
+		             parentFolder.folderId, aid.messageId(), true);
 		if (!ctx.plugin().exmdb.delete_message_instance_attachment(dir.c_str(),
 		    mInst->instanceId, aid.attachment_num))
 			throw EWSError::ItemSave(E3432);

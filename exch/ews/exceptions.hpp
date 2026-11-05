@@ -665,6 +665,7 @@ inline std::string E3581(std::string_view val) {return fmt::format("E-3581: inva
 E(3582, "failed to set response properties on the calendar item");
 E(3583, "failed to stamp the existing calendar item of the meeting");
 E(3584, "failed to stamp the message instance before its flush");
+E(3585, "the attachments changed since the id was issued");
 E(3590, "no right to answer for the principal in its calendar");
 E(3591, "failed to map named properties to the principal's store");
 E(3600, "cannot write to the calendar of the referenced item");

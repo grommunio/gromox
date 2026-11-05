@@ -2262,6 +2262,8 @@ void EWSContext::impersonate(const char* addrtype, const char* addr)
  */
 sAttachment EWSContext::loadAttachment(const std::string& dir, const sAttachmentId& aid) const
 {
+	m_plugin.loadCurrentMessageInstance(dir, aid.folderId(),
+		aid.messageId(), true);
 	auto aInst = m_plugin.loadAttachmentInstance(dir, aid.folderId(), aid.messageId(), aid.attachment_num);
 	static constexpr proptag_t tagIDs[] = {
 		PR_ATTACH_METHOD, PR_DISPLAY_NAME, PR_ATTACH_MIME_TAG,
@@ -2430,7 +2432,7 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 			PR_ATTACH_FLAGS, PR_ATTACH_SIZE,
 			PR_ATTACHMENT_HIDDEN,
 		};
-		auto mInst = m_plugin.loadMessageInstance(dir, fid, mid);
+		auto mInst = m_plugin.loadCurrentMessageInstance(dir, fid, mid);
 		std::vector<uint32_t> nums;
 		if (!attachment_nums(m_plugin, dir, mInst->instanceId, nums))
 			throw DispatchError(E3079);
@@ -2929,7 +2931,7 @@ EWSContext::loadOccurrenceSeries(const std::string &dir, uint64_t fid,
 void EWSContext::loadOccurrenceInstances(const std::string &dir,
     sOccurrenceSeries &s, sShape &shape) const
 {
-	auto mInst = m_plugin.loadMessageInstance(dir, s.fid, s.mid);
+	auto mInst = m_plugin.loadCurrentMessageInstance(dir, s.fid, s.mid);
 	std::vector<uint32_t> nums;
 	if (!attachment_nums(m_plugin, dir, mInst->instanceId, nums))
 		throw DispatchError(E3210);

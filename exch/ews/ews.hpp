@@ -139,6 +139,7 @@ class EWSPlugin {
 	std::shared_ptr<ExmdbInstance> loadAttachmentInstance(const std::string&, uint64_t, uint64_t, uint32_t) const;
 	std::shared_ptr<ExmdbInstance> loadEmbeddedInstance(const std::string &, const std::shared_ptr<ExmdbInstance> &) const;
 	std::shared_ptr<ExmdbInstance> loadMessageInstance(const std::string&, uint64_t, uint64_t) const;
+	std::shared_ptr<ExmdbInstance> loadCurrentMessageInstance(const std::string &, uint64_t, uint64_t, bool = false) const;
 	void unloadMessageInstance(const std::string&, uint64_t) const;
 	void unloadAttachmentInstance(const std::string &, uint64_t, uint32_t) const;
 	Structures::sFolderEntryId mkFolderEntryId(const Structures::sMailboxInfo&, uint64_t) const;
