@@ -25,20 +25,50 @@ Default: 3min
 Default: \fI5\fP
 .TP
 \fBlda_mrautoproc\fP
-Perform meeting request autoprocessing. This feature is currently experimental.
-Requires lda_twostep_ruleproc to be enabled.
+Perform meeting request autoprocessing after the rules of a delivered
+message have run. Meeting requests are entered into the recipient's calendar
+as tentative, room and equipment mailboxes accept or decline them according to
+their booking settings, and responses and cancellations update the calendar
+items. This needs lda_twostep_ruleproc. With lda_twostep_ruleproc=0, no
+meeting autoprocessing takes place.
 .br
-Default: \fIno\fP
+Default: \fIyes\fP
 .TP
 \fBlda_relay_unknown_recipients\fP
 -> See gromox.cfg(5) manpage instead!
 .TP
 \fBlda_twostep_ruleproc\fP
-If set to \fI1\fP, an alternate rule processor codebase will be used which
-supports cross-store moves, forwarding and OOF condition but (at this time)
-no delegation or autoreply.
-.br
-Default: \fI0\fP
+Selects the processor for server-side rules on delivered mail. With \fI1\fP,
+the message is stored first and the rules run afterwards in
+libgxs_ruleproc. With \fI0\fP, the older processor inside exmdb_provider(4gx)
+runs the rules within the delivery transaction.
+.RS
+.PP
+Compared to the old processor, the twostep processor also moves and copies
+into other stores (if the mailbox owner has write access there) and logs
+rule errors instead of failing the delivery. Its differences are:
+.IP \(bu 4
+After a move, the rules of the target folder are not evaluated.
+.IP \(bu 4
+SMS alert forwards (FWD_AS_SMS_ALERT) are sent as a short text mail to the
+e-mail recipients of the rule. There is no SMS gateway, so recipients with a
+mobile number get nothing and the rule reports a deferred error message.
+.IP \(bu 4
+Clients may briefly see a message in the Inbox before a rule moves or
+deletes it.
+.IP \(bu 4
+Rules flagged ST_ONLY_WHEN_OOF are evaluated during Out of Office even
+without ST_ENABLED, as MS-OXORULE v23.0 section 2.2.1.3.1.3 describes.
+.IP \(bu 4
+ST_ONLY_WHEN_OOF_EX, which Exchange 2007 sets on Out of Office rules, is
+treated like ST_ONLY_WHEN_OOF.
+.PP
+The setting only affects mail delivered through this hook (LMTP/SMTP).
+gromox\-import(8) \-D (without \-\-twostep) and messages saved into public
+folders by clients always use the old processor.
+.PP
+Default: \fI1\fP
+.RE
 .TP
 \fBresponse_audit_capacity\fP
 Keep track of at most this many {From address, To address} pairs for bounce
@@ -64,6 +94,11 @@ Out-of-office replies are only generated when one of the recipient's
 addresses (primary or alias) appears in the To, Cc or Bcc line of the
 message, cf. RFC 5230 section 4.5. Mail that reaches a mailbox only by way of
 e.g. a distribution group thus produces no OOF reply.
+.PP
+Rule conditions on the message class of automatic replies
+(IPM.Note.Rules.OofTemplate.Microsoft) only match replies that carry that
+class, e.g. from Exchange in TNEF form. The Out of Office replies Gromox
+sends arrive as IPM.Note.
 .SH Files
 .IP \(bu 4
 \fIdata_file_path\fP/local_bounce/: response templates for when mail cannot be

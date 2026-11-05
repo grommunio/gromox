@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2023–2026 grommunio GmbH
 // This file is part of Gromox.
+#include <algorithm>
 #include <cerrno>
 #include <cstdint>
 #include <cstring>
@@ -184,6 +185,60 @@ bool rprop_srchkey_eq(const SPropertyRestriction &rprop, const void *dbval,
 	return cvt_srchkey_eq(*static_cast<const BINARY *>(dbval),
 	       *static_cast<const BINARY *>(rprop.propval.pvalue),
 	       org, std::move(id2user));
+}
+
+static bool srchkey_word_match(std::string_view hay, std::string_view needle,
+    unsigned int fuzzy)
+{
+	auto eq = [](char a, char b) {
+		auto up = [](char c) { return c >= 'a' && c <= 'z' ? c - 'a' + 'A' : c; };
+		return up(a) == up(b);
+	};
+	switch (fuzzy & 0xFFFF) {
+	case FL_FULLSTRING:
+		return hay.size() == needle.size() &&
+		       std::equal(hay.begin(), hay.end(), needle.begin(), eq);
+	case FL_SUBSTRING:
+		return std::search(hay.begin(), hay.end(), needle.begin(),
+		       needle.end(), eq) != hay.end();
+	case FL_PREFIX:
+		return hay.size() >= needle.size() &&
+		       std::equal(needle.begin(), needle.end(), hay.begin(), eq);
+	}
+	return false;
+}
+
+/**
+ * Evaluate a RES_CONTENT restriction. Address search keys are compared
+ * without case, and an EX: key is also tried in its SMTP: form, since words
+ * like "@example.com" never occur in the EX: key of a local sender. This is
+ * what "sender contains these words" needs, outlook_rule_spec.rst condition
+ * 230. Other restrictions are evaluated as usual.
+ */
+bool rcont_srchkey_eval(const SContentRestriction &rcon, const void *dbval,
+    const char *org, cvt_id2user id2user) try
+{
+	if (PROP_TYPE(rcon.proptag) != PT_BINARY ||
+	    !is_srchkey_tag(rcon.proptag) || dbval == nullptr ||
+	    rcon.propval.pvalue == nullptr)
+		return rcon.eval(dbval);
+	std::string_view hay = *static_cast<const BINARY *>(dbval);
+	std::string_view needle = *static_cast<const BINARY *>(rcon.propval.pvalue);
+	while (!hay.empty() && hay.back() == '\0')
+		hay.remove_suffix(1);
+	while (!needle.empty() && needle.back() == '\0')
+		needle.remove_suffix(1);
+	if (srchkey_word_match(hay, needle, rcon.fuzzy_level))
+		return true;
+	if (!addrkey_style(hay) || strncasecmp(hay.data(), "EX:", 3) != 0)
+		return false;
+	std::string smtp;
+	if (srchkey_to_smtpaddr(hay, org, std::move(id2user), smtp) != ecSuccess)
+		return false;
+	return srchkey_word_match("SMTP:" + smtp, needle, rcon.fuzzy_level);
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return false;
 }
 
 static ec_error_t emsab_to_email2(EXT_PULL &ser, const char *org, cvt_id2user id2user,

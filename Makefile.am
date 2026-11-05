@@ -87,7 +87,7 @@ libgxm_alias_resolve_la_SOURCES = mda/alias_resolve.cpp mda/mdabounce.cpp mda/md
 libgxm_alias_resolve_la_LDFLAGS = ${default_SYFLAGS}
 libgxm_alias_resolve_la_LIBADD = -lpthread ${libHX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_mapi.la libgxs_mysql_adaptor.la
 EXTRA_libgxm_alias_resolve_la_DEPENDENCIES = default.sym
-libgxm_exmdb_local_la_SOURCES = lib/bounce_mda.cpp mda/exmdb_local/auto_response.cpp mda/exmdb_local/bounce_audit.cpp mda/exmdb_local/bounce_producer.cpp mda/exmdb_local/cache_queue.cpp mda/exmdb_local/exmdb_local.cpp mda/exmdb_local/exmdb_local.hpp
+libgxm_exmdb_local_la_SOURCES = lib/bounce_mda.cpp mda/exmdb_local/auto_response.cpp mda/exmdb_local/bounce_audit.cpp mda/exmdb_local/bounce_producer.cpp mda/exmdb_local/bounce_producer.hpp mda/exmdb_local/cache_queue.cpp mda/exmdb_local/exmdb_local.cpp mda/exmdb_local/exmdb_local.hpp
 libgxm_exmdb_local_la_LDFLAGS = ${default_SYFLAGS}
 libgxm_exmdb_local_la_LIBADD = -lpthread ${fmt_LIBS} ${libHX_LIBS} ${jsoncpp_LIBS} libgromox_common.la libgromox_exrpc.la libgromox_mapi.la libgxs_mysql_adaptor.la
 EXTRA_libgxm_exmdb_local_la_DEPENDENCIES = default.sym
@@ -147,7 +147,7 @@ libgromox_rfr_la_SOURCES = exch/rfr.cpp
 libgromox_rfr_la_LDFLAGS = ${default_SYFLAGS}
 libgromox_rfr_la_LIBADD = ${fmt_LIBS} ${libHX_LIBS} libgromox_common.la libgromox_ndr.la libgxs_mysql_adaptor.la
 EXTRA_libgromox_rfr_la_DEPENDENCIES = default.sym
-libgromox_ews_la_SOURCES = exch/ews/ObjectCache.hpp exch/ews/context.cpp exch/ews/enums.hpp exch/ews/ews.cpp exch/ews/ews.hpp exch/ews/exceptions.hpp exch/ews/hash.hpp exch/ews/namedtags.hpp exch/ews/requests.cpp exch/ews/requests.hpp exch/ews/serialization.cpp exch/ews/serialization.hpp exch/ews/soaputil.cpp exch/ews/soaputil.hpp exch/ews/structures.cpp exch/ews/structures.hpp
+libgromox_ews_la_SOURCES = exch/ews/ObjectCache.hpp exch/ews/context.cpp exch/ews/enums.hpp exch/ews/ews.cpp exch/ews/ews.hpp exch/ews/exceptions.hpp exch/ews/hash.hpp exch/ews/namedtags.hpp exch/ews/requests.cpp exch/ews/requests.hpp exch/ews/rules.cpp exch/ews/rules.hpp exch/ews/serialization.cpp exch/ews/serialization.hpp exch/ews/soaputil.cpp exch/ews/soaputil.hpp exch/ews/structures.cpp exch/ews/structures.hpp
 libgromox_ews_la_LDFLAGS = ${default_SYFLAGS}
 libgromox_ews_la_LIBADD = ${libHX_LIBS} ${fmt_LIBS} ${tinyxml2_LIBS} ${vmime_LIBS} libgromox_abtree.la libgromox_common.la libgromox_mapi.la libgromox_exrpc.la libgxs_mysql_adaptor.la
 EXTRA_libgromox_ews_la_DEPENDENCIES = default.sym
@@ -171,9 +171,9 @@ libgxs_mysql_adaptor_la_SOURCES = exch/mysql_adaptor/mysql_adaptor.cpp exch/mysq
 libgxs_mysql_adaptor_la_LDFLAGS = ${default_SYFLAGS}
 libgxs_mysql_adaptor_la_LIBADD = -lpthread ${crypt_LIBS} ${libHX_LIBS} ${fmt_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_dbop.la libgromox_mapi.la
 EXTRA_libgxs_mysql_adaptor_la_DEPENDENCIES = default.sym
-libgxs_ruleproc_la_SOURCES = lib/ruleproc.cpp
+libgxs_ruleproc_la_SOURCES = lib/bounce_mda.cpp lib/ruleproc.cpp mda/exmdb_local/bounce_producer.cpp mda/exmdb_local/bounce_producer.hpp
 libgxs_ruleproc_la_LDFLAGS = ${default_SYFLAGS}
-libgxs_ruleproc_la_LIBADD = ${vmime_LIBS} libgromox_common.la libgromox_exrpc.la libgxs_mysql_adaptor.la
+libgxs_ruleproc_la_LIBADD = ${fmt_LIBS} ${jsoncpp_LIBS} ${vmime_LIBS} libgromox_common.la libgromox_exrpc.la libgromox_mapi.la libgxs_mysql_adaptor.la
 EXTRA_libgxs_ruleproc_la_DEPENDENCIES = ${default_SYM}
 
 pam_gromox_la_SOURCES = tools/pam_gromox.cpp
@@ -234,7 +234,7 @@ mapi_la_LDFLAGS += -Wl,--allow-shlib-undefined
 endif
 EXTRA_mapi_la_DEPENDENCIES = default.sym
 
-noinst_PROGRAMS = dldcheck tests/bodyconv tests/compress tests/dnsbl_check tests/exrpctest tests/gxl-383 tests/imapargs tests/jsontest tests/mdigest tests/oxcmail_ie tests/ucvttest tests/udb tests/utf8filter tests/utiltest tests/vcard tools/tzdump
+noinst_PROGRAMS = dldcheck tests/bodyconv tests/compress tests/dnsbl_check tests/ewsrules tests/exrpctest tests/gxl-383 tests/imapargs tests/jsontest tests/mdigest tests/oxcmail_ie tests/ucvttest tests/udb tests/utf8filter tests/utiltest tests/vcard tools/tzdump
 if HAVE_ESEDB
 noinst_PROGRAMS += tests/epv_unpack
 endif
@@ -243,7 +243,7 @@ noinst_PROGRAMS += tests/gssauth
 endif
 dldcheck_SOURCES = tools/dldcheck.cpp
 dldcheck_LDADD = ${dl_LIBS} ${libHX_LIBS}
-TESTS = tests/bodyconv tests/imapargs tests/jsontest tests/mdigest tests/oxcmail_ie tests/utiltest
+TESTS = tests/bodyconv tests/ewsrules tests/imapargs tests/jsontest tests/mdigest tests/oxcmail_ie tests/utiltest
 tests_udb_SOURCES = tests/userdb.cpp
 tests_udb_LDADD = ${libHX_LIBS} libgromox_common.la libgxs_mysql_adaptor.la
 tests_bodyconv_SOURCES = tests/bodyconv.cpp
@@ -252,6 +252,9 @@ tests_compress_SOURCES = tests/compress.cpp
 tests_compress_LDADD = libgromox_common.la
 tests_dnsbl_check_SOURCES = tests/dnsbl_check.cpp
 tests_dnsbl_check_LDADD = libgromox_authz.la libgromox_common.la
+tests_ewsrules_SOURCES = tests/ewsrules.cpp exch/ews/rules.cpp exch/ews/rules.hpp
+tests_ewsrules_LDADD = ${fmt_LIBS} ${libHX_LIBS} ${tinyxml2_LIBS} libgromox_common.la libgromox_mapi.la
+tests_ewsrules_CXXFLAGS = ${AM_CXXFLAGS}
 tests_epv_unpack_SOURCES = tests/epv_unpack.cpp tools/edb_pack.cpp tools/edb_pack.hpp
 tests_epv_unpack_LDADD = ${libesedb_LIBS} ${libHX_LIBS} libgromox_common.la libgromox_mapi.la
 tests_exrpctest_SOURCES = tests/exrpctest.cpp

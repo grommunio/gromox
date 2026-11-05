@@ -2427,6 +2427,7 @@ BOOL exmdb_server::update_folder_rule(const char *dir, uint64_t folder_id,
 			if (pstmt.step() != SQLITE_DONE)
 				return false;
 			sqlite3_reset(pstmt);
+			++rule_count;
 			break;
 		}
 		case ROW_MODIFY: {
@@ -2451,6 +2452,18 @@ BOOL exmdb_server::update_folder_rule(const char *dir, uint64_t folder_id,
 				if (pstmt1 == nullptr)
 					return false;
 				sqlite3_bind_text(pstmt1, 1, pprovider, -1, SQLITE_STATIC);
+				if (pstmt1.step() != SQLITE_DONE)
+					return false;
+				pstmt1.finalize();
+			}
+			auto pname = prow[i].propvals.get<const char>(PR_RULE_NAME);
+			if (pname != nullptr) {
+				snprintf(sql_string, std::size(sql_string), "UPDATE rules SET"
+				          " name=? WHERE rule_id=%llu", LLU{rule_id});
+				pstmt1 = pdb->prep(sql_string);
+				if (pstmt1 == nullptr)
+					return false;
+				sqlite3_bind_text(pstmt1, 1, pname, -1, SQLITE_STATIC);
 				if (pstmt1.step() != SQLITE_DONE)
 					return false;
 				pstmt1.finalize();
@@ -2550,6 +2563,8 @@ BOOL exmdb_server::update_folder_rule(const char *dir, uint64_t folder_id,
 			        " WHERE rule_id=%llu", LLU{rule_id});
 			if (pdb->exec(sql_string) != SQLITE_OK)
 				return false;
+			if (rule_count > 0)
+				--rule_count;
 			break;
 		}
 		}

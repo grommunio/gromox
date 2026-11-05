@@ -82,6 +82,7 @@ class EWSError : public DispatchError {
 	ERR(FreeBusyGenerationFailed) ///< Something went wrong when trying to retrieve freebusy data
 	ERR(ImpersonateUserDenied) ///< Insufficient permissions to impersonate user
 	ERR(ImpersonationFailed) ///< Impersonation could not be setup properly
+	ERR(InboxRulesValidationError) ///< At least one inbox rule operation does not validate
 	ERR(InternalServerError) ///< Generic error
 	ERR(InvalidAttachmentId) ///< Cannot deserialize attachment ID
 	ERR(InvalidFolderId) ///< Cannot deserialize folder ID
@@ -107,6 +108,8 @@ class EWSError : public DispatchError {
 	ERR(MoveCopyFailed) ///< Exmdb `movecopy_message` operation failed
 	ERR(NameResolutionNoResults) ///< Name resolution failed / no results
 	ERR(NotEnoughMemory) ///< Out of memory
+	ERR(OutlookRuleBlobExists) ///< Outlook rule blob present and not to be removed
+	ERR(RulesOverQuota) ///< Rule limit of the folder reached
 	ERR(SchemaValidation) ///< XML value is does not confirm to schema
 	ERR(SendAsDenied) ///< Caller may not send as or on behalf of the claimed sender
 	ERR(ServerBusy) ///< Server declined to process the request (e.g. batch exceeds a configured limit)
@@ -662,11 +665,21 @@ E(3574, "failed to delete the content of a folder");
 inline std::string E3580(std::string_view val) {return fmt::format("E-3580: invalid base64 constant '{}'", val);}
 inline std::string E3581(std::string_view val) {return fmt::format("E-3581: invalid GUID constant '{}'", val);}
 E(3582, "failed to set response properties on the calendar item");
+E(3590, "no right to answer for the principal in its calendar");
+E(3591, "failed to map named properties to the principal's store");
 E(3600, "cannot write to the calendar of the referenced item");
 E(3601, "cannot modify the existing calendar item of the meeting");
 E(3602, "no read access to the referenced item");
 E(3603, "cannot write to the calendar item of the declined meeting");
 E(3604, "no read access to the meeting to cancel");
+inline std::string E3605(const char *m) {return fmt::format("E-3605: invalid inbox rule: {}", m);}
+E(3606, "failed to load the inbox rules");
+E(3607, "access denied: inbox rules of another mailbox");
+E(3608, "failed to look for the Outlook rule blob");
+E(3609, "Outlook rule blob present, set RemoveOutlookRuleBlob to replace it");
+E(3610, "failed to delete the Outlook rule blob");
+E(3611, "failed to write the inbox rules");
+E(3612, "the inbox rule limit has been reached");
 
 #undef E
 }

@@ -69,6 +69,7 @@ static const PROPERTY_NAME NtChangeHighlight = {MNID_ID, PSETID_Appointment, Pid
 static const PROPERTY_NAME NtLocation = {MNID_ID, PSETID_Appointment, PidLidLocation};
 static const PROPERTY_NAME NtMeetingWorkspaceUrl = {MNID_ID, PSETID_Appointment, PidLidMeetingWorkspaceUrl};
 static const PROPERTY_NAME NtAppointmentReplyTime = {MNID_ID, PSETID_Appointment, PidLidAppointmentReplyTime};
+static const PROPERTY_NAME NtAppointmentReplyName = {MNID_ID, PSETID_Appointment, PidLidAppointmentReplyName};
 static const PROPERTY_NAME NtAppointmentStartWhole = {MNID_ID, PSETID_Appointment, PidLidAppointmentStartWhole};
 static const PROPERTY_NAME NtAppointmentEndWhole = {MNID_ID, PSETID_Appointment, PidLidAppointmentEndWhole};
 static const PROPERTY_NAME NtAppointmentDuration = {MNID_ID, PSETID_Appointment, PidLidAppointmentDuration};

@@ -655,7 +655,7 @@ enum {
 	PR_RULES_TABLE = PROP_TAG(PT_OBJECT, 0x3FE1), /* PidTagRulesTable */
 	PR_DELEGATED_BY_RULE = PROP_TAG(PT_BOOLEAN, 0x3FE3), /* PidTagDelegatedByRule */
 	PR_RESOLVE_METHOD = PROP_TAG(PT_LONG, 0x3FE7), /* PidTagResolveMethod */
-	// PR_HAS_DAMS = PROP_TAG(PT_BOOLEAN, 0x3FEA), /* PidTagHasDeferredActionMessages */
+	PR_HAS_DAMS = PROP_TAG(PT_BOOLEAN, 0x3FEA), /* PidTagHasDeferredActionMessages */
 	PR_DEFERRED_SEND_NUMBER = PROP_TAG(PT_LONG, 0x3FEB), /* PidTagDeferredSendNumber */
 	PR_DEFERRED_SEND_UNITS = PROP_TAG(PT_LONG, 0x3FEC), /* PidTagDeferredSendUnits */
 	// PR_EXPIRY_NUMBER = PROP_TAG(PT_LONG, 0x3FED), /* PidTagExpiryNumber */
@@ -1220,6 +1220,8 @@ enum {
 	PidLidClassificationDescription = 0x85B7,
 	PidLidClassificationGuid = 0x85B8,
 	PidLidClassificationKeep = 0x85BA,
+	PidLidServerProcessed = 0x85CC,
+	PidLidServerProcessingActions = 0x85CD,
 	PidLidCommon85D8 = 0x85D8, /* undocumented */
 	PROP_ID_INVALID = 0xFFFF,
 };
