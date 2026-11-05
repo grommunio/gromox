@@ -7,9 +7,13 @@
 #include <deque>
 #include <libHX/string.h>
 #include <vmime/contentTypeField.hpp>
+#include <vmime/mailboxList.hpp>
+#include <vmime/messageIdSequence.hpp>
 #include <gromox/element_data.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/ical.hpp>
+#include <gromox/mail_func.hpp>
+#include <gromox/mjson.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/textmaps.hpp>
@@ -2400,6 +2404,9 @@ static int meeting_prefixes()
 		{"", "canceled", "Canceled: "},
 		{nullptr, "newtime", "New Time Proposed: "},
 		{"de", "nosuchkey", ""},
+		{"de-AT", "forward", "WG: "},
+		{"it", "forward", "I: "},
+		{"xx", "forward", "FW: "},
 	};
 	for (const auto &c : cases) {
 		auto p = meeting_subject_prefix(c.loc, c.key);
@@ -2409,6 +2416,333 @@ static int meeting_prefixes()
 			return EXIT_FAILURE;
 		}
 	}
+	static constexpr struct {
+		const char *loc, *key, *exp;
+	} labels[] = {
+		{"de_DE", "sent", "Gesendet"},
+		{"fr", "to", "À"},
+		{"xx", "subject", "Subject"},
+		{nullptr, "from", "From"},
+	};
+	for (const auto &c : labels) {
+		auto l = forward_header_label(c.loc, c.key);
+		if (l != c.exp) {
+			fprintf(stderr, "forward_header_label(%s, %s) = \"%s\"\n",
+			        znul(c.loc), c.key, l.c_str());
+			return EXIT_FAILURE;
+		}
+	}
+	return EXIT_SUCCESS;
+}
+
+static size_t hf_longest(std::string_view s)
+{
+	size_t max = 0;
+	for (size_t e; (e = s.find("\r\n")) != s.npos; s.remove_prefix(e + 2))
+		max = std::max(max, e);
+	return std::max(max, s.size());
+}
+
+static size_t hf_longest_ew(std::string_view s)
+{
+	size_t max = 0;
+	for (size_t p; (p = s.find("=?")) != s.npos; ) {
+		auto q = s.find('?', p + 2);
+		if (q == s.npos || q + 2 >= s.size() || s[q+2] != '?') {
+			s.remove_prefix(p + 2);
+			continue;
+		}
+		auto e = s.find("?=", q + 3);
+		if (e == s.npos)
+			break;
+		max = std::max(max, e + 2 - p);
+		s.remove_prefix(e + 2);
+	}
+	return max;
+}
+
+static bool hf_same_digest(const MAIL &a, const MAIL &b)
+{
+	Json::Value da, db;
+	if (a.make_digest(da) < 0 || b.make_digest(db) < 0)
+		return false;
+	return da == db;
+}
+
+/* Folded values stay in the head verbatim, but readers see them unfolded */
+static int hdrfold_verbatim()
+{
+	vmime::mailboxList mbl;
+	for (unsigned int i = 0; i < 60; ++i) {
+		auto n = std::to_string(i);
+		mbl.appendMailbox(vmime::make_shared<vmime::mailbox>(
+			vmime::text("Doe, John " + n, vmime::charsets::UTF_8),
+			vmime::emailAddress("john.doe" + n + "@example.com")));
+	}
+	std::string refs;
+	for (unsigned int i = 0; i < 20; ++i)
+		refs += "<" + std::to_string(i) + ".abcdefghijklmnop@example.org> ";
+	vmime::messageIdSequence mis;
+	mis.parse(refs);
+	vmime::text subj("Einladung zum Termin nächste Woche Mittwoch um 10 Uhr "
+		"im großen Besprechungsraum, bitte Unterlagen für Q3 mitbringen",
+		vmime::charsets::UTF_8);
+	const std::pair<const char *, std::string> fields[] = {
+		{"To", vmail_fold(mbl, 4)},
+		{"References", vmail_fold(mis, 12, true)},
+		{"Subject", vmail_fold(subj, 9)},
+		{"In-Reply-To", "\r\n <19.abcdefghijklmnop@example.org>"},
+		{"X-Odd", "a\\\r\n b \\\\\r\n\tc"},
+	};
+
+	MAIL mail;
+	auto head = mail.add_head();
+	assert(head != nullptr);
+	assert(head->set_content_type("text/plain"));
+	for (const auto &[k, v] : fields)
+		assert(head->set_field(k, std::string(v)));
+	assert(head->write_content("x\r\n", 3, mime_encoding::none));
+	std::string eml;
+	assert(mail.to_str(eml) == 0);
+	assert(mail.get_length() == static_cast<ssize_t>(eml.size()));
+	MAIL back;
+	assert(back.refonly_parse(eml.c_str(), eml.size()));
+	for (const auto &[k, v] : fields) {
+		assert(eml.find(std::string(k) + ": " + v + "\r\n") != eml.npos);
+		auto bv = back.get_head()->get_field(k);
+		assert(bv != nullptr && mime_unfold(*bv) == mime_unfold(v));
+	}
+	assert(hf_same_digest(mail, back));
+
+	Json::Value digest;
+	assert(mail.make_digest(digest) > 0);
+	digest["file"] = "x";
+	MJSON mj;
+	assert(mj.load_from_json(digest));
+	std::string env;
+	assert(mj.fetch_envelope("utf-8", env) == 0);
+	assert(env.find_first_of("\r\n") == env.npos);
+	return EXIT_SUCCESS;
+}
+
+/* A forwarded mail keeps its head byte for byte */
+static int fwd_prepend()
+{
+	std::string eml = "From: a@example.com\r\nTo: ", to;
+	for (unsigned int i = 0; i < 60; ++i) {
+		auto n = "<rcpt" + std::to_string(i) + "@example.com>";
+		eml += i > 0 ? ",\r\n " + n : n;
+		to += i > 0 ? ", " + n : n;
+	}
+	eml += "\r\nDelivered-To: owner@example.com\r\nSubject: x\r\n\r\nbody\r\n";
+	std::string pre = "Delivered-To: fwd@example.net\r\n"
+	                  "Delivered-To: owner@example.com\r\n";
+	MAIL mail;
+	{
+		auto tmp = eml;
+		assert(mail.refonly_parse_prepended(pre, tmp.data(), tmp.size()));
+		tmp.assign(tmp.size(), '\0');
+	}
+	auto head = mail.get_head();
+	assert(head != nullptr && !head->head_touched);
+	std::string out;
+	assert(mail.to_str(out) == 0);
+	assert(out == pre + eml);
+	assert(head->get_field_num("Delivered-To") == 3);
+	std::string v;
+	assert(head->search_field("Delivered-To", 0, v) && v == "fwd@example.net");
+	assert(head->search_field("Delivered-To", 1, v) && v == "owner@example.com");
+	assert(head->search_field("Delivered-To", 2, v) && v == "owner@example.com");
+	auto tv = head->get_field("To");
+	assert(tv != nullptr && *tv == to);
+	return EXIT_SUCCESS;
+}
+
+static int hdrfold_export()
+{
+	static constexpr const char *names[] = {
+		"Doe, John", "Meier, Hans \"Hansi\"", "IT \\ Support",
+		"Müller, Jürgen", nullptr, "Doe,  John",
+		"Αλέξανδρος Παπαδόπουλος-Κωνσταντινίδης (Λογιστήριο Θεσσαλονίκης)",
+		"Somebody With A Rather Long Display Name Here",
+	};
+	static constexpr char subject[] =
+		"Einladung zum Termin nächste Woche Mittwoch um 10 Uhr im großen "
+		"Besprechungsraum, bitte Unterlagen für Q3 mitbringen";
+	/* the backslash must survive a fold next to it */
+	static constexpr char topic[] =
+		"Ablage Vertrieb Nord und Sued Einkauf \\ Übergabeprotokoll";
+	static constexpr char fname[] =
+		"日本語のファイル名はとても長いので"
+		"分割されなければなりません.txt";
+	static constexpr char fname2[] =
+		"Angebot Firma Mustermann GmbH 2026-09-23.pdf";
+	static constexpr char cloc[] =
+		"file:///C:/Users/Erika Mustermann/Documents/Angebote und "
+		"Rechnungen/2026/Angebot Firma Mustermann GmbH 2026-09-23.pdf";
+	static constexpr char agent[] =
+		"Mozilla/5.0 (Windows NT 10.0; Win64; x64) Microsoft Outlook "
+		"16.0.17928.20114 (Microsoft 365 Apps for enterprise; 64-bit) "
+		"\\ de-DE";
+	const std::string longlp = "rcpt5." + std::string(72, 'x');
+	auto cvt = ve_converter();
+	message_content_ptr mct(message_content_init());
+	auto &props = mct->proplist;
+	props.set(PR_BODY, "x");
+	props.set(PR_SUBJECT, subject);
+	props.set(PR_CONVERSATION_TOPIC, topic);
+	std::string refs;
+	for (unsigned int i = 0; i < 20; ++i)
+		refs += (i > 0 ? " <" : "<") + std::to_string(i) +
+		        ".abcdefghijklmnop@example.org>";
+	props.set(PR_INTERNET_REFERENCES, refs.c_str());
+	props.set(PR_IN_REPLY_TO_ID, "<19.abcdefghijklmnop@example.org>");
+	const PROPERTY_NAME pn[] = {
+		{MNID_STRING, PS_PUBLIC_STRINGS, 0, deconst("Keywords")},
+		{MNID_STRING, PS_INTERNET_HEADERS, 0, deconst("User-Agent")},
+	};
+	const PROPNAME_ARRAY pna = {std::size(pn), deconst(pn)};
+	PROPID_ARRAY ids;
+	assert(ee_get_propids(&pna, &ids));
+	/* the first ends at column 78 unless the comma is accounted for */
+	char kw0[] = "Abteilungen Vertrieb Nord und Sued Kundenprojekte "
+	             "Jahresplanung 2026",
+	     kw1[] = "Projektübersicht", kw2[] = "Quartalsabschluss Q3",
+	     kw3[] = "Vertraulich und nur für den internen Gebrauch bestimmt",
+	     kw4[] = "Kundennummer-2026-0000123456-Vertriebsgebiet-"
+	             "Nord-Sued-Ost-West";
+	char *kwv[] = {kw0, kw1, kw2, kw3, kw4};
+	const STRING_ARRAY kw = {std::size(kwv), kwv};
+	props.set(PROP_TAG(PT_MV_UNICODE, ids[0]), &kw);
+	props.set(PROP_TAG(PT_UNICODE, ids[1]), agent);
+	for (unsigned int i = 0; i < 64; ++i) {
+		auto smtp = (i == 5 ? longlp : "rcpt" + std::to_string(i)) +
+		            "@example.com";
+		assert(ve_new_rcpt(mct.get(), i % 4 == 3 ? MAPI_CC : MAPI_TO,
+		       names[i % std::size(names)], smtp.c_str()) != nullptr);
+	}
+	auto atx = ve_new_attachment(mct.get());
+	const BINARY blob = {3, {deconst("abc")}};
+	uint32_t method = ATTACH_BY_VALUE;
+	atx->proplist.set(PR_ATTACH_METHOD, &method);
+	atx->proplist.set(PR_ATTACH_DATA_BIN, &blob);
+	atx->proplist.set(PR_ATTACH_LONG_FILENAME, fname);
+	atx->proplist.set(PR_DISPLAY_NAME, fname);
+	uint64_t nt = 134030000000000000ULL;
+	atx->proplist.set(PR_CREATION_TIME, &nt);
+	atx->proplist.set(PR_LAST_MODIFICATION_TIME, &nt);
+	atx = ve_new_attachment(mct.get());
+	atx->proplist.set(PR_ATTACH_METHOD, &method);
+	atx->proplist.set(PR_ATTACH_DATA_BIN, &blob);
+	atx->proplist.set(PR_ATTACH_LONG_FILENAME, fname2);
+	atx->proplist.set(PR_ATTACH_CONTENT_LOCATION, cloc);
+
+	auto vmail = vmime::make_shared<vmime::message>();
+	assert(cvt.mapi_to_inet(*mct, vmail) == ecSuccess);
+	auto eml = vmail_to_string(*vmail);
+	/* the long address cannot be split and is alone on its line */
+	auto lline = "\r\n <" + longlp + "@example.com>,\r\n";
+	auto hv = eml;
+	auto pos = hv.find(lline);
+	assert(pos != hv.npos);
+	hv.erase(pos, lline.size() - 2);
+	if (vmail_default_genctx().getWrapMessageId())
+		assert(hf_longest(hv) <= 78);
+	assert(hf_longest_ew(eml) <= 75);
+	assert(eml.find("\t\r\n") == eml.npos);
+	assert(eml.find("\r\n  <") == eml.npos);
+	std::string qf = std::string("=\"") + fname2 + "\"";
+	assert(eml.find(" filename" + qf) != eml.npos);
+
+	MAIL back;
+	assert(back.refonly_parse(eml.c_str(), eml.size()));
+	auto mc = cvt.inet_to_mapi(back);
+	assert(mc != nullptr);
+	auto s = mc->proplist.get<const char>(PR_SUBJECT);
+	assert(s != nullptr && strcmp(s, subject) == 0);
+	s = mc->proplist.get<const char>(PR_CONVERSATION_TOPIC);
+	assert(s != nullptr && strcmp(s, topic) == 0);
+	s = mc->proplist.get<const char>(PR_INTERNET_REFERENCES);
+	assert(s != nullptr && refs == s);
+	s = mc->proplist.get<const char>(PROP_TAG(PT_UNICODE, ids[1]));
+	assert(s != nullptr && strcmp(s, agent) == 0);
+	auto kwb = mc->proplist.get<const STRING_ARRAY>(PROP_TAG(PT_MV_UNICODE, ids[0]));
+	assert(kwb != nullptr && kwb->count == kw.count);
+	for (size_t i = 0; i < kw.count; ++i)
+		assert(strcmp(kwb->ppstr[i], kw.ppstr[i]) == 0);
+	auto rl = mc->children.prcpts;
+	assert(rl != nullptr && rl->count == 64);
+	for (const auto &r : *rl) {
+		unsigned int i = 64;
+		s = r.get<const char>(PR_SMTP_ADDRESS);
+		assert(s != nullptr && sscanf(s, "rcpt%u", &i) == 1 && i < 64);
+		assert(i != 5 || strcmp(s, (longlp + "@example.com").c_str()) == 0);
+		auto type = r.get<const uint32_t>(PR_RECIPIENT_TYPE);
+		uint32_t want = i % 4 == 3 ? MAPI_CC : MAPI_TO;
+		assert(type != nullptr && *type == want);
+		auto dn = names[i % std::size(names)];
+		s = r.get<const char>(PR_DISPLAY_NAME);
+		assert(dn == nullptr || (s != nullptr && strcmp(s, dn) == 0));
+	}
+	auto atl = mc->children.pattachments;
+	assert(atl != nullptr && atl->count == 2);
+	s = atl->pplist[0]->proplist.get<const char>(PR_ATTACH_LONG_FILENAME);
+	assert(s != nullptr && strcmp(s, fname) == 0);
+	s = atl->pplist[0]->proplist.get<const char>(PR_DISPLAY_NAME);
+	assert(s != nullptr && strcmp(s, fname) == 0);
+	s = atl->pplist[1]->proplist.get<const char>(PR_ATTACH_LONG_FILENAME);
+	assert(s != nullptr && strcmp(s, fname2) == 0);
+	s = atl->pplist[1]->proplist.get<const char>(PR_ATTACH_CONTENT_LOCATION);
+	assert(s != nullptr && strcmp(s, cloc) == 0);
+	return EXIT_SUCCESS;
+}
+
+static int hdr_long_values()
+{
+	static constexpr char fname[] = "quote\"back\\slash.txt";
+	const std::string subject = "x " + std::string(1200, 'a');
+	std::string refs, exp_refs;
+	for (unsigned int i = 0; i < 100; ++i) {
+		auto id = "<" + std::to_string(i) + "@example.org>";
+		refs += (i > 0 ? " " : "") + id;
+		exp_refs += (i > 0 ? " " : "") + id;
+	}
+	auto cvt = ve_converter();
+	message_content_ptr mct(message_content_init());
+	auto &props = mct->proplist;
+	props.set(PR_BODY, "x");
+	props.set(PR_SUBJECT, subject.c_str());
+	props.set(PR_INTERNET_REFERENCES, refs.c_str());
+	auto atx = ve_new_attachment(mct.get());
+	const BINARY blob = {3, {deconst("abc")}};
+	uint32_t method = ATTACH_BY_VALUE;
+	atx->proplist.set(PR_ATTACH_METHOD, &method);
+	atx->proplist.set(PR_ATTACH_DATA_BIN, &blob);
+	atx->proplist.set(PR_ATTACH_LONG_FILENAME, fname);
+	auto vmail = vmime::make_shared<vmime::message>();
+	assert(cvt.mapi_to_inet(*mct, vmail) == ecSuccess);
+	auto eml = vmail_to_string(*vmail);
+	if (vmail_default_genctx().getWrapMessageId())
+		assert(hf_longest(eml) <= 998);
+	assert(hf_longest_ew(eml) <= 75);
+	assert(eml.find("filename=\"quote\\\"back\\\\slash.txt\"") != eml.npos);
+	auto v = vmail->getHeader()->References();
+	assert(v != nullptr && v->getValue()->generate() == exp_refs);
+	if (vmail_default_genctx().getWrapMessageId())
+		assert(hf_longest("References: " + v->generate()) <= 78);
+
+	MAIL back;
+	assert(back.refonly_parse(eml.c_str(), eml.size()));
+	auto mc = cvt.inet_to_mapi(back);
+	assert(mc != nullptr);
+	/* the importer keeps 255 characters */
+	auto s = mc->proplist.get<const char>(PR_SUBJECT);
+	assert(s != nullptr && s == subject.substr(0, 255));
+	auto atl = mc->children.pattachments;
+	assert(atl != nullptr && atl->count == 1);
+	/* complete, with the reserved characters replaced by the importer */
+	s = atl->pplist[0]->proplist.get<const char>(PR_ATTACH_LONG_FILENAME);
+	assert(s != nullptr && strcmp(s, "quote_back_slash.txt") == 0);
 	return EXIT_SUCCESS;
 }
 
@@ -2454,6 +2788,8 @@ int main()
 		E(openpgp_legacy_layout),
 		E(ical_exception_roundtrip), E(ical_exception_origdate),
 		E(ical_moved_exception_dates), E(meeting_prefixes),
+		E(hdrfold_verbatim), E(fwd_prepend),
+		E(hdrfold_export), E(hdr_long_values),
 	};
 #undef E
 	for (const auto &t : tests)

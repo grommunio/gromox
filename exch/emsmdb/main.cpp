@@ -150,7 +150,8 @@ bool PROC_exchange_emsmdb(enum plugin_op reason, const struct dlfuncs &ppdata)
 		return TRUE;
 	case PLUGIN_INIT: {
 		LINK_PROC_API(ppdata);
-		if (service_run_library({"libgxs_mysql_adaptor.so", SVC_mysql_adaptor}) != PLUGIN_LOAD_OK)
+		if (service_run_library({"libgxs_mysql_adaptor.so", SVC_mysql_adaptor}) != PLUGIN_LOAD_OK ||
+		    service_run_library({"libgxs_ruleproc.so", SVC_ruleproc}) != PLUGIN_LOAD_OK)
 			return false;
 		textmaps_init();
 		emsmdb::g_logon_debug = getenv("MILLENIUM_PRIZE") != nullptr;

@@ -77,8 +77,10 @@ errno_t mysql_plugin::meta(const char *username, unsigned int wantpriv,
 		/* ...based on username lookup */
 		"(SELECT u.password, dt.propval_str AS dtypx, u.address_status, "
 		"u.privilege_bits, u.maildir, u.lang, u.externid, "
+		"u.username, u.timezone, u.id, d.id, d.org_id, "
 		"op1.value, op2.value, op3.value, op4.value, op5.value, op6.value, "
-		"u.username, u.timezone, u.id, d.id, d.org_id FROM users AS u "
+		"dop1.value, dop2.value, dop3.value, dop4.value, dop5.value, dop6.value "
+		"FROM users AS u "
 		JOIN_WITH_DISPLAYTYPE
 		" LEFT JOIN domains AS d ON u.domain_id=d.id"
 		" LEFT JOIN orgs ON d.org_id=orgs.id"
@@ -88,14 +90,22 @@ errno_t mysql_plugin::meta(const char *username, unsigned int wantpriv,
 		" LEFT JOIN orgparam AS op4 ON orgs.id=op4.org_id AND op4.key='ldap_basedn'"
 		" LEFT JOIN orgparam AS op5 ON orgs.id=op5.org_id AND op5.key='ldap_mail_attr'"
 		" LEFT JOIN orgparam AS op6 ON orgs.id=op6.org_id AND op6.key='ldap_start_tls'"
+		" LEFT JOIN default_orgparam AS dop1 ON orgs.id=op1.org_id AND dop1.key='ldap_uri'"
+		" LEFT JOIN default_orgparam AS dop2 ON orgs.id=op2.org_id AND dop2.key='ldap_binddn'"
+		" LEFT JOIN default_orgparam AS dop3 ON orgs.id=op3.org_id AND dop3.key='ldap_bindpw'"
+		" LEFT JOIN default_orgparam AS dop4 ON orgs.id=op4.org_id AND dop4.key='ldap_basedn'"
+		" LEFT JOIN default_orgparam AS dop5 ON orgs.id=op5.org_id AND dop5.key='ldap_mail_attr'"
+		" LEFT JOIN default_orgparam AS dop6 ON orgs.id=op6.org_id AND dop6.key='ldap_start_tls'"
 		" LEFT JOIN altnames AS alt ON u.id=alt.user_id AND alt.altname='" +
 		q_user + "' WHERE " + q_where + " LIMIT 2) UNION"
 
 		/* ...by altname lookup */
 		"(SELECT u.password, dt.propval_str AS dtypx, u.address_status, "
 		"u.privilege_bits, u.maildir, u.lang, u.externid, "
+		"u.username, u.timezone, u.id, d.id, d.org_id, "
 		"op1.value, op2.value, op3.value, op4.value, op5.value, op6.value, "
-		"u.username, u.timezone, u.id, d.id, d.org_id FROM users AS u "
+		"dop1.value, dop2.value, dop3.value, dop4.value, dop5.value, dop6.value "
+		"FROM users AS u "
 		JOIN_WITH_DISPLAYTYPE
 		" LEFT JOIN domains AS d ON u.domain_id=d.id"
 		" LEFT JOIN orgs ON d.org_id=orgs.id"
@@ -105,6 +115,12 @@ errno_t mysql_plugin::meta(const char *username, unsigned int wantpriv,
 		" LEFT JOIN orgparam AS op4 ON orgs.id=op4.org_id AND op4.key='ldap_basedn'"
 		" LEFT JOIN orgparam AS op5 ON orgs.id=op5.org_id AND op5.key='ldap_mail_attr'"
 		" LEFT JOIN orgparam AS op6 ON orgs.id=op6.org_id AND op6.key='ldap_start_tls'"
+		" LEFT JOIN default_orgparam AS dop1 ON orgs.id=op1.org_id AND dop1.key='ldap_uri'"
+		" LEFT JOIN default_orgparam AS dop2 ON orgs.id=op2.org_id AND dop2.key='ldap_binddn'"
+		" LEFT JOIN default_orgparam AS dop3 ON orgs.id=op3.org_id AND dop3.key='ldap_bindpw'"
+		" LEFT JOIN default_orgparam AS dop4 ON orgs.id=op4.org_id AND dop4.key='ldap_basedn'"
+		" LEFT JOIN default_orgparam AS dop5 ON orgs.id=op5.org_id AND dop5.key='ldap_mail_attr'"
+		" LEFT JOIN default_orgparam AS dop6 ON orgs.id=op6.org_id AND dop6.key='ldap_start_tls'"
 		" LEFT JOIN altnames AS alt ON u.id=alt.user_id AND alt.altname='" + q_user + "'"
 		" LEFT JOIN aliases AS ali ON u.username=ali.mainname AND ali.aliasname='" + q_user + "'"
 		" WHERE alt.altname='" + q_user + "' LIMIT 2) UNION"
@@ -112,8 +128,10 @@ errno_t mysql_plugin::meta(const char *username, unsigned int wantpriv,
 		/* ..by alias lookup */
 		"(SELECT u.password, dt.propval_str AS dtypx, u.address_status, "
 		"u.privilege_bits, u.maildir, u.lang, u.externid, "
+		"u.username, u.timezone, u.id, d.id, d.org_id, "
 		"op1.value, op2.value, op3.value, op4.value, op5.value, op6.value, "
-		"u.username, u.timezone, u.id, d.id, d.org_id FROM users AS u "
+		"dop1.value, dop2.value, dop3.value, dop4.value, dop5.value, dop6.value "
+		"FROM users AS u "
 		JOIN_WITH_DISPLAYTYPE
 		" LEFT JOIN domains AS d ON u.domain_id=d.id"
 		" LEFT JOIN orgs ON d.org_id=orgs.id"
@@ -123,6 +141,12 @@ errno_t mysql_plugin::meta(const char *username, unsigned int wantpriv,
 		" LEFT JOIN orgparam AS op4 ON orgs.id=op4.org_id AND op4.key='ldap_basedn'"
 		" LEFT JOIN orgparam AS op5 ON orgs.id=op5.org_id AND op5.key='ldap_mail_attr'"
 		" LEFT JOIN orgparam AS op6 ON orgs.id=op6.org_id AND op6.key='ldap_start_tls'"
+		" LEFT JOIN default_orgparam AS dop1 ON orgs.id=op1.org_id AND dop1.key='ldap_uri'"
+		" LEFT JOIN default_orgparam AS dop2 ON orgs.id=op2.org_id AND dop2.key='ldap_binddn'"
+		" LEFT JOIN default_orgparam AS dop3 ON orgs.id=op3.org_id AND dop3.key='ldap_bindpw'"
+		" LEFT JOIN default_orgparam AS dop4 ON orgs.id=op4.org_id AND dop4.key='ldap_basedn'"
+		" LEFT JOIN default_orgparam AS dop5 ON orgs.id=op5.org_id AND dop5.key='ldap_mail_attr'"
+		" LEFT JOIN default_orgparam AS dop6 ON orgs.id=op6.org_id AND dop6.key='ldap_start_tls'"
 		" LEFT JOIN altnames AS alt ON u.id=alt.user_id AND alt.altname='" + q_user + "'"
 		" LEFT JOIN aliases AS ali ON u.username=ali.mainname AND ali.aliasname='" + q_user + "'"
 		" WHERE ali.aliasname='" + q_user + "' LIMIT 2) LIMIT 2";
@@ -182,17 +206,17 @@ errno_t mysql_plugin::meta(const char *username, unsigned int wantpriv,
 	mres.lang       = lc.generate();
 	mres.enc_passwd = myrow[0];
 	mres.have_xid   = myrow[6] != nullptr;
-	mres.ldap_uri    = znul(myrow[7]);
-	mres.ldap_binddn = znul(myrow[8]);
-	mres.ldap_bindpw = znul(myrow[9]);
-	mres.ldap_basedn = znul(myrow[10]);
-	mres.ldap_mail_attr = znul(myrow[11]);
-	mres.ldap_start_tls = parse_bool(znul(myrow[12]));
-	mres.username       = znul(myrow[13]);
-	mres.timezone       = znul(myrow[14]);
-	mres.user_id        = strtoul(znul(myrow[15]), nullptr, 0);
-	mres.domain_id      = strtoul(znul(myrow[16]), nullptr, 0);
-	mres.org_id         = strtoul(znul(myrow[17]), nullptr, 0);
+	mres.username       = znul(myrow[7]);
+	mres.timezone       = znul(myrow[8]);
+	mres.user_id        = strtoul(znul(myrow[9]), nullptr, 0);
+	mres.domain_id      = strtoul(znul(myrow[10]), nullptr, 0);
+	mres.org_id         = strtoul(znul(myrow[11]), nullptr, 0);
+	mres.ldap_uri       = myrow[12] != nullptr ? myrow[12] : znul(myrow[18]);
+	mres.ldap_binddn    = myrow[13] != nullptr ? myrow[13] : znul(myrow[19]);
+	mres.ldap_bindpw    = myrow[14] != nullptr ? myrow[14] : znul(myrow[20]);
+	mres.ldap_basedn    = myrow[15] != nullptr ? myrow[15] : znul(myrow[21]);
+	mres.ldap_mail_attr = myrow[16] != nullptr ? myrow[16] : znul(myrow[22]);
+	mres.ldap_start_tls = parse_bool(myrow[17] != nullptr ? myrow[17] : znul(myrow[23]));
 	return 0;
 } catch (const std::bad_alloc &e) {
 	mlog(LV_ERR, "E-2007: ENOMEM");

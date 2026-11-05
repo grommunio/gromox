@@ -240,12 +240,7 @@ BOOL exmdb_server::get_mbox_perm(const char *dir,
 		auto fid  = pstmt.col_uint64(0);
 		unsigned int perm = pstmt.col_uint64(1);
 		seen_fid.emplace(fid);
-		if (perm & ~rightsMaxROP)
-			mlog(LV_DEBUG, "D-2352: %s has an ACE with unrecognized bits! "
-				"folder=0x%llx user=%s perms=0x%x, unknown: 0x%x. Behavior unspecified.",
-				dir, static_cast<unsigned long long>(fid), username,
-				perm, perm & ~rightsMaxROP);
-		*ppermission |= perm;
+		*ppermission |= perm & rightsMaxROP;
 	/*
 	 * Outlook and g-web only expose IPM_SUBTREE and below, so permissions
 	 * can only be set on those folders with those UIs.

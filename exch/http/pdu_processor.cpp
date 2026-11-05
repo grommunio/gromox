@@ -49,6 +49,7 @@
 
 #define NDR_STACK_IN					0
 #define NDR_STACK_OUT					1
+#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != pack_result::ok) return klfdv; } while (false)
 
 using namespace std::string_literals;
 using namespace gromox;
@@ -181,6 +182,12 @@ static bool is_negotiate_uuid(GUID i)
 static bool is_negotiate_syntax(const SYNTAX_ID &i)
 {
 	return i.version == 1 && is_negotiate_uuid(i.uuid);
+}
+
+static bool is_negotiate_ctx(const dcerpc_ctx_list &c)
+{
+	return c.transfer_syntaxes.size() == 1 &&
+	       is_negotiate_syntax(c.transfer_syntaxes[0]);
 }
 
 static bool is_requesting_negotiate(const dcerpc_bind &b)
@@ -328,11 +335,120 @@ static uint16_t pdu_processor_find_secondary(const char *host,
 	return ix != lst.cend() ? ei->tcp_port : tcp_port;
 }
 
+/*
+ * DCE/RPC remote management interface, C706 Appendix Q. Windows serves it
+ * for every endpoint. Clients like MS RCA use it to ping a server.
+ */
+namespace {
+
+enum {
+	mgmt_inq_if_ids = 0,
+	mgmt_inq_stats = 1,
+	mgmt_is_server_listening = 2,
+};
+
+/* calls in, calls out, pkts in, pkts out */
+constexpr uint32_t MGMT_STATS_MAX = 4;
+
+struct mgmt_inq_stats_in final : public rpc_request {
+	uint32_t count = 0;
+};
+
+struct mgmt_out final : public rpc_response {
+	std::vector<SYNTAX_ID> if_ids;
+	uint32_t count = 0;
+};
+
+}
+
+static pack_result mgmt_ndr_pull(unsigned int op, NDR_PULL &x,
+    std::unique_ptr<rpc_request> &in) try
+{
+	switch (op) {
+	case mgmt_inq_if_ids:
+	case mgmt_is_server_listening:
+		in = std::make_unique<rpc_request>();
+		return pack_result::ok;
+	case mgmt_inq_stats: {
+		auto r = std::make_unique<mgmt_inq_stats_in>();
+		TRY(x.g_uint32(&r->count));
+		in = std::move(r);
+		return pack_result::ok;
+	}
+	default:
+		return pack_result::bad_switch;
+	}
+} catch (const std::bad_alloc &) {
+	return pack_result::alloc;
+}
+
+static int mgmt_dispatch(unsigned int op, const GUID *, uint64_t,
+    const rpc_request *in, std::unique_ptr<rpc_response> &out,
+    ec_error_t *) try
+{
+	auto r = std::make_unique<mgmt_out>();
+	if (op == mgmt_inq_if_ids) {
+		auto &ep = *g_call_key->pprocessor->pendpoint;
+		for (const auto &i : ep.interface_list)
+			r->if_ids.push_back({i.uuid, i.version});
+	} else if (op == mgmt_inq_stats) {
+		auto &rq = *static_cast<const mgmt_inq_stats_in *>(in);
+		r->count = std::min(rq.count, MGMT_STATS_MAX);
+	}
+	out = std::move(r);
+	return DISPATCH_SUCCESS;
+} catch (const std::bad_alloc &) {
+	return DISPATCH_FAIL;
+}
+
+static pack_result mgmt_ndr_push(unsigned int op, NDR_PUSH &x,
+    const rpc_response *pout)
+{
+	auto &r = *static_cast<const mgmt_out *>(pout);
+	switch (op) {
+	case mgmt_inq_if_ids:
+		TRY(x.p_unique_ptr(&r.if_ids));
+		TRY(x.p_ulong(r.if_ids.size()));
+		TRY(x.p_uint32(r.if_ids.size()));
+		for (const auto &i : r.if_ids)
+			TRY(x.p_unique_ptr(&i));
+		for (const auto &i : r.if_ids) {
+			TRY(x.p_guid(i.uuid));
+			TRY(x.p_uint16(i.version & 0xffff));
+			TRY(x.p_uint16(i.version >> 16));
+		}
+		break;
+	case mgmt_inq_stats:
+		/* Counters are not kept, report zeroes */
+		TRY(x.p_uint32(r.count));
+		TRY(x.p_ulong(r.count));
+		for (uint32_t i = 0; i < r.count; ++i)
+			TRY(x.p_uint32(0));
+		break;
+	case mgmt_is_server_listening:
+		/* status, then the result, which Exchange also sends as 0 */
+		TRY(x.p_uint32(0));
+		return x.p_uint32(0);
+	default:
+		return pack_result::bad_switch;
+	}
+	return x.p_uint32(0); /* status */
+}
+
+static constexpr DCERPC_INTERFACE g_mgmt_interface = {
+	"mgmt",
+	/* {afa8bd80-7d8a-11c9-bef4-08002b102989} */
+	{0xafa8bd80, 0x7d8a, 0x11c9, {0xbe, 0xf4}, {0x08, 0x00, 0x2b, 0x10, 0x29, 0x89}},
+	1, mgmt_ndr_pull, mgmt_dispatch, mgmt_ndr_push,
+};
+
 /* find the interface operations on an endpoint by uuid */
 static const DCERPC_INTERFACE *
 pdu_processor_find_interface_by_uuid(const dcerpc_endpoint *pendpoint,
     const GUID *puuid, uint32_t if_version)
 {
+	if (interface_eq(*puuid, if_version)(g_mgmt_interface))
+		return &g_mgmt_interface;
 	auto &lst = pendpoint->interface_list;
 	auto ix = ct_find_if(lst, interface_eq(*puuid, if_version));
 	return ix != lst.end() ? &*ix : nullptr;
@@ -831,50 +947,58 @@ static BOOL pdu_processor_process_bind(dcerpc_call *pcall)
 {
 	GUID uuid;
 	BOOL b_ndr64;
-	uint32_t reason;
-	uint32_t result;
 	uint32_t context_id;
 	uint32_t if_version;
 	uint32_t extra_flags;
 	auto pbind = static_cast<dcerpc_bind *>(pcall->pkt.payload.get());
+	auto pendpoint = pcall->pprocessor->pendpoint;
 
 	if (pbind->ctx_list.size() < 1 || pbind->ctx_list[0].transfer_syntaxes.size() < 1)
 		return pdu_processor_bind_nak(pcall, 0);
-	
+
 	/* can not bind twice on the same connection */
 	if (pcall->pprocessor->assoc_group_id != 0)
 		return pdu_processor_bind_nak(pcall, 0);
-	context_id = pbind->ctx_list[0].context_id;
 
 	/* bind only there's no context, otherwise, use alter */
 	if (pcall->pprocessor->context_list.size() > 0)
 		return pdu_processor_bind_nak(pcall, 0);
+
+	auto ctx_intf = [&](const dcerpc_ctx_list &c) {
+		return pdu_processor_find_interface_by_uuid(pendpoint,
+		       &c.abstract_syntax.uuid, c.abstract_syntax.version);
+	};
+	/* Accept the first context with a known interface and NDR/NDR64 */
+	const dcerpc_ctx_list *acc = nullptr;
+	const DCERPC_INTERFACE *pinterface = nullptr;
+	b_ndr64 = FALSE;
+	for (const auto &c : pbind->ctx_list) {
+		if (is_negotiate_ctx(c))
+			continue;
+		auto intf = ctx_intf(c);
+		if (intf == nullptr)
+			continue;
+		if (c.contains(g_transfer_syntax_ndr))
+			b_ndr64 = FALSE;
+		else if (c.contains(g_transfer_syntax_ndr64))
+			b_ndr64 = TRUE;
+		else
+			continue;
+		acc = &c;
+		pinterface = intf;
+		break;
+	}
+	context_id = acc != nullptr ? acc->context_id :
+	             pbind->ctx_list[0].context_id;
 	if_version = pbind->ctx_list[0].abstract_syntax.version;
 	uuid = pbind->ctx_list[0].abstract_syntax.uuid;
-
-	b_ndr64 = FALSE;
-	bool b_found = pbind->ctx_list[0].contains(g_transfer_syntax_ndr);
-	if (!b_found) {
-		b_found = pbind->ctx_list[0].contains(g_transfer_syntax_ndr64);
-		if (!b_found) {
-			mlog(LV_DEBUG, "pdu_processor: only NDR or NDR64 transfer syntax "
-				"can be accepted by system");
-			return pdu_processor_bind_nak(pcall, 0);
-		}
-		b_ndr64 = TRUE;
-	}
-	bool b_negotiate = b_found && is_requesting_negotiate(*pbind);
-	auto pinterface = pdu_processor_find_interface_by_uuid(
-					pcall->pprocessor->pendpoint, &uuid, if_version);
+	bool b_negotiate = acc != nullptr && is_requesting_negotiate(*pbind);
 	std::shared_ptr<dcerpc_context> pcontext;
 	if (NULL == pinterface) {
 		char uuid_str[GUIDSTR_SIZE];
 		uuid.to_str(uuid_str, std::size(uuid_str));
 		mlog(LV_DEBUG, "pdu_processor: interface %s/%d unknown when binding",
 			uuid_str, if_version);
-		/* we don't know about that interface */
-		result = DCERPC_BIND_RESULT_PROVIDER_REJECT;
-		reason = DCERPC_BIND_REASON_ASYNTAX;
 	} else {
 		/* add this context to the list of available context_ids */
 		try {
@@ -894,8 +1018,6 @@ static BOOL pdu_processor_process_bind(dcerpc_call *pcall)
 		pcontext->assoc_group_id = pcall->pprocessor->assoc_group_id;
 		double_list_init(&pcontext->async_list);
 		pcall->pcontext = pcontext;
-		result = 0;
-		reason = 0;
 	}
 
 	/* pcontext will only be set when a new ctx was made */
@@ -945,21 +1067,35 @@ static BOOL pdu_processor_process_bind(dcerpc_call *pcall)
 	} else {
 		bind_ack->secondary_address[0] = '\0';
 	}
+	/* One result per presentation context */
 	try {
-		bind_ack->ctx_list.resize(b_negotiate ? 2 : 1);
+		bind_ack->ctx_list.resize(pbind->ctx_list.size());
 	} catch (const std::bad_alloc &) {
 		return pdu_processor_bind_nak(pcall, 0);
 	}
-	if (b_negotiate) {
-		bind_ack->ctx_list[1].result = DCERPC_BIND_RESULT_NEGOTIATE_ACK;
-		auto &u = pbind->ctx_list[1].transfer_syntaxes[0].uuid;
-		char bitmap = pcall->b_bigendian ? u.node[5] : u.clock_seq[0];
-		bind_ack->ctx_list[1].reason = bitmap & DCERPC_SECURITY_CONTEXT_MULTIPLEXING;;
-		bind_ack->ctx_list[1].syntax = {};
+	for (size_t i = 0; i < pbind->ctx_list.size(); ++i) {
+		auto &in  = pbind->ctx_list[i];
+		auto &out = bind_ack->ctx_list[i];
+		out.syntax = {};
+		if (&in == acc) {
+			out.result = 0;
+			out.reason = 0;
+			out.syntax = b_ndr64 ? g_transfer_syntax_ndr64 :
+			             g_transfer_syntax_ndr;
+		} else if (b_negotiate && is_negotiate_ctx(in)) {
+			auto &u = in.transfer_syntaxes[0].uuid;
+			auto big = pcall->b_bigendian;
+			uint8_t bm = big ? u.node[5] : u.clock_seq[0];
+			out.result = DCERPC_BIND_RESULT_NEGOTIATE_ACK;
+			out.reason = bm & DCERPC_SECURITY_CONTEXT_MULTIPLEXING;
+		} else {
+			auto known = is_negotiate_ctx(in) ||
+			             ctx_intf(in) != nullptr;
+			out.result = DCERPC_BIND_RESULT_PROVIDER_REJECT;
+			out.reason = known ? DCERPC_BIND_REASON_TSYNTAX :
+			             DCERPC_BIND_REASON_ASYNTAX;
+		}
 	}
-	bind_ack->ctx_list[0].result = result;
-	bind_ack->ctx_list[0].reason = reason;
-	bind_ack->ctx_list[0].syntax = g_transfer_syntax_ndr;
 	bind_ack->auth_info.clear();
 	
 	if (pcall->pprocessor->auth_list.empty()) {
@@ -2594,7 +2730,8 @@ int pdu_processor::input(const char *pbuff, uint16_t length,
 					*ppcall = pcall;
 					return PDU_PROCESSOR_OUTPUT;
 				}
-				alloc_size = strange_roundup(alloc_size - 1, 16 * 1024);
+				alloc_size = std::min<size_t>(gx_capacity(alloc_size, 16 * 1024),
+				             g_max_request_mem);
 				try {
 					prequest->stub_and_verifier.reserve(alloc_size);
 				} catch (const std::bad_alloc &) {
@@ -2647,7 +2784,8 @@ int pdu_processor::input(const char *pbuff, uint16_t length,
 					*ppcall = pcall;
 					return PDU_PROCESSOR_OUTPUT;
 				}	
-				alloc_size = strange_roundup(alloc_size - 1, 16 * 1024);
+				alloc_size = std::min<size_t>(gx_capacity(alloc_size, 16 * 1024),
+				             g_max_request_mem);
 				try {
 					prequestx->stub_and_verifier.reserve(alloc_size);
 				} catch (const std::bad_alloc &) {

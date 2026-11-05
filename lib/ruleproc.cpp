@@ -17,9 +17,12 @@
 #include <vmime/addressList.hpp>
 #include <vmime/contentTypeField.hpp>
 #include <vmime/dateTime.hpp>
+#include <vmime/defaultAttachment.hpp>
 #include <vmime/headerFieldFactory.hpp>
 #include <vmime/mailbox.hpp>
 #include <vmime/message.hpp>
+#include <vmime/messageBuilder.hpp>
+#include <vmime/messageIdSequence.hpp>
 #include <vmime/stringContentHandler.hpp>
 #include <vmime/utility/url.hpp>
 #include <gromox/algorithm.hpp>
@@ -42,6 +45,7 @@
 #include <gromox/pcl.hpp>
 #include <gromox/propval.hpp>
 #include <gromox/rop_util.hpp>
+#include <gromox/ruleproc.hpp>
 #include <gromox/svc_common.h>
 #include <gromox/textmaps.hpp>
 #include <gromox/tie.hpp>
@@ -50,6 +54,7 @@
 #include "../mda/exmdb_local/bounce_producer.hpp"
 
 using namespace gromox;
+using LLU = unsigned long long;
 DECLARE_SVC_API(,);
 
 namespace {
@@ -164,8 +169,9 @@ struct rxparam {
 	bool eml_loaded = false;
 	unsigned int m_flags = ~0U;
 	uint32_t act_type = 0, act_idx = 0; /* action being run, for DEMs */
-	bool del = false, exit = false, cal_changed = false;
+	bool del = false, exit = false, cal_changed = false, moved_out = false;
 	int64_t oof_hist_window = -1; /* seconds, see rx_oof_hist_window */
+	std::string oof_hist_key; /* of the rule being run */
 };
 
 }
@@ -173,6 +179,7 @@ struct rxparam {
 unsigned int g_ruleproc_debug;
 static std::string rp_smtp_url, rp_org_name;
 static unsigned int rp_max_ext_rules = 20;
+static bool rp_enable_dam = true;
 /*
  * Exchange 2007 marks Out of Office rules with ST_ONLY_WHEN_OOF_EX, with the
  * same meaning as ST_ONLY_WHEN_OOF, MS-OXORULE v23.0 §2.2.1.3.1.3 note 1.
@@ -213,6 +220,28 @@ static BOOL cu_get_propname(propid_t propid, PROPERTY_NAME **name) try
 	return TRUE;
 } catch (const std::bad_alloc &) {
 	return false;
+}
+
+/*
+ * Export @msg, whose named properties are numbered as in the store @dir.
+ * @fmt supplies PR_INETMAIL_OVERRIDE_FORMAT, if any.
+ */
+static bool rx_mapi_to_inet(const char *dir, const message_content &msg,
+    const message_content *fmt, const std::string &log_id,
+    vmime::shared_ptr<vmime::message> &out)
+{
+	rp_storedir = dir;
+	oxcmail_converter cvt;
+	cvt.log_id = log_id.c_str();
+	cvt.alloc = cu_alloc;
+	cvt.get_propids = cu_get_propids;
+	cvt.get_propname = cu_get_propname;
+	if (fmt != nullptr)
+		cvt.use_format_override(*fmt);
+	auto err = cvt.mapi_to_inet(msg, out);
+	rp_alloc_ctx.clear();
+	rp_storedir = nullptr;
+	return err == ecSuccess;
 }
 
 rule_node::rule_node(rule_node &&o) :
@@ -498,11 +527,13 @@ static void rx_xrule_retag(const npid_map &map, RESTRICTION &res)
 		break;
 	case RES_CONTENT:
 		rx_xrule_retag(map, res.cont->proptag);
-		res.cont->propval.proptag = res.cont->proptag;
+		res.cont->propval.proptag = PROP_TAG(PROP_TYPE(res.cont->propval.proptag),
+		                           PROP_ID(res.cont->proptag));
 		break;
 	case RES_PROPERTY:
 		rx_xrule_retag(map, res.prop->proptag);
-		res.prop->propval.proptag = res.prop->proptag;
+		res.prop->propval.proptag = PROP_TAG(PROP_TYPE(res.prop->propval.proptag),
+		                           PROP_ID(res.prop->proptag));
 		break;
 	case RES_PROPCOMPARE:
 		rx_xrule_retag(map, res.pcmp->proptag1);
@@ -618,13 +649,13 @@ ec_error_t rxparam::load_ext_rules(bool oof,
 			if (ep.g_namedprop_info(&rule.xcnames) != pack_result::ok ||
 			    ep.g_restriction(&rule.xcond) != pack_result::ok) {
 				mlog(LV_WARN, "ruleproc: %s: extrule %llxh: unparsable condition",
-					dir, static_cast<unsigned long long>(*mid));
+					dir, LLU{*mid});
 				continue;
 			}
 			npid_map map;
 			if (!rx_xrule_npmap(dir, rule.xcnames, map)) {
 				mlog(LV_WARN, "ruleproc: %s: extrule %llxh: named properties unresolvable",
-					dir, static_cast<unsigned long long>(*mid));
+					dir, LLU{*mid});
 				continue;
 			}
 			rx_xrule_retag(map, rule.xcond);
@@ -638,13 +669,13 @@ ec_error_t rxparam::load_ext_rules(bool oof,
 		    version != 1 ||
 		    ep.g_ext_rule_actions(&rule.xact) != pack_result::ok) {
 			mlog(LV_WARN, "ruleproc: %s: extrule %llxh: unparsable actions",
-				dir, static_cast<unsigned long long>(*mid));
+				dir, LLU{*mid});
 			continue;
 		}
 		npid_map map;
 		if (!rx_xrule_npmap(dir, rule.xanames, map)) {
 			mlog(LV_WARN, "ruleproc: %s: extrule %llxh: named properties unresolvable",
-				dir, static_cast<unsigned long long>(*mid));
+				dir, LLU{*mid});
 			continue;
 		}
 		for (auto &blk : rule.xact)
@@ -729,32 +760,6 @@ static bool rx_eval_sub(const MESSAGE_CONTENT *ct, proptag_t tag,
  * PT_UNICODE, while Outlook rules reference the PT_UNICODE tag. Fall back to
  * the sibling string type when the exact tag is absent.
  */
-/* PR_DISPLAY_TO/CC/BCC as exmdb computes them from the recipients */
-static std::string rx_display_list(const MESSAGE_CONTENT &ct, uint32_t type) try
-{
-	std::string out;
-	if (ct.children.prcpts == nullptr)
-		return out;
-	for (const auto &rcpt : *ct.children.prcpts) {
-		auto rt = rcpt.get<const uint32_t>(PR_RECIPIENT_TYPE);
-		if (rt == nullptr || (*rt & 0xf) != type)
-			continue;
-		auto name = rcpt.get<const char>(PR_DISPLAY_NAME);
-		if (name == nullptr)
-			name = rcpt.get<const char>(PR_SMTP_ADDRESS);
-		if (name == nullptr)
-			name = rcpt.get<const char>(PR_EMAIL_ADDRESS);
-		if (name == nullptr)
-			continue;
-		if (!out.empty())
-			out += "; ";
-		out += name;
-	}
-	return out;
-} catch (const std::bad_alloc &) {
-	return {};
-}
-
 /*
  * @ct is the message whose properties @props are, or nullptr for recipients
  * and attachments. @buf holds a computed value.
@@ -788,7 +793,7 @@ static const void *rx_getval(const MESSAGE_CONTENT *ct,
 	case CHANGE_PROP_TYPE(PR_DISPLAY_BCC, PT_UNSPECIFIED):
 		if (ct == nullptr || (t != PT_UNICODE && t != PT_STRING8))
 			return nullptr;
-		buf = rx_display_list(*ct, PROP_ID(tag) == PROP_ID(PR_DISPLAY_TO) ? MAPI_TO :
+		buf = rcpt_display_list(ct->children.prcpts, PROP_ID(tag) == PROP_ID(PR_DISPLAY_TO) ? MAPI_TO :
 		      PROP_ID(tag) == PROP_ID(PR_DISPLAY_CC) ? MAPI_CC : MAPI_BCC);
 		return buf.c_str();
 	}
@@ -890,7 +895,6 @@ static constexpr size_t rx_max_rule_rcpts = 256, rx_max_dams = 128;
  */
 static void rx_disable_rule(rxparam &par, const rule_node &rule)
 {
-	using LLU = unsigned long long;
 	auto dir = par.orig_dir.c_str();
 	uint32_t state = rule.state | ST_ERROR;
 	bool ok;
@@ -923,6 +927,8 @@ static void rx_disable_rule(rxparam &par, const rule_node &rule)
 static void rx_make_dem(rxparam &par, const rule_node &rule,
     uint32_t rule_error)
 {
+	if (!rp_enable_dam)
+		return;
 	if (rule.extended)
 		return; /* §2.2.7: extended rules are not used in DEMs */
 	auto dir = par.orig_dir.c_str();
@@ -979,7 +985,6 @@ static void rx_rule_error(rxparam &par, const rule_node &rule,
 static ec_error_t op_copy_other(rxparam &par, const rule_node &rule,
     const MOVECOPY_ACTION &mc, uint8_t act_type)
 {
-	using LLU = unsigned long long;
 	/* Resolve store */
 	if (mc.pstore_eid == nullptr)
 		return ecNotFound;
@@ -1100,6 +1105,7 @@ static ec_error_t op_copy_other(rxparam &par, const rule_node &rule,
 	par.cur.dir = newdir;
 	par.cur.fid = eid_t(dst_fid);
 	par.cur.mid = eid_t(dst_mid);
+	par.moved_out = !owner_mode;
 	return ecSuccess;
 }
 
@@ -1125,7 +1131,7 @@ static ec_error_t op_copy(rxparam &par, const rule_node &rule,
 		return ecRpcFailed;
 	if (!exist) {
 		mlog(LV_WARN, "ruleproc: %s: OP_MOVE/OP_COPY target folder %llxh does not exist",
-			par.cur.dirc(), static_cast<unsigned long long>(rop_util_get_gc_value(dst_fid)));
+			par.cur.dirc(), LLU{rop_util_get_gc_value(dst_fid)});
 		rx_rule_error(par, rule, RULE_ERROR_MOVECOPY, true);
 		return ecSuccess;
 	}
@@ -1242,16 +1248,292 @@ static ec_error_t op_read(rxparam &par, const rule_node &rule)
 	return ecSuccess;
 }
 
+static inline uint32_t cvidx_make_delta(uint64_t oldtime, uint64_t now)
+{
+	auto delta = now - oldtime;
+	return delta >= (1ULL << 48) ?
+	       (delta >> 23) | (1ULL << 31) :
+	       (delta >> 18) & ~(1ULL << 31);
+}
+
+/* PR_CONVERSATION_INDEX for a message answering one with index @bin */
+static bool cvidx_child(const BINARY *bin, uint64_t nt_time, std::string &out)
+{
+	if (bin == nullptr || bin->cb < 22)
+		return false;
+	out.assign(bin->pc, bin->cb);
+	out.resize(bin->cb + 5);
+	/* Well that's just great, Y2057 problem */
+	auto oldtime = be64p_to_cpu(&out[1]) & 0xffffffffff000000ULL;
+	cpu_to_be32p(&out[bin->cb], cvidx_make_delta(oldtime, nt_time));
+	out[bin->cb+4] = gromox::rand();
+	return true;
+}
+
+/* Make @addr the sender of a message that ruleproc generates */
+static ec_error_t rx_set_sender(TPROPVAL_ARRAY &props, const char *addr,
+    const char *name = nullptr)
+{
+	ec_error_t err;
+	if ((err = props.set(PR_SENT_REPRESENTING_ADDRTYPE, "SMTP")) != ecSuccess ||
+	    (err = props.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, addr)) != ecSuccess ||
+	    (err = props.set(PR_SENT_REPRESENTING_SMTP_ADDRESS, addr)) != ecSuccess ||
+	    (err = props.set(PR_SENDER_ADDRTYPE, "SMTP")) != ecSuccess ||
+	    (err = props.set(PR_SENDER_EMAIL_ADDRESS, addr)) != ecSuccess ||
+	    (err = props.set(PR_SENDER_SMTP_ADDRESS, addr)) != ecSuccess)
+		return err;
+	if (name == nullptr)
+		return ecSuccess;
+	if ((err = props.set(PR_SENT_REPRESENTING_NAME, name)) != ecSuccess ||
+	    (err = props.set(PR_SENDER_NAME, name)) != ecSuccess)
+		return err;
+	return ecSuccess;
+}
+
+static constexpr char rx_loop_hdr[] = "X-MS-Exchange-Inbox-Rules-Loop";
+
 /*
- * Whether a forward by a rule already reached @rcpt. Forwards and alerts name
- * their recipients in Delivered-To, which stops forwarding loops.
+ * Whether a forward by a rule already reached @rcpt, which stops forwarding
+ * loops. Redirects and alerts name their recipients in Delivered-To. Forwards
+ * name every mailbox they passed in X-MS-Exchange-Inbox-Rules-Loop, as EXC
+ * does.
  */
 static bool rx_delivered_before(vmime::header &head, const char *rcpt)
 {
 	for (const auto &dvto : head.findAllFields(vmime::fields::DELIVERED_TO))
 		if (strcasecmp(dvto->getValue()->generate().c_str(), rcpt) == 0)
 			return true;
+	for (const auto &dvto : head.findAllFields(rx_loop_hdr))
+		if (strcasecmp(dvto->getValue()->generate().c_str(), rcpt) == 0)
+			return true;
 	return false;
+}
+
+/* The forwarding mailboxes named in @orig, plus @owner */
+static std::vector<std::string> rx_loop_trace(const MIME *orig, const char *owner)
+{
+	std::vector<std::string> out;
+	auto num = orig != nullptr ? orig->get_field_num(rx_loop_hdr) : 0;
+	for (int i = 0; i < num; ++i) {
+		std::string v;
+		if (orig->search_field(rx_loop_hdr, i, v))
+			out.push_back(std::move(v));
+	}
+	out.emplace_back(owner);
+	return out;
+}
+
+static std::string mr_owner_lang(const rxparam &);
+
+/* Bodies of @orig with its header block quoted on top, into @out */
+static ec_error_t rx_fwd_body(const message_content &orig, const char *lang,
+    TPROPVAL_ARRAY &out)
+{
+	auto &p = orig.proplist;
+	auto cpid = p.get<const uint32_t>(PR_INTERNET_CPID);
+	auto text = p.get<const char>(PR_BODY);
+	auto html = p.get<const BINARY>(PR_HTML);
+	std::string conv;
+	ec_error_t err;
+	if (text == nullptr && (text = p.get<const char>(PR_BODY_A)) != nullptr) {
+		auto cset = cpid != nullptr ? cpid_to_cset(static_cast<cpid_t>(*cpid)) : nullptr;
+		conv = cset != nullptr ? iconvtext(text, cset, "UTF-8") : text;
+		text = conv.c_str();
+	}
+	if (text == nullptr && (html == nullptr || html->pc == nullptr)) {
+		auto rtf = p.getval(PR_RTF_COMPRESSED);
+		if (rtf != nullptr) {
+			/* Not worth an RTF editor, keep the body as it is */
+			for (auto tag : {PR_RTF_COMPRESSED, PR_RTF_IN_SYNC, PR_NATIVE_BODY_INFO}) {
+				auto v = p.getval(tag);
+				if (v != nullptr && (err = out.set(tag, v)) != ecSuccess)
+					return err;
+			}
+			return ecSuccess;
+		}
+		text = "";
+	}
+	auto hdr = make_quote_header(orig, lang);
+	if (text != nullptr &&
+	    (err = out.set(PR_BODY, quote_plain(hdr, text).c_str())) != ecSuccess)
+		return err;
+	/* As with EWS ForwardItem, the HTML part goes out in UTF-8 */
+	static constexpr uint32_t utf8_cpid = CP_UTF8;
+	if (html != nullptr && html->pc != nullptr) {
+		std::string s(html->pc, html->cb);
+		auto cset = cpid != nullptr && *cpid != CP_UTF8 ?
+		            cpid_to_cset(static_cast<cpid_t>(*cpid)) : nullptr;
+		if (cset != nullptr && !s.empty()) {
+			auto conv = iconvtext(s, cset, "UTF-8");
+			if (conv.empty()) {
+				/* Charset unknown to iconv, pass the HTML on unchanged */
+				if ((err = out.set(PR_HTML, html)) != ecSuccess)
+					return err;
+				return out.set(PR_INTERNET_CPID, cpid);
+			}
+			s = std::move(conv);
+		}
+		if ((err = quote_html(hdr, s)) != ecSuccess)
+			return err;
+		if (s.size() > UINT32_MAX)
+			return ecInvalidParam;
+		BINARY bin;
+		bin.cb = s.size();
+		bin.pc = s.data();
+		if ((err = out.set(PR_HTML, &bin)) != ecSuccess)
+			return err;
+	}
+	return out.set(PR_INTERNET_CPID, &utf8_cpid);
+}
+
+/**
+ * A forward by a rule that does not preserve the sender is a new message
+ * from the mailbox owner, which quotes the original as a forward by hand
+ * would. EXC does the same.
+ */
+static ec_error_t rx_fwd_compose(const rxparam &par,
+    const std::vector<std::string> &rcpt_list,
+    const std::vector<std::string> &rcpt_names, message_content &fwd)
+{
+	auto &p = par.ctnt->proplist;
+	auto &o = fwd.proplist;
+	auto norm = p.get<const char>(PR_NORMALIZED_SUBJECT);
+	if (norm == nullptr)
+		norm = znul(p.get<const char>(PR_SUBJECT));
+	auto topic = p.get<const char>(PR_CONVERSATION_TOPIC);
+	auto lang = mr_owner_lang(par);
+	auto pfx = meeting_subject_prefix(lang.c_str(), "forward");
+	auto subj = pfx + std::string(norm);
+	auto now = rop_util_current_nttime();
+	char msgid[128];
+	auto err = make_inet_msgid(msgid, std::size(msgid), 0x5246);
+	if (err != ecSuccess)
+		return err;
+	std::string owner_name;
+	if (!mysql_adaptor_get_user_displayname(par.ev_to, owner_name) ||
+	    owner_name.empty())
+		owner_name = par.ev_to;
+	if ((err = o.set(PR_MESSAGE_CLASS, "IPM.Note")) != ecSuccess ||
+	    (err = o.set(PR_SUBJECT_PREFIX, pfx)) != ecSuccess ||
+	    (err = o.set(PR_NORMALIZED_SUBJECT, norm)) != ecSuccess ||
+	    (err = o.set(PR_SUBJECT, subj.c_str())) != ecSuccess ||
+	    (err = o.set(PR_CONVERSATION_TOPIC, topic != nullptr ? topic : norm)) != ecSuccess ||
+	    (err = o.set(PR_CLIENT_SUBMIT_TIME, &now)) != ecSuccess ||
+	    (err = o.set(PR_AUTO_FORWARDED, &byte_value_one)) != ecSuccess ||
+	    (err = o.set(PR_INTERNET_MESSAGE_ID, msgid)) != ecSuccess ||
+	    (err = rx_set_sender(o, par.ev_to, owner_name.c_str())) != ecSuccess)
+		return err;
+	auto imp = p.get<const uint32_t>(PR_IMPORTANCE);
+	if (imp != nullptr && (err = o.set(PR_IMPORTANCE, imp)) != ecSuccess)
+		return err;
+	std::string cvidx;
+	if (cvidx_child(p.get<const BINARY>(PR_CONVERSATION_INDEX), now, cvidx)) {
+		BINARY cvbin;
+		cvbin.cb = cvidx.size();
+		cvbin.pc = cvidx.data();
+		if ((err = o.set(PR_CONVERSATION_INDEX, &cvbin)) != ecSuccess)
+			return err;
+	}
+	auto omid = p.get<const char>(PR_INTERNET_MESSAGE_ID);
+	if (!znoval(omid)) {
+		auto refs = p.get<const char>(PR_INTERNET_REFERENCES);
+		auto nrefs = znoval(refs) ? std::string(omid) : std::string(refs) + " " + omid;
+		if ((err = o.set(PR_IN_REPLY_TO_ID, omid)) != ecSuccess ||
+		    (err = o.set(PR_INTERNET_REFERENCES, nrefs.c_str())) != ecSuccess)
+			return err;
+	}
+	err = rx_fwd_body(*par.ctnt, lang.c_str(), o);
+	if (err != ecSuccess)
+		return err;
+
+	auto rcpts = tarray_set_init();
+	if (rcpts == nullptr)
+		return ecServerOOM;
+	fwd.set_rcpts_internal(rcpts);
+	static constexpr uint32_t rtype = MAPI_TO;
+	for (size_t i = 0; i < rcpt_list.size(); ++i) {
+		auto r = rcpts->emplace();
+		if (r == nullptr)
+			return ecServerOOM;
+		auto addr = rcpt_list[i].c_str();
+		auto name = rcpt_names[i].empty() ? addr : rcpt_names[i].c_str();
+		if ((err = r->set(PR_RECIPIENT_TYPE, &rtype)) != ecSuccess ||
+		    (err = r->set(PR_ADDRTYPE, "SMTP")) != ecSuccess ||
+		    (err = r->set(PR_EMAIL_ADDRESS, addr)) != ecSuccess ||
+		    (err = r->set(PR_SMTP_ADDRESS, addr)) != ecSuccess ||
+		    (err = r->set(PR_DISPLAY_NAME, name)) != ecSuccess)
+			return err;
+	}
+	auto atx = par.ctnt->children.pattachments;
+	if (atx != nullptr && atx->count > 0) {
+		auto dup = atx->dup();
+		if (dup == nullptr)
+			return ecServerOOM;
+		fwd.set_attachments_internal(dup);
+	}
+	return ecSuccess;
+}
+
+/* Whether a forward may rewrite a message of class @cls */
+static bool rx_fwd_may_munge(const char *cls)
+{
+	if (cls == nullptr)
+		return true;
+	return class_match_prefix(cls, "IPM.Note") == 0 &&
+	       class_match_prefix(cls, "IPM.Note.SMIME") != 0;
+}
+
+static ec_error_t rx_fwd_new(rxparam &par,
+    const std::vector<std::string> &rcpt_list,
+    const std::vector<std::string> &rcpt_names)
+{
+	vmime::message orig;
+	vmime::shared_ptr<vmime::header> orig_head;
+	std::string thdr;
+	auto eml = par.get_eml();
+	if (eml == nullptr) {
+		/* Without the loop trace, a forward loop would not end */
+		auto th = par.ctnt->proplist.get<const char>(PR_TRANSPORT_MESSAGE_HEADERS);
+		if (th != nullptr) {
+			thdr = th + std::string("\r\n");
+			eml = &thdr;
+		}
+	}
+	if (eml != nullptr) {
+		auto vpctx = vmail_default_parsectx();
+		orig.parse(vpctx, *eml);
+		orig_head = orig.getHeader();
+		if (orig_head != nullptr && rx_delivered_before(*orig_head, par.ev_to)) {
+			mlog(LV_DEBUG, "ruleproc: %s: OP_FORWARD skipped, "
+				"message was already delivered to %s",
+				par.orig_dir.c_str(), par.ev_to);
+			return ecSuccess;
+		}
+	}
+	message_content_ptr fwd(message_content_init());
+	if (fwd == nullptr)
+		return ecServerOOM;
+	auto err = rx_fwd_compose(par, rcpt_list, rcpt_names, *fwd);
+	if (err != ecSuccess)
+		return err;
+	auto log_id = "f" + std::to_string(rop_util_get_gc_value(par.cur.fid)) +
+	              ":m" + std::to_string(rop_util_get_gc_value(par.cur.mid));
+	auto vmail = vmime::make_shared<vmime::message>();
+	if (!rx_mapi_to_inet(par.orig_dir.c_str(), *fwd, par.ctnt, log_id,
+	    vmail) != ecSuccess) {
+		mlog(LV_ERR, "ruleproc: OP_FORWARD oxcmail_export failed");
+		return ecError;
+	}
+	auto &vhead = *vmail->getHeader();
+	for (auto &&entry : orig_head->findAllFields(vmime::fields::DELIVERED_TO))
+		vhead.appendField(std::move(entry));
+	for (auto &&entry : orig_head->findAllFields(rx_loop_hdr))
+		vhead.appendField(std::move(entry));
+	err = cu_send_vmail(vmail, rp_smtp_url.c_str(), par.ev_to, rcpt_list);
+	if (err != ecSuccess)
+		mlog(LV_ERR, "ruleproc: OP_FORWARD cu_send_mail: %s",
+			mapi_strerror(err));
+	return ecSuccess;
 }
 
 /**
@@ -1346,22 +1628,41 @@ static ec_error_t op_forward2(rxparam &par, const rule_node &rule,
 		rx_rule_error(par, rule, RULE_ERROR_TOO_MANY_RCPTS, true);
 		return ecSuccess;
 	}
+	/*
+	 * A forward goes out with a non-null envelope sender. Doing that
+	 * for a bounce sends the next bounce back here, which the rule
+	 * forwards again (RFC 5321 §4.5.5).
+	 */
+	if (strcasecmp(par.ev_from, ENVELOPE_FROM_NULL) == 0) {
+		mlog(LV_DEBUG, "ruleproc: %s: OP_FORWARD skipped, "
+			"message has a null envelope sender",
+			par.orig_dir.c_str());
+		return ecSuccess;
+	}
 	if (flavor & FWD_AS_SMS_ALERT)
 		return op_sms_alert(par, rule, blk);
-	std::vector<std::string> rcpt_list;
+	std::vector<std::string> rcpt_list, rcpt_names;
 	for (const auto &rcptprops : blk) {
 		TPROPVAL_ARRAY pv;
 		pv.count = rcptprops.count;
 		pv.ppropval = rcptprops.ppropval;
-		if (cu_rcpt_to_list(std::move(pv), rp_org_name.c_str(),
+		auto before = rcpt_list.size();
+		if (cu_rcpt_to_list(pv, rp_org_name.c_str(),
 		    rcpt_list, mysql_adaptor_userid_to_name, false) != ecSuccess)
 			return ecError;
+		auto name = rcpt_list.size() == before + 1 ?
+		            znul(pv.get<const char>(PR_DISPLAY_NAME)) : "";
+		rcpt_names.resize(rcpt_list.size(), name);
 	}
 	if (rcpt_list.empty())
 		return ecSuccess;
+	if (!(flavor & (FWD_PRESERVE_SENDER | FWD_DO_NOT_MUNGE_MSG | FWD_AS_ATTACHMENT)) &&
+	    rx_fwd_may_munge(par.ctnt->proplist.get<const char>(PR_MESSAGE_CLASS)))
+		return rx_fwd_new(par, rcpt_list, rcpt_names);
 
 	auto vmail = vmime::make_shared<vmime::message>();
 	auto eml = par.get_eml();
+	bool head_kept = false;
 	if (eml != nullptr) {
 		/*
 		 * Send the message as received, which keeps signatures intact
@@ -1375,24 +1676,28 @@ static ec_error_t op_forward2(rxparam &par, const rule_node &rule,
 				par.orig_dir.c_str(), par.ev_to);
 			return ecSuccess;
 		}
+		auto af = vmail->getHeader()->findField("X-MS-Exchange-Organization-AutoForwarded");
+		if (!(flavor & FWD_AS_ATTACHMENT) &&
+		    (!(flavor & FWD_PRESERVE_SENDER) || af == nullptr ||
+		    strcasecmp(af->generate().c_str(), "true") == 0)) {
+			/* Editing the head would re-emit it unfolded */
+			std::string pre;
+			for (const auto &eaddr : rcpt_list)
+				pre += "Delivered-To: " + eaddr + "\r\n";
+			if (flavor & FWD_PRESERVE_SENDER && af == nullptr)
+				pre += "X-MS-Exchange-Organization-AutoForwarded: true\r\n";
+			vmail = vmime::make_shared<vmime::message>();
+			vmail->parse(vpctx, pre + *eml);
+			head_kept = true;
+		}
 	} else {
 		auto log_id = "f" + std::to_string(rop_util_get_gc_value(par.cur.fid)) +
 		              ":m" + std::to_string(rop_util_get_gc_value(par.cur.mid));
-		rp_storedir = par.orig_dir.c_str();
-		oxcmail_converter cvt;
-		cvt.log_id = log_id.c_str();
-		cvt.alloc = cu_alloc;
-		cvt.get_propids = cu_get_propids;
-		cvt.get_propname = cu_get_propname;
-		cvt.use_format_override(*par.ctnt);
-		if (!cvt.mapi_to_inet(*par.ctnt, vmail)) {
+		if (!rx_mapi_to_inet(par.orig_dir.c_str(), *par.ctnt,
+		    par.ctnt, log_id, vmail)) {
 			mlog(LV_ERR, "ruleproc: OP_FORWARD oxcmail_export failed");
-			rp_alloc_ctx.clear();
-			rp_storedir = nullptr;
 			return ecError;
 		}
-		rp_alloc_ctx.clear();
-		rp_storedir = nullptr;
 	}
 
 	ec_error_t ret = ecSuccess;
@@ -1507,8 +1812,8 @@ static bool rx_stock_reply_body(rxparam &par, std::string &body) try
 			parts += name;
 		}
 	}
-	char date_buf[128], size_buf[64];
-	rfc1123_dstring(date_buf, std::size(date_buf), 0);
+	char date_buf[32], size_buf[64];
+	make_rfc_date(date_buf, std::size(date_buf));
 	auto size = props.get<const uint32_t>(PR_MESSAGE_SIZE);
 	HX_unit_size(size_buf, std::size(size_buf), size != nullptr ? *size : 0, 1000, 0);
 	auto fa = HXformat_init();
@@ -1533,6 +1838,39 @@ static bool rx_stock_reply_body(rxparam &par, std::string &body) try
 	return false;
 }
 
+/*
+ * Mail that RFC 3834 §2 says not to answer automatically, the same checks
+ * that exmdb_local applies to its own OOF reply.
+ */
+static bool rx_reply_suppressed(rxparam &par, uint8_t act_type)
+{
+	auto &props = par.ctnt->proplist;
+	auto suppress = props.get<const uint32_t>(PR_AUTO_RESPONSE_SUPPRESS);
+	if (suppress != nullptr && *suppress & (act_type == OP_REPLY ?
+	    AUTO_RESPONSE_SUPPRESS_AUTOREPLY : AUTO_RESPONSE_SUPPRESS_OOF))
+		return true;
+	auto prec = props.get<const char>(PR_INTERNET_PRECEDENCE);
+	if (prec != nullptr && (strcasecmp(prec, "bulk") == 0 ||
+	    strcasecmp(prec, "list") == 0 || strcasecmp(prec, "junk") == 0))
+		return true;
+	for (auto tag : {PR_LIST_HELP, PR_LIST_HELP_A, PR_LIST_SUBSCRIBE,
+	    PR_LIST_SUBSCRIBE_A, PR_LIST_UNSUBSCRIBE, PR_LIST_UNSUBSCRIBE_A})
+		if (props.has(tag))
+			return true;
+	/* Auto-Submitted is lost on import when X-Auto-Response-Suppress is present */
+	auto eml = par.get_eml();
+	if (eml == nullptr)
+		return false;
+	MAIL mail;
+	if (!mail.refonly_parse(eml->c_str(), eml->size()))
+		return false;
+	auto head = mail.get_head();
+	if (head == nullptr)
+		return false;
+	auto as = head->get_field("Auto-Submitted");
+	return as != nullptr && strncasecmp(as->c_str(), "no", 2) != 0;
+}
+
 /**
  * OP_REPLY and OP_OOF_REPLY, MS-OXORULE v23.0 §3.2.5.1. @tpl_mid is the
  * template, an FAI message in the rule folder.
@@ -1543,13 +1881,10 @@ static bool rx_stock_reply_body(rxparam &par, std::string &body) try
 static ec_error_t op_reply2(rxparam &par, uint8_t act_type, uint32_t flavor,
     eid_t tpl_mid, const GUID &tpl_guid) try
 {
-	if (strcasecmp(par.ev_from, ENVELOPE_FROM_NULL) == 0)
+	if (strcasecmp(par.ev_from, ENVELOPE_FROM_NULL) == 0 ||
+	    rx_reply_suppressed(par, act_type))
 		return ecSuccess;
 	auto &props = par.ctnt->proplist;
-	auto suppress = props.get<const uint32_t>(PR_AUTO_RESPONSE_SUPPRESS);
-	if (suppress != nullptr && *suppress & (act_type == OP_REPLY ?
-	    AUTO_RESPONSE_SUPPRESS_AUTOREPLY : AUTO_RESPONSE_SUPPRESS_OOF))
-		return ecSuccess;
 
 	auto dir = par.orig_dir.c_str();
 	message_content *tpl = nullptr;
@@ -1614,16 +1949,7 @@ static ec_error_t op_reply2(rxparam &par, uint8_t act_type, uint32_t flavor,
 
 	auto log_id = par.orig_dir + ":m" + std::to_string(rop_util_get_gc_value(tpl_mid));
 	auto vmail  = vmime::make_shared<vmime::message>();
-	rp_storedir = dir;
-	oxcmail_converter cvt;
-	cvt.log_id = log_id.c_str();
-	cvt.alloc = cu_alloc;
-	cvt.get_propids = cu_get_propids;
-	cvt.get_propname = cu_get_propname;
-	auto ok = cvt.mapi_to_inet(*tpl, vmail);
-	rp_alloc_ctx.clear();
-	rp_storedir = nullptr;
-	if (!ok) {
+	if (!rx_mapi_to_inet(dir, *tpl, nullptr, log_id, vmail)) {
 		mlog(LV_ERR, "ruleproc: OP_REPLY oxcmail_export failed");
 		return ecError;
 	}
@@ -1642,8 +1968,13 @@ static ec_error_t op_reply2(rxparam &par, uint8_t act_type, uint32_t flavor,
 	if (rcpt_list.empty())
 		return ecSuccess;
 	auto ret = cu_send_vmail(vmail, rp_smtp_url.c_str(), par.ev_to, rcpt_list);
-	if (ret != ecSuccess)
+	if (ret != ecSuccess) {
 		mlog(LV_ERR, "ruleproc: OP_REPLY cu_send_mail: %s", mapi_strerror(ret));
+		return ecSuccess;
+	}
+	if (act_type == OP_OOF_REPLY && !par.oof_hist_key.empty() &&
+	    !exmdb_client->autoreply_tsupdate(dir, par.oof_hist_key.c_str()))
+		mlog(LV_WARN, "ruleproc: %s: could not update the OOF history", dir);
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	return ecMAPIOOM;
@@ -1663,12 +1994,24 @@ static ec_error_t op_reply(rxparam &par, const rule_node &rule,
 	return ecSuccess;
 }
 
+/* Whether @guid names the mailbox the rules came from */
+static bool rx_is_own_store(const rxparam &par, const GUID &guid)
+{
+	unsigned int user_id = 0, domain_id = 0;
+	return mysql_adaptor_get_user_ids(par.ev_to, &user_id, &domain_id, nullptr) &&
+	       guid == rop_util_make_user_guid(user_id);
+}
+
 static ec_error_t opx_reply(rxparam &par, const rule_node &rule,
     const EXT_ACTION_BLOCK &act)
 {
 	auto ra = static_cast<const EXT_REPLY_ACTION *>(act.pdata);
 	if (ra == nullptr)
 		return ecSuccess;
+	if (!rx_is_own_store(par, ra->message_eid.message_dbguid)) {
+		rx_disable_rule(par, rule);
+		return ecSuccess;
+	}
 	auto mid = eid_t(1, rop_util_gc_to_value(ra->message_eid.message_gc));
 	auto err = op_reply2(par, act.type, act.flavor, mid, ra->template_guid);
 	if (err != ecNotFound)
@@ -1827,20 +2170,25 @@ static ec_error_t op_delegate(rxparam &par, const rule_node &rule,
 
 /*
  * After OP_DELETE only Out of Office rules still run. Actions that would keep
- * the message in a mailbox are dropped then.
+ * the message in a mailbox are dropped then. A message moved into another
+ * store is out of reach of the remaining actions as well.
  */
 static bool rx_skip_after_delete(const rxparam &par, uint8_t type)
 {
-	if (!par.del)
+	if (!par.del && !par.moved_out)
 		return false;
 	switch (type) {
+	case OP_DELETE:
+		if (!par.moved_out)
+			return false;
+		[[fallthrough]];
 	case OP_MOVE:
 	case OP_COPY:
 	case OP_TAG:
 	case OP_MARK_AS_READ:
 	case OP_DEFER_ACTION:
 		if (g_ruleproc_debug)
-			mlog(LV_DEBUG, "ruleproc: %s: action %u skipped, message is deleted",
+			mlog(LV_DEBUG, "ruleproc: %s: action %u skipped, message is gone",
 				par.orig_dir.c_str(), type);
 		return true;
 	default:
@@ -1972,7 +2320,7 @@ static bool rx_rule_matches(const rxparam &par, const rule_node &rule)
 		if (g_ruleproc_debug)
 			mlog(LV_DEBUG, "ruleproc: %s: %srule %llxh has no condition, skipped",
 				par.orig_dir.c_str(), rule.extended ? "ext" : "",
-				static_cast<unsigned long long>(rule.rule_id));
+				LLU{rule.rule_id});
 		return false;
 	}
 	auto matched = rx_eval_props(par.ctnt, par.ctnt->proplist, *rule.cond);
@@ -2063,15 +2411,13 @@ static bool rx_rule_applies(rxparam &par, const rule_node &rule)
 		if (g_ruleproc_debug)
 			mlog(LV_DEBUG, "ruleproc: %s: %srule %llxh skipped, %s was answered before",
 				par.orig_dir.c_str(), rule.extended ? "ext" : "",
-				static_cast<unsigned long long>(rule.rule_id), key.c_str());
+				LLU{rule.rule_id}, key.c_str());
 		return false;
 	}
 	if (!rx_rule_matches(par, rule))
 		return false;
-	if (!key.empty() &&
-	    !exmdb_client->autoreply_tsupdate(par.orig_dir.c_str(), key.c_str()))
-		mlog(LV_WARN, "ruleproc: %s: could not update the OOF history",
-			par.orig_dir.c_str());
+	/* Recorded by op_reply2 once a reply went out */
+	par.oof_hist_key = std::move(key);
 	return true;
 }
 
@@ -2099,7 +2445,8 @@ static ec_error_t op_process(rxparam &par, const rule_node &rule)
 static ec_error_t opx_move(rxparam &par, const rule_node &rule,
     const EXT_MOVECOPY_ACTION &mc, uint8_t act_type)
 {
-	if (mc.folder_eid.eid_type != EITLT_PRIVATE_FOLDER) {
+	if (mc.folder_eid.eid_type != EITLT_PRIVATE_FOLDER ||
+	    !rx_is_own_store(par, mc.folder_eid.folder_dbguid)) {
 		rx_disable_rule(par, rule);
 		return ecSuccess;
 	}
@@ -2165,6 +2512,8 @@ static ec_error_t opx_process(rxparam &par, const rule_node &rule)
 
 static ec_error_t mr_get_policy(const char *ev_to, mr_policy &pol)
 {
+	if (ev_to == nullptr)
+		return ecSuccess;
 	tpropval_array_ptr props(tpropval_array_init());
 	if (props == nullptr)
 		return ecServerOOM;
@@ -2281,14 +2630,6 @@ static ec_error_t mr_insert_to_cal(rxparam &par, const PROPID_ARRAY &propids,
 	if (err == ecSuccess)
 		par.cal_changed = true;
 	return err;
-}
-
-static inline uint32_t cvidx_make_delta(uint64_t oldtime, uint64_t now)
-{
-	auto delta = now - oldtime;
-	return delta >= (1ULL << 48) ?
-	       (delta >> 23) | (1ULL << 31) :
-	       (delta >> 18) & ~(1ULL << 31);
 }
 
 /*
@@ -2430,24 +2771,14 @@ static ec_error_t mr_send_response(rxparam &par, bool recurring_flg,
 		mlog(LV_ERR, "%s: no Envelope-To to identify the responder with", __func__);
 		return ecInvalidParam;
 	}
-	if ((err = rsp_prop.set(PR_SENT_REPRESENTING_ADDRTYPE, "SMTP")) != ecSuccess ||
-	    (err = rsp_prop.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, par.ev_to)) != ecSuccess ||
-	    (err = rsp_prop.set(PR_SENT_REPRESENTING_SMTP_ADDRESS, par.ev_to)) != ecSuccess ||
-	    (err = rsp_prop.set(PR_SENDER_ADDRTYPE, "SMTP")) != ecSuccess ||
-	    (err = rsp_prop.set(PR_SENDER_EMAIL_ADDRESS, par.ev_to)) != ecSuccess ||
-	    (err = rsp_prop.set(PR_SENDER_SMTP_ADDRESS, par.ev_to)) != ecSuccess)
+	if ((err = rx_set_sender(rsp_prop, par.ev_to)) != ecSuccess)
 		return err;
-	auto bin = rq_prop.get<const BINARY>(PR_CONVERSATION_INDEX);
-	if (bin != nullptr && bin->cb >= 22) {
-		auto cvidx = std::make_unique<char[]>(bin->cb + 5);
-		memcpy(&cvidx[0], bin->pv, bin->cb);
-		/* Well that's just great, Y2057 problem */
-		auto oldtime = be64p_to_cpu(&cvidx[1]) & 0xffffffffff000000ULL;
-		cpu_to_be32p(&cvidx[bin->cb], cvidx_make_delta(oldtime, nt_time));
-		cvidx[bin->cb+4] = gromox::rand();
+	std::string cvidx;
+	if (cvidx_child(rq_prop.get<const BINARY>(PR_CONVERSATION_INDEX),
+	    nt_time, cvidx)) {
 		BINARY cvbin;
-		cvbin.cb = bin->cb + 5;
-		cvbin.pc = cvidx.get();
+		cvbin.cb = cvidx.size();
+		cvbin.pc = cvidx.data();
 		err = rsp_prop.set(PR_CONVERSATION_INDEX, &cvbin);
 		if (err != ecSuccess)
 			return err;
@@ -2456,21 +2787,11 @@ static ec_error_t mr_send_response(rxparam &par, bool recurring_flg,
 	auto vmsg = vmime::make_shared<vmime::message>();
 	auto log_id = "f" + std::to_string(rop_util_get_gc_value(par.cur.fid)) +
 	              ":m" + std::to_string(rop_util_get_gc_value(par.cur.mid));
-	rp_storedir = par.cur.dirc();
-	oxcmail_converter cvt;
-	cvt.log_id = log_id.c_str();
-	cvt.alloc = cu_alloc;
-	cvt.get_propids = cu_get_propids;
-	cvt.get_propname = cu_get_propname;
-	err = cvt.mapi_to_inet(*rsp_ctnt, vmsg);
-	if (err != ecSuccess) {
-		mlog(LV_ERR, "mr_send_response: oxcmail_export failed: %s", mapi_strerror(err));
-		return err;
+	if (!rx_mapi_to_inet(par.cur.dirc(), *rsp_ctnt, nullptr, log_id, vmsg)) {
+		mlog(LV_ERR, "mr_send_response: oxcmail_export failed for an unspecified reason.");
+		return ecError;
 	}
-	err = cu_send_vmail(vmsg, rp_smtp_url.c_str(), par.ev_to, {txt});
-	rp_alloc_ctx.clear();
-	rp_storedir = nullptr;
-	return err;
+	return cu_send_vmail(vmsg, rp_smtp_url.c_str(), par.ev_to, {txt});
 } catch (const std::bad_alloc &) {
 	return ecMAPIOOM;
 }
@@ -2564,6 +2885,50 @@ static ec_error_t mr_find_cal_items(rxparam &par, proptag_t match_tag,
 		item.dated = mr_goid_instancedate(rows.pparray[i]->get<const BINARY>(goid_tag)) != 0;
 		items.emplace_back(item);
 	}
+	return ecSuccess;
+}
+
+/**
+ * Whether the calendar holds the organizer's own item of the meeting, which
+ * has asfMeeting without asfReceived (MS-OXOCAL v22.1 §2.2.1.10). A request or
+ * cancellation reaches the organizer only as a forwarded copy, and that must
+ * not replace the item.
+ */
+static ec_error_t mr_have_organizer_item(rxparam &par,
+    const PROPID_ARRAY &propids, bool &found)
+{
+	found = false;
+	if (propids[l_appt_state_flags] == 0)
+		return ecSuccess;
+	auto &rq_prop = par.ctnt->proplist;
+	RESTRICTION_PROPERTY id_prop[2];
+	RESTRICTION id_rst[2];
+	uint32_t id_count = 0;
+	for (auto ix : {l_goid, l_cleangoid}) {
+		auto tag = PROP_TAG(PT_BINARY, propids[ix]);
+		auto val = rq_prop.get<const BINARY>(tag);
+		if (propids[ix] == 0 || val == nullptr || val->cb == 0)
+			continue;
+		id_prop[id_count] = {RELOP_EQ, tag, {tag, deconst(val)}};
+		id_rst[id_count] = {RES_PROPERTY, {&id_prop[id_count]}};
+		++id_count;
+	}
+	if (id_count == 0)
+		return ecSuccess;
+	auto state_tag = PROP_TAG(PT_LONG, propids[l_appt_state_flags]);
+	RESTRICTION_AND_OR id_or   = {id_count, id_rst};
+	RESTRICTION_BITMASK mtg    = {BMR_NEZ, state_tag, asfMeeting};
+	RESTRICTION_BITMASK rcvd   = {BMR_EQZ, state_tag, asfReceived};
+	RESTRICTION all[]          = {{RES_OR, {&id_or}}, {RES_BITMASK, {&mtg}}, {RES_BITMASK, {&rcvd}}};
+	RESTRICTION_AND_OR all_and = {std::size(all), all};
+	RESTRICTION rst            = {RES_AND, {&all_and}};
+	uint32_t table_id = 0, row_count = 0;
+	if (!exmdb_client->load_content_table(par.cur.dirc(), CP_ACP,
+	    eid_t(1, PRIVATE_FID_CALENDAR), nullptr, TABLE_FLAG_NONOTIFICATIONS,
+	    &rst, nullptr, &table_id, &row_count))
+		return ecRpcFailed;
+	exmdb_client->unload_table(par.cur.dirc(), table_id);
+	found = row_count > 0;
 	return ecSuccess;
 }
 
@@ -3050,9 +3415,11 @@ static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
 	auto recurring_ptr = rq_prop.get<const uint8_t>(PROP_TAG(PT_BOOLEAN, propids[l_recurring]));
 	auto recurring_flg = recurring_ptr != nullptr && *recurring_ptr != 0;
 	if (recurring_flg && policy.decline_recurring) {
-		auto err = mr_send_response(par, recurring_flg, propids, respDeclined);
-		if (err != ecSuccess)
-			return err;
+		if (freebusy_perms(par.ev_from, par.cur.dirc()) != 0) {
+			auto err = mr_send_response(par, recurring_flg, propids, respDeclined);
+			if (err != ecSuccess)
+				return err;
+		}
 		return mr_mark_done(par);
 	}
 
@@ -3407,7 +3774,7 @@ static ec_error_t mr_remove_occurrence(rxparam &par, const PROPID_ARRAY &propids
 	APPOINTMENT_RECUR_PAT apr{};
 	if (ep.g_apptrecpat(&apr) != pack_result::success) {
 		mlog(LV_WARN, "mr_remove_occurrence: %s:m%llu: unparsable recurrence blob",
-			par.cur.dirc(), static_cast<unsigned long long>(rop_util_get_gc_value(cal_mid)));
+			par.cur.dirc(), LLU{rop_util_get_gc_value(cal_mid)});
 		return ecSuccess;
 	}
 	auto ret = apr.remove_instance(basedate);
@@ -3416,7 +3783,7 @@ static ec_error_t mr_remove_occurrence(rxparam &par, const PROPID_ARRAY &propids
 	if (ret == 2)
 		mlog(LV_WARN, "mr_remove_occurrence: %s:m%llu: no modified-instance "
 			"entry for exception, leaving exception in place.",
-			par.cur.dirc(), static_cast<unsigned long long>(cal_mid.gcv()));
+			par.cur.dirc(), LLU{cal_mid.gcv()});
 	EXT_PUSH epu;
 	if (!epu.init(nullptr, 0, EXT_FLAG_UTF16) ||
 	    epu.p_apptrecpat(apr) != pack_result::success)
@@ -3573,7 +3940,7 @@ static ec_error_t mr_cancel_occurrence(rxparam &par, const PROPID_ARRAY &propids
 	if (ep.g_apptrecpat(&apr) != pack_result::success ||
 	    apr.pexceptioninfo.size() != apr.pextendedexception.size()) {
 		mlog(LV_WARN, "mr_cancel_occurrence: %s:m%llu: unparsable recurrence blob",
-			par.cur.dirc(), static_cast<unsigned long long>(cal_mid.gcv()));
+			par.cur.dirc(), LLU{cal_mid.gcv()});
 		return ecSuccess;
 	}
 	auto &rp = apr.recur_pat;
@@ -3671,7 +4038,7 @@ static ec_error_t mr_cancel_occurrence(rxparam &par, const PROPID_ARRAY &propids
 		} else {
 			mlog(LV_WARN, "mr_cancel_occurrence: %s:m%llu: no embedded "
 				"message for the exception, blob updated only",
-				par.cur.dirc(), static_cast<unsigned long long>(cal_mid.gcv()));
+				par.cur.dirc(), LLU{cal_mid.gcv()});
 		}
 	} else {
 		uint32_t lstart = basedate + apr.starttimeoffset;
@@ -3851,7 +4218,7 @@ static ec_error_t mr_update_occurrence(rxparam &par, const PROPID_ARRAY &propids
 	if (ep.g_apptrecpat(&apr) != pack_result::success ||
 	    apr.pexceptioninfo.size() != apr.pextendedexception.size()) {
 		mlog(LV_WARN, "mr_update_occurrence: %s:m%llu: unparsable recurrence blob",
-			par.cur.dirc(), static_cast<unsigned long long>(cal_mid.gcv()));
+			par.cur.dirc(), LLU{cal_mid.gcv()});
 		return ecSuccess;
 	}
 
@@ -4275,7 +4642,7 @@ static ec_error_t mr_start(rxparam &par, const mr_policy &policy)
 		{MNID_ID, PSETID_Appointment, PidLidAppointmentStartWhole},
 		{MNID_ID, PSETID_Appointment, PidLidAppointmentEndWhole},
 		{MNID_ID, PSETID_Meeting,     PidLidIsException},
-		{MNID_ID, PSETID_Meeting,     PidLidTimeZoneStruct},
+		{MNID_ID, PSETID_Appointment, PidLidTimeZoneStruct},
 		{MNID_ID, PSETID_Appointment, PidLidAppointmentRecur},
 		{MNID_ID, PSETID_Appointment, PidLidAppointmentTimeZoneDefinitionRecur},
 		{MNID_ID, PSETID_Meeting,     PidLidIsRecurring},
@@ -4296,9 +4663,17 @@ static ec_error_t mr_start(rxparam &par, const mr_policy &policy)
 
 	auto &rq_prop = par.ctnt->proplist;
 	auto rq_class = mr_get_class(rq_prop);
-	if (class_match_prefix(rq_class, "IPM.Schedule.Meeting.Request") == 0)
+	bool is_rq = class_match_prefix(rq_class, "IPM.Schedule.Meeting.Request") == 0;
+	bool is_cn = class_match_prefix(rq_class, "IPM.Schedule.Meeting.Canceled") == 0;
+	if (is_rq || is_cn) {
+		bool organizer = false;
+		auto err = mr_have_organizer_item(par, propids, organizer);
+		if (err != ecSuccess || organizer)
+			return err;
+	}
+	if (is_rq)
 		return mr_do_request(par, propids, policy);
-	if (class_match_prefix(rq_class, "IPM.Schedule.Meeting.Canceled") == 0)
+	if (is_cn)
 		return mr_do_cancel(par, propids, policy);
 	if (class_match_prefix(rq_class, "IPM.Schedule.Meeting.Resp") == 0) {
 		auto err = mr_do_response(par, propids);
@@ -4357,12 +4732,12 @@ ec_error_t rxparam::run_rules()
 			/* One failing rule must not keep the others from running */
 			mlog(LV_ERR, "ruleproc: %s: %srule %llxh \"%s\" failed: %s",
 				orig_dir.c_str(), rule.extended ? "ext" : "",
-				static_cast<unsigned long long>(rule.rule_id),
+				LLU{rule.rule_id},
 				rule.name.c_str(), mapi_strerror(err));
 	}
 	if (!del)
 		make_dams();
-	if (del) {
+	if (del && !moved_out) {
 		const EID_ARRAY ids = {1, &cur.mid};
 		BOOL partial;
 		if (!exmdb_client->delete_messages(cur.dirc(), CP_ACP, nullptr,
@@ -4387,7 +4762,7 @@ ec_error_t rxparam::run()
 		/* Message is gone, nothing left to process or announce */
 		return ret;
 
-	if (m_flags & DELIVERY_DO_MRAUTOPROC) {
+	if (m_flags & DELIVERY_DO_MRAUTOPROC && !moved_out) {
 		mr_policy res_policy;
 		auto err = ecSuccess;
 		if (ctnt == nullptr && (!exmdb_client->read_message(cur.dirc(),
@@ -4473,7 +4848,7 @@ const std::string *rxparam::get_eml()
  */
 void rxparam::make_dams() try
 {
-	if (dams.empty())
+	if (dams.empty() || !rp_enable_dam)
 		return;
 	auto dir = orig_dir.c_str();
 	if (dams.size() > rx_max_dams) {
@@ -4593,14 +4968,16 @@ void rxparam::notify()
 	auto cls   = vals.get<const char>(PR_MESSAGE_CLASS);
 	auto Tflags = vals.get<const uint32_t>(PR_MESSAGE_FLAGS);
 	if (cls == nullptr || Tflags == nullptr) {
-		mlog(LV_ERR, "ruleproc: msg %llxh oddly missing FL/C", static_cast<unsigned long long>(cur.mid));
+		mlog(LV_ERR, "ruleproc: msg %llxh oddly missing FL/C", LLU{cur.mid});
 		return;
 	}
 	if (!exmdb_client->transport_new_mail(cur.dirc(), cur.fid, cur.mid, *Tflags, cls))
 		mlog(LV_ERR, "ruleproc: tnewmail notification unsuccessful");
 }
 
-static ec_error_t exmdb_local_rules_execute(const char *dir, const char *ev_from,
+namespace gromox {
+
+ec_error_t exmdb_local_rules_execute(const char *dir, const char *ev_from,
     const char *ev_to, eid_t folder_id, eid_t msg_id, unsigned int flags) try
 {
 	rxparam p({dir, folder_id, msg_id});
@@ -4611,6 +4988,8 @@ static ec_error_t exmdb_local_rules_execute(const char *dir, const char *ev_from
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;
+}
+
 }
 
 static constexpr cfg_directive rp_config_defaults[] = {
@@ -4624,8 +5003,6 @@ bool SVC_ruleproc(enum plugin_op reason, const struct dlfuncs &param)
 	if (reason != PLUGIN_INIT)
 		return TRUE;
 	LINK_SVC_API(param);
-	if (!register_service("rules_execute", exmdb_local_rules_execute))
-		return false;
 	auto cfg = config_file_initd("gromox.cfg", get_config_path(), rp_config_defaults);
 	if (cfg == nullptr)
 		/* e.g. permission error */
@@ -4645,14 +5022,16 @@ bool SVC_ruleproc(enum plugin_op reason, const struct dlfuncs &param)
 	}
 	rp_org_name = *znul(org) != '\0' ? org : "Gromox default";
 	mlog(LV_DEBUG, "ruleproc: x500 org name is \"%s\"", rp_org_name.c_str());
-	/* Same limit as the legacy processor in exmdb_provider */
 	static constexpr cfg_directive xp_defaults[] = {
+		{"enable_dam", "1", CFG_BOOL},
 		{"max_ext_rule_number", "20", CFG_SIZE},
 		CFG_TABLE_END,
 	};
 	auto xpc = config_file_initd("exmdb_provider.cfg", get_config_path(), xp_defaults);
-	if (xpc != nullptr)
+	if (xpc != nullptr) {
+		rp_enable_dam = parse_bool(xpc->get_value("enable_dam"));
 		rp_max_ext_rules = xpc->get_ll("max_ext_rule_number");
+	}
 	auto str = cfg->get_value("outgoing_smtp_url");
 	if (str != nullptr) {
 		try {

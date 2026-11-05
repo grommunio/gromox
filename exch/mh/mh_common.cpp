@@ -53,8 +53,8 @@ std::string render_content(std::chrono::system_clock::time_point now, std::chron
 	static constexpr char templ[] = "PROCESSING\r\nDONE\r\n"
 		"X-ElapsedTime: {}\r\n"
 		"X-StartTime: {}\r\n\r\n";
-	char dstring[128];
-	rfc1123_dstring(dstring, std::size(dstring), decltype(start)::clock::to_time_t(start));
+	char dstring[32];
+	make_rfc_date(dstring, std::size(dstring), decltype(start)::clock::to_time_t(start));
 	long long elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - start).count();
 	return fmt::format(templ, elapsed, dstring);
 }
@@ -84,8 +84,8 @@ std::string commonHeader(const char *requestType, const char *requestId,
         "X-ServerApplication: Exchange/{}\r\n"
         "Date: {}\r\n";
 	using namespace std::chrono;
-	char dstring[128];
-	rfc1123_dstring(dstring, std::size(dstring), wallclock::to_time_t(date));
+	char dstring[32];
+	make_rfc_date(dstring, std::size(dstring), wallclock::to_time_t(date));
 	auto rs = fmt::format(templ, requestType, requestId, clientInfo,
 	          static_cast<long long>(duration_cast<milliseconds>(response_pending_period).count()),
 	          static_cast<long long>(duration_cast<milliseconds>(session_valid_interval).count()),
@@ -101,7 +101,7 @@ std::string commonHeader(const char *requestType, const char *requestId,
 
 http_status MhContext::error_responsecode(resp_code response_code) const
 {
-	char dstring[128], text_buff[512];
+	char dstring[32], text_buff[512];
 
 	mlog(LV_DEBUG, "D-2390: mh: user=%s rq=%s sid=%s X-ResponseCode %u",
 		znul(auth_info.username), request_value, session_string,
@@ -114,7 +114,7 @@ http_status MhContext::error_responsecode(resp_code response_code) const
 		"<h1>Diagnostic Information</h1>\r\n"
 		"<p>%s</p>\r\n"
 		"</body></html>\r\n", resp_code_text(response_code));
-	rfc1123_dstring(dstring, std::size(dstring), wallclock::to_time_t(wall_start_time));
+	make_rfc_date(dstring, std::size(dstring), wallclock::to_time_t(wall_start_time));
 	static constexpr char templ[] =
 		"HTTP/1.1 200 OK\r\n"
 		"Cache-Control: private\r\n"

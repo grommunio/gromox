@@ -119,7 +119,7 @@ wmime notes
 If instead of wmime you want to use vmime, provided it is new enough, you can
 do so with:
 
-	./configure wmime_CFLAGS="$(pkg-config vmime --cflags)" wmime_LIBS="$(pkg-config vmime --libs)"
+	./configure vmime_CFLAGS="$(pkg-config vmime --cflags)" vmime_LIBS="$(pkg-config vmime --libs)"
 
 ASAN notes
 ----------

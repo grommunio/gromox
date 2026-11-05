@@ -707,6 +707,36 @@ void sCalendarMeetingRequestCommon::timezoneId(std::string_view tzid, bool setTz
 		EndTimeZoneId = StartTimeZoneId = tzid;
 }
 
+/**
+ * @brief      Attach the zone rules to (Start|End)TimeZone
+ *
+ * Exchange returns the periods and transitions with every zone, and
+ * the EWS Managed API cannot use one without them. That matters most
+ * for "Customized Time Zone", which no client can look up by name.
+ *
+ * @param      start     PidLidAppointmentTimeZoneDefinitionStartDisplay
+ * @param      end       PidLidAppointmentTimeZoneDefinitionEndDisplay
+ */
+void sCalendarMeetingRequestCommon::timezoneRules(const TZDEF *start,
+    const TZDEF *end)
+{
+	if (start == nullptr)
+		start = end;
+	if (start != nullptr && StartTimeZone)
+		StartTimeZone->rules = start->rules;
+	if (end == nullptr) {
+		if (start != nullptr && EndTimeZone)
+			EndTimeZone->rules = start->rules;
+		return;
+	}
+	if (EndTimeZone) {
+		EndTimeZone->Id = end->keyname;
+		EndTimeZone->rules = end->rules;
+	}
+	if (EndTimeZoneId)
+		EndTimeZoneId = end->keyname;
+}
+
 const std::string &sCalendarMeetingRequestCommon::timezoneId() const
 {
 	if(StartTimeZoneId)
@@ -893,18 +923,6 @@ static void recurrence_zone(tRecurrenceType &rec,
 	rec.zone(east);
 }
 
-static std::string tzdef_keyname(const BINARY *bin)
-{
-	if (bin == nullptr)
-		return {};
-	EXT_PULL ext_pull;
-	TZDEF tzdef;
-	ext_pull.init(bin->pb, bin->cb, nullptr, EXT_FLAG_UTF16);
-	if (ext_pull.g_tzdef(&tzdef) != pack_result::ok)
-		return {};
-	return std::move(tzdef.keyname);
-}
-
 /**
  * @brief      Collect meetings that overlap or touch this one
  *
@@ -1027,9 +1045,16 @@ void sCalendarMeetingRequestCommon::update(const sShape &shape)
 	    (u64 = shape.get<uint64_t>(NtAppointmentStartWhole)))
 		Start.emplace(rop_util_nttime_to_unix2(*u64));
 
-	auto tzid = tzdef_keyname(shape.get<BINARY>(NtAppointmentTimeZoneDefinitionStartDisplay));
-	if (tzid.empty())
-		tzid = tzdef_keyname(shape.get<BINARY>(NtAppointmentTimeZoneDefinitionEndDisplay));
+	auto tzstart = binary_to_tzdef(shape.get<BINARY>(
+	               NtAppointmentTimeZoneDefinitionStartDisplay));
+	auto tzend = binary_to_tzdef(shape.get<BINARY>(
+	             NtAppointmentTimeZoneDefinitionEndDisplay));
+	if (tzstart && tzstart->keyname.empty())
+		tzstart.reset();
+	if (tzend && tzend->keyname.empty())
+		tzend.reset();
+	std::string tzid = tzstart ? tzstart->keyname :
+	                   tzend ? tzend->keyname : std::string();
 	const char *str;
 	if (tzid.empty() && (str = shape.get<char>(NtCalendarTimeZone)) != nullptr)
 		tzid = str;
@@ -1045,8 +1070,23 @@ void sCalendarMeetingRequestCommon::update(const sShape &shape)
 	    (u64 = shape.get<uint64_t>(NtCommonStart, sShape::FL_ANY)) != nullptr &&
 	    rop_util_nttime_to_unix(*u64) % 86400 == 0)
 		tzid = "UTC";
-	if (!tzid.empty())
+	if (!tzid.empty()) {
 		timezoneId(tzid);
+		if (!tzstart && !tzend)
+			tzstart = TZDEF{tzid, {}};
+		for (auto tz : {&tzstart, &tzend}) {
+			if (!*tz || tTimeZoneDefinition::usable((*tz)->rules))
+				continue;
+			auto named = lookup_tz_get_tzdef(
+			             (*tz)->keyname.c_str());
+			if (named)
+				(*tz)->rules = std::move(named->rules);
+			else
+				(*tz)->rules.clear();
+		}
+		timezoneRules(tzstart ? &*tzstart : nullptr,
+			tzend ? &*tzend : nullptr);
+	}
 
 	Enum::CalendarItemTypeType calendarItemType = Enum::Single;
 	if ((prop = shape.get(NtAppointmentRecur))) {
@@ -1815,7 +1855,7 @@ void sShape::deriveSmtp()
 		{PR_RECEIVED_BY_ADDRTYPE, PR_RECEIVED_BY_EMAIL_ADDRESS, PR_RECEIVED_BY_SMTP_ADDRESS},
 		{PR_RCVD_REPRESENTING_ADDRTYPE, PR_RCVD_REPRESENTING_EMAIL_ADDRESS, PR_RCVD_REPRESENTING_SMTP_ADDRESS},
 	};
-	static_assert(std::size(tags) == std::size(smtpProps));
+	static_assert(std::size(tags) == std::extent_v<decltype(smtpProps)>);
 	for (size_t i = 0; i < std::size(tags); ++i) {
 		auto it = props.find(tags[i][2]);
 		if (it == props.end() || it->second.prop != nullptr)
@@ -2594,8 +2634,48 @@ void tCalendarItem::setDatetimeFields(sShape& shape)
 
 ///////////////////////////////////////////////////////////////////////////////
 
+static bool date_ok(const SYSTEMTIME &t)
+{
+	return t.year == 0 && t.month >= 1 && t.month <= 12 &&
+	       t.dayofweek >= 0 && t.dayofweek <= 6 &&
+	       t.day >= 1 && t.day <= 5 &&
+	       t.hour >= 0 && t.hour <= 23 &&
+	       t.minute >= 0 && t.minute <= 59;
+}
+
+static bool bias_ok(int32_t b, int32_t max_bias)
+{
+	return b >= -max_bias && b <= max_bias;
+}
+
 tServerTimeZone::tServerTimeZone(TZDEF &&t, bool f) : tz(std::move(t)), full(f)
 {}
+
+/**
+ * @brief      Whether the rules can be written as EWS transitions
+ *
+ * The rules may come from a client-supplied TZDEF blob.
+ */
+bool tTimeZoneDefinition::usable(const std::vector<TZRULE> &rules)
+{
+	static constexpr size_t max_rules = 64;
+	static constexpr int32_t max_bias = 24 * 60;
+	if (rules.empty() || rules.size() > max_rules)
+		return false;
+	for (size_t i = 0; i < rules.size(); ++i) {
+		const auto &r = rules[i];
+		if (i > 0 && (r.year <= rules[i-1].year ||
+		    r.year < 1 || r.year > 9999))
+			return false;
+		if (!bias_ok(r.bias, max_bias) || !bias_ok(r.standardbias, max_bias) ||
+		    !bias_ok(r.daylightbias, max_bias))
+			return false;
+		if (r.standarddate.month != 0 && r.daylightdate.month != 0 &&
+		    (!date_ok(r.standarddate) || !date_ok(r.daylightdate)))
+			return false;
+	}
+	return true;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -5099,10 +5179,14 @@ void tItem::update(const sShape& shape)
 		fromProp(prop, defaulted(ConversationId).Id);
 		ConversationId->type = tItemId::ID_GENERIC;
 	}
-	if ((prop = shape.get(PR_CREATION_TIME)))
-		fromProp(prop, DateTimeCreated);
-	else
-		fromProp(shape.get(PR_LOCAL_COMMIT_TIME), DateTimeCreated);
+	prop = shape.get(PR_CREATION_TIME);
+	if (prop == nullptr) {
+		auto want = shape.requested(PR_CREATION_TIME);
+		prop = shape.get(PR_LOCAL_COMMIT_TIME, want ? sShape::FL_ANY : sShape::FL_FIELD);
+		if (prop == nullptr && want)
+			prop = shape.get(PR_LAST_MODIFICATION_TIME, sShape::FL_ANY);
+	}
+	fromProp(prop, DateTimeCreated);
 	fromProp(shape.get(PR_DISPLAY_BCC), DisplayBcc);
 	fromProp(shape.get(PR_DISPLAY_CC), DisplayCc);
 	fromProp(shape.get(PR_DISPLAY_TO),DisplayTo);
@@ -5342,6 +5426,9 @@ void tItemResponseShape::tags(sShape& shape) const
 		for (const auto& named : namedTagsAllProperties)
 			shape.add(*named.first, named.second, sShape::FL_FIELD);
 	}
+	/* Fallback for a missing PR_CREATION_TIME, see tItem::update */
+	if (shape.requested(PR_CREATION_TIME))
+		shape.add(PR_LOCAL_COMMIT_TIME);
 	/*
 	 * The UTC fallback zone of all-day items needs these. Added last so
 	 * that a field request made above keeps its flags.

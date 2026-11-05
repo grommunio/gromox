@@ -442,7 +442,7 @@ pack_result edb_pull::g_edb_propval_a(TPROPVAL_ARRAY *r)
 		return pack_result::ok;
 	}
 	r->count = std::min(r->count, static_cast<uint16_t>(UINT16_MAX));
-	r->ppropval = anew<TAGGED_PROPVAL>(strange_roundup(r->count, SR_GROW_TAGGED_PROPVAL));
+	r->ppropval = anew<TAGGED_PROPVAL>(gx_capacity(r->count, SR_GROW_TAGGED_PROPVAL));
 	if (r->ppropval == nullptr) {
 		r->count = 0;
 		return pack_result::alloc;

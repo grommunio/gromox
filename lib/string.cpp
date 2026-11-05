@@ -631,18 +631,26 @@ std::string hex2bin(std::string_view input, hex2bin_mode onbad)
 	return buf;
 }
 
-void rfc1123_dstring(char *buf, size_t z, const struct tm &tm)
+void make_rfc_date(char *buf, size_t z, const struct tm &tm)
 {
-	strftime(buf, z, "%a, %d %b %Y %T GMT", &tm);
+	/*
+	 * LC_TIME=C asctime: %a %b %2d %T %Y
+	 * RFC 822 (IMF): [%a,] %d %b %y %T %Z
+	 * RFC 850 (News): %A, %02d-%b-%02y %T %Z
+	 * RFC 850 (News): %a %b %02d %T %Y
+	 * RFC 2822: [%a,] %d %b %4Y %T %z
+	 */
+	/* Typically, this will emit 31 chars, so z should be >=32. */
+	strftime(buf, z, "%a, %d %b %Y %T %z", &tm);
 }
 
-void rfc1123_dstring(char *buf, size_t z, time_t ts)
+void make_rfc_date(char *buf, size_t z, time_t ts)
 {
 	if (ts == 0)
 		ts = time(nullptr);
 	struct tm tm;
 	if (gmtime_r(&ts, &tm) != nullptr)
-		rfc1123_dstring(buf, z, tm);
+		make_rfc_date(buf, z, tm);
 	else
 		*buf = '\0';
 }

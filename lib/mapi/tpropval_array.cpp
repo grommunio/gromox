@@ -21,10 +21,10 @@ static bool tpropval_array_append(TPROPVAL_ARRAY *parray, proptag_t proptag,
 	if (parray->count == 0 && parray->ppropval == nullptr &&
 	    !tpropval_array_init_internal(parray))
 		return false;
-	auto count = strange_roundup(parray->count, SR_GROW_TAGGED_PROPVAL);
-	if (parray->count + 1U >= count) {
-		count += SR_GROW_TAGGED_PROPVAL;
-		auto ppropvals = gromox::re_alloc<TAGGED_PROPVAL>(parray->ppropval, count);
+	auto cap = gx_capacity(parray->count, SR_GROW_TAGGED_PROPVAL);
+	if (parray->count >= cap) {
+		cap = gx_capacity(parray->count + 1U, SR_GROW_TAGGED_PROPVAL);
+		auto ppropvals = gromox::re_alloc<TAGGED_PROPVAL>(parray->ppropval, cap);
 		if (ppropvals == nullptr)
 			return false;
 		parray->ppropval = ppropvals;
@@ -84,7 +84,7 @@ void TPROPVAL_ARRAY::erase(proptag_t proptag)
 bool tpropval_array_init_internal(TPROPVAL_ARRAY *parray)
 {
 	parray->count = 0;
-	auto count = strange_roundup(parray->count, SR_GROW_TAGGED_PROPVAL);
+	auto count = gx_capacity(parray->count, SR_GROW_TAGGED_PROPVAL);
 	parray->ppropval = gromox::me_alloc<TAGGED_PROPVAL>(count);
 	return parray->ppropval != nullptr;
 }

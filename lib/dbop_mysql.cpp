@@ -391,6 +391,13 @@ static constexpr char tbl_disabled_plugins_133[] =
 "  CONSTRAINT `domain_ibfk_1` FOREIGN KEY (`domain_id`) REFERENCES `domains` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
 ") DEFAULT CHARSET=utf8mb4";
 
+static constexpr char tbl_default_orgparam_134[] =
+"CREATE TABLE `default_orgparam` ("
+"  `key` varchar(32) CHARACTER SET ascii NOT NULL,"
+"  `value` varchar(255),"
+"  PRIMARY KEY (`key`)"
+") DEFAULT CHARSET=utf8mb4";
+
 static constexpr struct tbl_init tbl_init_0[] = {
 	{"aliases", tbl_alias_0},
 	{"associations", tbl_assoc_0},
@@ -609,6 +616,7 @@ static constexpr struct tbl_init tbl_init_top[] = {
 	{"orgparam", tbl_orgparam_109},
 	{"altnames", tbl_altnames_129},
 	{"disabled_plugins", tbl_disabled_plugins_133},
+	{"default_orgparam", tbl_default_orgparam_134},
 	{nullptr},
 };
 
@@ -790,6 +798,7 @@ static constexpr tbl_upgradefn tbl_upgrade_list[] = {
 	{131, "UPDATE users SET altname=NULL"},
 	{132, "ALTER TABLE `associations` ADD INDEX `username` (`username`)"},
 	{133, tbl_disabled_plugins_133},
+	{134, tbl_default_orgparam_134},
 	{0, nullptr},
 };
 

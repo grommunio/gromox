@@ -549,8 +549,6 @@ E(3407, "failed to duplicate content for cancellation send");
 E(3408, "failed to duplicate content for meeting request send");
 E(3409, "failed to set response properties on meeting item");
 E(3410, "failed to set properties on sent meeting request");
-E(3411, "failed to update message properties after attachment create");
-E(3412, "failed to update message properties after attachment delete");
 E(3413, "failed to allocate message id for user configuration");
 E(3414, "failed to allocate change number for user configuration");
 E(3415, "failed to write user configuration message");
@@ -665,6 +663,9 @@ E(3574, "failed to delete the content of a folder");
 inline std::string E3580(std::string_view val) {return fmt::format("E-3580: invalid base64 constant '{}'", val);}
 inline std::string E3581(std::string_view val) {return fmt::format("E-3581: invalid GUID constant '{}'", val);}
 E(3582, "failed to set response properties on the calendar item");
+E(3583, "failed to stamp the existing calendar item of the meeting");
+E(3584, "failed to stamp the message instance before its flush");
+E(3585, "the attachments changed since the id was issued");
 E(3590, "no right to answer for the principal in its calendar");
 E(3591, "failed to map named properties to the principal's store");
 E(3600, "cannot write to the calendar of the referenced item");
@@ -680,6 +681,7 @@ E(3609, "Outlook rule blob present, set RemoveOutlookRuleBlob to replace it");
 E(3610, "failed to delete the Outlook rule blob");
 E(3611, "failed to write the inbox rules");
 E(3612, "the inbox rule limit has been reached");
+E(3613, "user configuration message has no entry id");
 
 #undef E
 }

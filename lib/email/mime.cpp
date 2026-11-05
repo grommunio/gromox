@@ -271,8 +271,6 @@ bool MIME::write_content(const char *pcontent, size_t length,
     enum mime_encoding encoding_type) try
 {
 	auto pmime = this;
-	/* align the buffer with 64K */
-	
 	if (pmime->mime_type != mime_type::single &&
 	    pmime->mime_type != mime_type::single_obj)
 		return false;
@@ -295,11 +293,12 @@ bool MIME::write_content(const char *pcontent, size_t length,
 			"quoted-printable" : "base64");
 		return true;
 	}
+	/* Encoders want slack beyond their output, and a CRLF may be appended */
 	switch (encoding_type) {
 	case mime_encoding::none: {
 		/* should add '\r\n' at the end of buffer if it misses */
 		bool added_crlf = pcontent[length-1] != '\n';
-		size_t buff_length = strange_roundup(2 * length, 64 * 1024);
+		size_t buff_length = length + 2;
 		content_buf.reset(me_alloc<char>(buff_length));
 		content_begin = content_buf.get();
 		if (pmime->content_begin == nullptr)
@@ -313,7 +312,7 @@ bool MIME::write_content(const char *pcontent, size_t length,
 		return true;
 	}
 	case mime_encoding::qp: {
-		size_t buff_length = strange_roundup(4 * length, 64 * 1024);
+		size_t buff_length = 4 * length + 8;
 		auto pbuff = std::make_unique<char[]>(buff_length);
 		content_buf.reset(me_alloc<char>(buff_length));
 		content_begin = content_buf.get();
@@ -333,7 +332,7 @@ bool MIME::write_content(const char *pcontent, size_t length,
 		return true;
 	}
 	case mime_encoding::base64: {
-		size_t buff_length = strange_roundup(2 * length, 64 * 1024);
+		size_t buff_length = 2 * length + 8;
 		content_buf.reset(me_alloc<char>(buff_length));
 		content_begin = content_buf.get();
 		if (pmime->content_begin == nullptr)
@@ -1407,9 +1406,9 @@ static int make_digest_single(const MIME *pmime, const char *id_string,
 		}
 	}
 	if (auto hval = pmime->get_field("Content-ID"))
-		digest["cid"] = base64_encode(*hval);
+		digest["cid"] = base64_encode(mime_unfold(*hval));
 	if (auto hval = pmime->get_field("Content-Location"))
-		digest["cntl"] = base64_encode(*hval);
+		digest["cntl"] = base64_encode(mime_unfold(*hval));
 	dsarray.append(std::move(digest));
 	return 0;
 }

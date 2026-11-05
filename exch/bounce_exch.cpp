@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <ctime>
 #include <string>
@@ -29,7 +29,7 @@ static bool bounce_producer_make_content(meta_t meta,
     const char *username, MESSAGE_CONTENT *pbrief, const char *bounce_type,
     std::string &subject, std::string &content)
 {
-	char date_buff[128];
+	char mixed_buf[64];
 
 	auto tsptr = pbrief->proplist.get<const uint64_t>(PR_CLIENT_SUBMIT_TIME);
 	auto ts = tsptr == nullptr ? time(nullptr) : rop_util_nttime_to_unix(*tsptr);
@@ -39,7 +39,7 @@ static bool bounce_producer_make_content(meta_t meta,
 	sql_meta_result mres;
 	auto charset = meta(from, WANTPRIV_METAONLY, mres) == 0 ?
 	               lang_to_charset(mres.lang.c_str()) : nullptr;
-	rfc1123_dstring(date_buff, std::size(date_buff), ts);
+	make_rfc_date(mixed_buf, std::size(mixed_buf), ts);
 	auto message_size = pbrief->proplist.get<const uint32_t>(PR_MESSAGE_SIZE);
 	if (message_size == nullptr)
 		return false;
@@ -60,7 +60,7 @@ static bool bounce_producer_make_content(meta_t meta,
 		return false;
 	auto cl_0 = HX::make_scope_exit([&]() { HXformat_free(fa); });
 	unsigned int immed = HXFORMAT_IMMED;
-	if (HXformat_add(fa, "time", date_buff,
+	if (HXformat_add(fa, "time", mixed_buf,
 	    HXTYPE_STRING | immed) < 0 ||
 	    HXformat_add(fa, "from", from, HXTYPE_STRING) < 0 ||
 	    HXformat_add(fa, "user", username, HXTYPE_STRING) < 0 ||
@@ -72,8 +72,8 @@ static bool bounce_producer_make_content(meta_t meta,
 	auto subj = pbrief->proplist.get<const char>(PR_SUBJECT);
 	if (HXformat_add(fa, "subject", znul(subj), HXTYPE_STRING) < 0)
 		return false;
-	HX_unit_size(date_buff, std::size(date_buff), *message_size, 1000, 0);
-	if (HXformat_add(fa, "length", date_buff, HXTYPE_STRING) < 0)
+	HX_unit_size(mixed_buf, std::size(mixed_buf), *message_size, 1000, 0);
+	if (HXformat_add(fa, "length", mixed_buf, HXTYPE_STRING) < 0)
 		return false;
 
 	hxmc_t *replaced = nullptr;
@@ -109,7 +109,7 @@ bool exch_bouncer_make(buff_t gudn, meta_t meta,
 
 	auto bv = pbrief->proplist.get<const BINARY>(PR_CONVERSATION_INDEX);
 	if (bv != nullptr)
-		hdr->getField("Thread-Index")->setValue(base64_encode({bv->pc, bv->cb}));
+		hdr->getField("Thread-Index")->setValue(base64_encode(*bv));
 	hdr->From()->setValue(expeditor);
 	auto str = pbrief->proplist.get<const char>(PR_SENT_REPRESENTING_NAME);
 	if (str != nullptr && *str != '\0')
@@ -145,7 +145,7 @@ bool exch_bouncer_make(buff_t gudn, meta_t meta,
 		dsn.getField("Original-Message-ID")->setValue(str);
 	bv = pbrief->proplist.get<BINARY>(PR_PARENT_KEY);
 	if (bv != nullptr)
-		dsn.getField("X-MSExch-Correlation-Key")->setValue(base64_encode({bv->pc, bv->cb}));
+		dsn.getField("X-MSExch-Correlation-Key")->setValue(base64_encode(*bv));
 	dsn.getField("X-Display-Name")->setValue(expeditor);
 
 	std::ostringstream oss;

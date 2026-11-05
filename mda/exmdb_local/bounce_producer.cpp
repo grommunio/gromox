@@ -49,7 +49,7 @@ bool exml_bouncer_make(const char *host_id, const char *from, const char *rcpt_t
     MAIL *pmail_original, time_t original_time, const char *bounce_type,
     MAIL *qmail) try
 {
-	char date_buff[128], size_buff[64];
+	char date_buff[32], size_buff[64];
 	sql_meta_result mres;
 	const char *charset = nullptr;
 
@@ -60,7 +60,7 @@ bool exml_bouncer_make(const char *host_id, const char *from, const char *rcpt_t
 		    mysql_adaptor_meta(from, WANTPRIV_METAONLY, mres) == 0)
 			charset = lang_to_charset(mres.lang.c_str());
 	}
-	rfc1123_dstring(date_buff, std::size(date_buff), original_time);
+	make_rfc_date(date_buff, std::size(date_buff), original_time);
 	auto mcharset = bounce_gen_charset(*pmail_original);
 	if (charset == nullptr)
 		charset = mcharset.c_str();

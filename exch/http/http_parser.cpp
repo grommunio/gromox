@@ -488,8 +488,8 @@ std::string http_make_err_response(const http_context &ctx, http_status code)
 	auto msg = status_text(code);
 	if (static_cast<int>(code) >= 1000)
 		code = static_cast<http_status>(static_cast<int>(code) / 10);
-	char dstring[128];
-	rfc1123_dstring(dstring, std::size(dstring));
+	char dstring[32];
+	make_rfc_date(dstring, std::size(dstring));
 	auto rsp = fmt::format(
 		"HTTP/1.1 {} {}\r\n"
 		"Date: {}\r\n"
@@ -1231,9 +1231,9 @@ static tproc_status htp_delegate_rpc(http_context *pcontext,
 	char tmp_buff[2048];
 	gx_strlcpy(tmp_buff, pcontext->request.f_request_uri.c_str(), std::size(tmp_buff));
 	char *ptoken;
-	if (0 == strncmp(tmp_buff, "/rpc/rpcproxy.dll?", 18)) {
+	if (0 == strncasecmp(tmp_buff, "/rpc/rpcproxy.dll?", 18)) {
 		ptoken = tmp_buff + 18;
-	} else if (0 == strncmp(tmp_buff,
+	} else if (0 == strncasecmp(tmp_buff,
 	    "/rpcwithcert/rpcproxy.dll?", 26)) {
 		ptoken = tmp_buff + 26;
 	} else {
@@ -1892,7 +1892,10 @@ tproc_status http_parser::rdbody_nochan2(http_context *pcontext)
 
 tproc_status http_parser::rdbody_nochan(http_context *pcontext)
 {
-	if (0 == pcontext->total_length ||
+	auto is_rpc = pcontext->request.imethod == http_method::rpcin ||
+	              pcontext->request.imethod == http_method::rpcout;
+	/* An empty RPC echo request has no body to wait for */
+	if ((!is_rpc && pcontext->total_length == 0) ||
 	    pcontext->bytes_rw < pcontext->total_length) {
 		auto ret = rdbody_nochan2(pcontext);
 		if (ret == tproc_status::endproc)
@@ -2083,8 +2086,8 @@ tproc_status http_parser::rdbody(http_context *pcontext)
 				return tproc_status::runoff;
 			}
 			/* first send http response head */
-			char dstring[128], response_buff[1024];
-			rfc1123_dstring(dstring, std::size(dstring));
+			char dstring[32], response_buff[1024];
+			make_rfc_date(dstring, std::size(dstring));
 			auto response_len = gx_snprintf(
 				response_buff, std::size(response_buff),
 				"HTTP/1.1 200 Success\r\n"

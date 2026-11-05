@@ -37,6 +37,8 @@
 #include "structures.hpp"
 #include "../bounce_exch.cpp"
 
+using LLU = unsigned long long;
+
 DECLARE_HPM_API(gromox::EWS, extern);
 
 namespace gromox::EWS {
@@ -1545,6 +1547,13 @@ std::optional<uint64_t> EWSContext::createCalendarItemFromMeetingRequest(const t
 		throw EWSError::AccessDenied(E3601);
 	if (existingMid && props.set(PidTagMid, construct<uint64_t>(*existingMid)) != ecSuccess)
 		throw EWSError::ItemSave(E3328);
+	if (existingMid) {
+		sShape stamp;
+		updated(calendarDir, *existingMid, stamp);
+		for (const auto &prop : stamp.write())
+			if (props.set(prop) != ecSuccess)
+				throw EWSError::ItemSave(E3583);
+	}
 
 	ec_error_t err = ecSuccess;
 	uint64_t newMid = 0, newCn = 0;
@@ -1642,6 +1651,43 @@ void EWSContext::enableEventStream(int timeout)
 }
 
 /**
+ * @brief      Put the received header fields back into a generated header
+ *
+ * @param      gen       Header of the generated MIME message
+ * @param      xhdr      PR_TRANSPORT_MESSAGE_HEADERS value
+ *
+ * @return     Verbatim CRLF-terminated fields of @xhdr that now replace
+ *             their counterparts in @gen
+ */
+static std::string take_transport_headers(vmime::header &gen, std::string_view xhdr)
+{
+	std::string out;
+	bool keep = false;
+	while (!xhdr.empty()) {
+		auto nl = xhdr.find('\n');
+		auto line = xhdr.substr(0, nl);
+		xhdr = nl == xhdr.npos ? std::string_view() : xhdr.substr(nl + 1);
+		if (!line.empty() && line.back() == '\r')
+			line.remove_suffix(1);
+		if (line.empty())
+			break;
+		if (line[0] != ' ' && line[0] != '\t') {
+			auto name = line.substr(0, line.find(':'));
+			while (!name.empty() && (name.back() == ' ' || name.back() == '\t'))
+				name.remove_suffix(1);
+			keep = name.size() != line.size() && !name.empty() &&
+			       strncasecmp(name.data(), "Content-", 8) != 0 &&
+			       !(name.size() == 12 && strncasecmp(name.data(), "MIME-Version", 12) == 0);
+			if (keep)
+				gen.removeAllFields(std::string(name));
+		}
+		if (keep)
+			out.append(line).append("\r\n");
+	}
+	return out;
+}
+
+/**
  * @brief      Export message content to string
  *
  * @param      dir       Parent store
@@ -1666,7 +1712,13 @@ std::string EWSContext::exportContent(const std::string& dir, const MESSAGE_CONT
 	                   };
 	if (cvt.mapi_to_inet(content, mail) != ecSuccess)
 		throw EWSError::ItemCorrupt(E3072);
-	return vmail_to_string(*mail);
+	auto xhdr = content.proplist.get<const char>(PR_TRANSPORT_MESSAGE_HEADERS);
+	if (xhdr == nullptr)
+		xhdr = content.proplist.get<const char>(PR_TRANSPORT_MESSAGE_HEADERS_A);
+	if (xhdr == nullptr)
+		return vmail_to_string(*mail);
+	auto lines = take_transport_headers(*mail->getHeader(), xhdr);
+	return lines + vmail_to_string(*mail);
 }
 
 /**
@@ -2210,6 +2262,8 @@ void EWSContext::impersonate(const char* addrtype, const char* addr)
  */
 sAttachment EWSContext::loadAttachment(const std::string& dir, const sAttachmentId& aid) const
 {
+	m_plugin.loadCurrentMessageInstance(dir, aid.folderId(),
+		aid.messageId(), true);
 	auto aInst = m_plugin.loadAttachmentInstance(dir, aid.folderId(), aid.messageId(), aid.attachment_num);
 	static constexpr proptag_t tagIDs[] = {
 		PR_ATTACH_METHOD, PR_DISPLAY_NAME, PR_ATTACH_MIME_TAG,
@@ -2378,7 +2432,7 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 			PR_ATTACH_FLAGS, PR_ATTACH_SIZE,
 			PR_ATTACHMENT_HIDDEN,
 		};
-		auto mInst = m_plugin.loadMessageInstance(dir, fid, mid);
+		auto mInst = m_plugin.loadCurrentMessageInstance(dir, fid, mid);
 		std::vector<uint32_t> nums;
 		if (!attachment_nums(m_plugin, dir, mInst->instanceId, nums))
 			throw DispatchError(E3079);
@@ -2480,7 +2534,7 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 		TARRAY_SET rcpts;
 		if (!m_plugin.exmdb.get_message_rcpts(dir.c_str(), mid, &rcpts)) {
 			mlog(LV_ERR, "[ews] failed to load message recipients (%s:%llu)",
-				dir.c_str(), static_cast<unsigned long long>(mid));
+				dir.c_str(), LLU{mid});
 		} else {
 			for (const auto &rcpt : rcpts) {
 				auto recipientType = rcpt.get<const uint32_t>(PR_RECIPIENT_TYPE);
@@ -2588,8 +2642,7 @@ void EWSContext::loadSpecial(const std::string &dir, uint64_t fid, uint64_t mid,
 	TARRAY_SET rcpts;
 	if (!m_plugin.exmdb.get_message_rcpts(dir.c_str(), mid, &rcpts)) {
 		mlog(LV_ERR, "[ews] failed to load meeting request "
-		     "attendees (%s:%llu)", dir.c_str(),
-		     static_cast<unsigned long long>(mid));
+		     "attendees (%s:%llu)", dir.c_str(), LLU{mid});
 		return;
 	}
 	for (const auto &rcpt : rcpts) {
@@ -2642,7 +2695,7 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 	TARRAY_SET rcpts;
 	if (!m_plugin.exmdb.get_message_rcpts(dir.c_str(), mid, &rcpts)) {
 		mlog(LV_ERR, "[ews] failed to load calItem recipients (%s:%llu)",
-			dir.c_str(), static_cast<unsigned long long>(mid));
+			dir.c_str(), LLU{mid});
 		return;
 	}
 	for (const auto &rcpt : rcpts) {
@@ -2878,7 +2931,7 @@ EWSContext::loadOccurrenceSeries(const std::string &dir, uint64_t fid,
 void EWSContext::loadOccurrenceInstances(const std::string &dir,
     sOccurrenceSeries &s, sShape &shape) const
 {
-	auto mInst = m_plugin.loadMessageInstance(dir, s.fid, s.mid);
+	auto mInst = m_plugin.loadCurrentMessageInstance(dir, s.fid, s.mid);
 	std::vector<uint32_t> nums;
 	if (!attachment_nums(m_plugin, dir, mInst->instanceId, nums))
 		throw DispatchError(E3210);
@@ -3262,41 +3315,19 @@ bool EWSContext::saveRecurBlob(const std::string &dir, uint64_t mid,
 	BINARY new_bin;
 	new_bin.cb = ext_push.m_offset;
 	new_bin.pb = ext_push.m_udata;
-	std::vector<TAGGED_PROPVAL> rprop = {{recur_tag, &new_bin}};
+	auto eid = getItemProp<const BINARY>(dir, mid, PR_ENTRYID);
+	if (eid == nullptr)
+		return false;
+	sShape shape;
+	shape.write(TAGGED_PROPVAL{recur_tag, &new_bin});
 
 	/*
 	 * The series changed with its occurrence, so give it a new change
 	 * number and key. Otherwise SyncFolderItems and ICS never report
 	 * the change and other clients keep the old occurrences.
 	 */
-	uint64_t cn = 0;
-	if (!m_plugin.exmdb.allocate_cn(dir.c_str(), &cn))
-		return false;
-	uint64_t now = rop_util_current_nttime();
-	rprop.push_back({PidTagChangeNumber, &cn});
-	rprop.push_back({PR_LAST_MODIFICATION_TIME, &now});
-	const proptag_t ctags[] = {PR_CHANGE_KEY, PR_PREDECESSOR_CHANGE_LIST};
-	auto cur = getItemProps(dir, mid, ctags);
-	auto oldkey = cur.get<const BINARY>(PR_CHANGE_KEY);
-	XID xid;
-	EXT_PULL ep;
-	BINARY ckey{};
-	binary_ptr pcl_buf;
-	if (oldkey != nullptr) {
-		ep.init(oldkey->pb, oldkey->cb, nullptr, 0);
-		if (ep.g_xid(oldkey->cb, &xid) == pack_result::ok) {
-			xid = XID{xid.guid, cn};
-			ckey = serialize(xid);
-			PCL pcl;
-			auto oldpcl = cur.get<const BINARY>(PR_PREDECESSOR_CHANGE_LIST);
-			if (oldpcl != nullptr && !pcl.deserialize(oldpcl))
-				pcl = PCL{};
-			pcl_buf = mkPCL(xid, std::move(pcl));
-			rprop.push_back({PR_CHANGE_KEY, &ckey});
-			rprop.push_back({PR_PREDECESSOR_CHANGE_LIST, pcl_buf.get()});
-		}
-	}
-	const TPROPVAL_ARRAY rpropvals = {static_cast<uint16_t>(rprop.size()), rprop.data()};
+	updated(dir, sMessageEntryId(eid->pv, eid->cb), shape);
+	const TPROPVAL_ARRAY rpropvals = shape.write();
 	PROBLEM_ARRAY rproblems;
 	return m_plugin.exmdb.set_message_properties(dir.c_str(),
 	       nullptr, CP_ACP, mid, &rpropvals, &rproblems) &&
@@ -3772,6 +3803,27 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 }
 
 /**
+ * @brief      Give a message instance a new change number before its flush
+ *
+ * flush_instance keeps the change number loaded with the instance.
+ *
+ * @param      dir         Store directory
+ * @param      mid         Message ID
+ * @param      instanceId  Instance of the message
+ */
+void EWSContext::stampInstance(const std::string &dir, uint64_t mid,
+    uint32_t instanceId) const
+{
+	sShape stamp;
+	updated(dir, mid, stamp);
+	const auto props = stamp.write();
+	PROBLEM_ARRAY problems;
+	if (!m_plugin.exmdb.set_instance_properties(dir.c_str(),
+	    instanceId, &props, &problems))
+		throw EWSError::ItemSave(E3584);
+}
+
+/**
  * @brief      Update attendee recipients on existing calendar item
  *
  * Used by UpdateItem when the client sets RequiredAttendees,
@@ -3895,6 +3947,7 @@ void EWSContext::updateAttendees(const std::string &dir,
 		}
 	}
 
+	stampInstance(dir, mid, inst->instanceId);
 	ec_error_t err;
 	if (!exmdb.flush_instance(dir.c_str(),
 	    inst->instanceId, &err) || err != ecSuccess)
@@ -3976,6 +4029,7 @@ void EWSContext::updateMessageRecipients(const std::string &dir,
 	if (!exmdb.update_message_instance_rcpts(dir.c_str(),
 	    inst->instanceId, rcpts))
 		throw EWSError::ItemSave(E3462);
+	stampInstance(dir, mid, inst->instanceId);
 	ec_error_t err;
 	if (!exmdb.flush_instance(dir.c_str(),
 	    inst->instanceId, &err) || err != ecSuccess)
@@ -5510,11 +5564,9 @@ void EWSContext::sendMeetingCancellation(const std::string &dir, const sMessageE
 		auto subj = cancel_subject(cancelcontent->proplist, culture(), norm, full);
 		sprops.insert(sprops.end(), subj.begin(), subj.end());
 		const TPROPVAL_ARRAY sproplist{static_cast<uint16_t>(sprops.size()), sprops.data()};
-		PROBLEM_ARRAY sproblems;
-		if (!exmdb.set_message_properties(dir.c_str(), sentuser, CP_ACP,
-		    newMid, &sproplist, &sproblems) ||
-		    !exmdb.remove_message_properties(dir.c_str(), CP_ACP,
-		    newMid, staleKeys))
+		if (!exmdb.remove_message_properties(dir.c_str(), CP_ACP,
+		    newMid, staleKeys) ||
+		    !setItemProps(dir, sentuser, newMid, sproplist))
 			throw EWSError::ItemSave(E3092);
 		MESSAGE_CONTENT *sentcontent = nullptr;
 		if (!exmdb.read_message(dir.c_str(), sentuser, CP_ACP, newMid,
@@ -5632,7 +5684,7 @@ void EWSContext::cancelRemovedAttendees(const std::string &dir,
 		if (addr.empty()) {
 			mlog(LV_WARN, "[ews] %s:m%llu: removed attendee has "
 			     "no usable address, no cancellation sent",
-			     dir.c_str(), static_cast<unsigned long long>(mid));
+			     dir.c_str(), LLU{mid});
 			continue;
 		}
 		if (is_kept(addr))
@@ -5760,9 +5812,7 @@ uint32_t EWSContext::nextSequence(const std::string &dir,
 	}
 	const TPROPVAL_ARRAY list = {static_cast<uint16_t>(vals.size()),
 	                            vals.data()};
-	PROBLEM_ARRAY problems;
-	if (!m_plugin.exmdb.set_message_properties(dir.c_str(),
-	    effectiveUser(parent), CP_ACP, mid, &list, &problems))
+	if (!setItemProps(dir, effectiveUser(parent), mid, list))
 		throw EWSError::ItemSave(E3542);
 	return val;
 }
@@ -5820,20 +5870,23 @@ void EWSContext::setUnsendable(TPROPVAL_ARRAY &props, proptag_t tag,
  * Sets PidLidFInvited, which EWS reports as MeetingRequestWasSent. Outlook
  * shows a meeting without it as not sent yet. The mail is out already, so
  * a failure is only logged.
+ *
+ * @param      dir     Store directory
+ * @param      parent  Parent folder of the meeting
+ * @param      mid     Message ID of the meeting
  */
-static void mark_invited(const EWSContext &ctx, const std::string &dir,
-    const sFolderSpec &parent, uint64_t mid)
+void EWSContext::markInvited(const std::string &dir,
+    const sFolderSpec &parent, uint64_t mid) const try
 {
-	auto propid = ctx.getNamedPropId(dir, NtFInvited, true);
-	if (propid == 0)
-		return;
+	auto propid = getNamedPropId(dir, NtFInvited, true);
 	const TAGGED_PROPVAL val = {PROP_TAG(PT_BOOLEAN, propid), deconst(&byte_value_one)};
 	const TPROPVAL_ARRAY list = {1, deconst(&val)};
-	PROBLEM_ARRAY problems;
-	if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
-	    ctx.effectiveUser(parent), CP_ACP, mid, &list, &problems))
+	if (propid == 0 || !setItemProps(dir, effectiveUser(parent), mid, list))
 		mlog(LV_ERR, "[ews] %s:m%llu: cannot set PidLidFInvited",
-			dir.c_str(), static_cast<unsigned long long>(rop_util_get_gc_value(mid)));
+			dir.c_str(), LLU{rop_util_get_gc_value(mid)});
+} catch (const DispatchError &e) {
+	mlog(LV_ERR, "[ews] %s:m%llu: cannot set PidLidFInvited: %s",
+		dir.c_str(), LLU{rop_util_get_gc_value(mid)}, e.what());
 }
 
 /**
@@ -5953,7 +6006,7 @@ void EWSContext::sendMeetingUpdate(const std::string &dir,
 	if (!stamp_exceptions(*req, ident))
 		throw EWSError::NotEnoughMemory(E3408);
 	send(dir, mid, *req);
-	mark_invited(*this, dir, parent, mid);
+	markInvited(dir, parent, mid);
 	if (!saveCopy)
 		return;
 	static constexpr proptag_t rmProps[] = {
@@ -6216,6 +6269,8 @@ void EWSContext::suppressReadReceipt(const tItemId &refId) const
 	if (!m_plugin.exmdb.set_message_properties(dir.c_str(),
 	    effectiveUser(parent), CP_ACP, mid.messageId(), &propvals, &problems))
 		throw EWSError::ItemSave(E3409);
+	/* No new change number, so a cached instance cannot tell */
+	m_plugin.unloadMessageInstance(dir, mid.messageId());
 }
 
 /**
@@ -7408,65 +7463,15 @@ static std::optional<tEmailAddressType> msg_author(const TPROPVAL_ARRAY &props)
 	return std::nullopt;
 }
 
-/* Display names of the recipients of one type */
-static std::string rcpt_names(const TARRAY_SET *rcpts, uint32_t type)
-{
-	std::string out;
-	if (rcpts == nullptr)
-		return out;
-	for (const auto &row : *rcpts) {
-		auto rtype = row.get<const uint32_t>(PR_RECIPIENT_TYPE);
-		if (rtype == nullptr || *rtype != type)
-			continue;
-		auto name = row.get<const char>(PR_DISPLAY_NAME);
-		if (name == nullptr)
-			name = row.get<const char>(PR_SMTP_ADDRESS);
-		if (name == nullptr)
-			name = row.get<const char>(PR_EMAIL_ADDRESS);
-		if (name == nullptr)
-			continue;
-		if (!out.empty())
-			out += "; ";
-		out += name;
-	}
-	return out;
-}
-
 /*
  * NewBodyContent followed by a header and the body of the referenced
  * message, the way Exchange quotes it.
  */
-static std::string smart_body(const tBody &nb, const MESSAGE_CONTENT &ref)
+static std::string smart_body(const tBody &nb, const MESSAGE_CONTENT &ref,
+    const char *lang)
 {
 	const auto &props = ref.proplist;
 	bool html = nb.BodyType == Enum::HTML;
-	std::vector<std::pair<const char *, std::string>> hdr;
-	auto author = msg_author(props);
-	if (author && author->EmailAddress) {
-		std::string from = author->Name ? *author->Name + " <" +
-		                   *author->EmailAddress + ">" : *author->EmailAddress;
-		hdr.emplace_back("From", std::move(from));
-	}
-	auto when = props.get<const uint64_t>(PR_CLIENT_SUBMIT_TIME);
-	if (when == nullptr)
-		when = props.get<const uint64_t>(PR_MESSAGE_DELIVERY_TIME);
-	if (when != nullptr) {
-		auto t = rop_util_nttime_to_unix(*when);
-		struct tm tm{};
-		char buf[64];
-		if (localtime_r(&t, &tm) != nullptr &&
-		    strftime(buf, std::size(buf), "%a, %d %b %Y %H:%M", &tm) > 0)
-			hdr.emplace_back("Sent", buf);
-	}
-	auto to = rcpt_names(ref.children.prcpts, MAPI_TO);
-	if (!to.empty())
-		hdr.emplace_back("To", std::move(to));
-	auto cc = rcpt_names(ref.children.prcpts, MAPI_CC);
-	if (!cc.empty())
-		hdr.emplace_back("Cc", std::move(cc));
-	auto subj = props.get<const char>(PR_SUBJECT);
-	hdr.emplace_back("Subject", subj != nullptr ? subj : "");
-
 	auto cpid = props.get<const uint32_t>(PR_INTERNET_CPID);
 	auto text = props.get<const char>(PR_BODY);
 	auto hbin = props.get<const BINARY>(PR_HTML);
@@ -7475,32 +7480,24 @@ static std::string smart_body(const tBody &nb, const MESSAGE_CONTENT &ref)
 	if (html && hbin != nullptr && hbin->pc != nullptr)
 		orig = cpid != nullptr && *cpid != CP_UTF8 &&
 		       (cset = cpid_to_cset(static_cast<cpid_t>(*cpid))) != nullptr ?
-		       iconvtext({hbin->pc, hbin->cb}, cset, "UTF-8") :
-		       std::string(hbin->pc, hbin->cb);
+		       iconvtext(*hbin, cset, "UTF-8") :
+		       std::string_view(*hbin);
 	else if (html && text != nullptr)
 		plain_to_html(text, orig);
 	else if (text != nullptr)
 		orig = text;
 	else if (hbin != nullptr && hbin->pc != nullptr &&
-	    html_to_plain({hbin->pc, hbin->cb}, cpid != nullptr ?
+	    html_to_plain(*hbin, cpid != nullptr ?
 	    static_cast<cpid_t>(*cpid) : CP_UTF8, orig) < 0)
 		orig.clear();
 
+	auto hdr = make_quote_header(ref, lang);
 	std::string out = nb;
-	if (!html) {
-		out += "\r\n\r\n________________________________\r\n";
-		for (const auto &[k, v] : hdr)
-			out += std::string(k) + ": " + v + "\r\n";
-		return out + "\r\n" + orig;
-	}
-	out += "<hr><div>";
-	for (const auto &[k, v] : hdr) {
-		std::unique_ptr<char[], stdlib_delete> q(HX_strquote(v.c_str(), HXQUOTE_HTML, nullptr));
-		if (q == nullptr)
-			throw std::bad_alloc();
-		out += std::string("<b>") + k + ":</b> " + q.get() + "<br>";
-	}
-	return out + "</div><br>" + orig;
+	if (!html)
+		return out + quote_plain(hdr, orig);
+	if (quote_html(hdr, orig) != ecSuccess)
+		throw std::bad_alloc();
+	return out + orig;
 }
 
 /**
@@ -7551,7 +7548,7 @@ void EWSContext::smartResponse(const tItemId &refId, smart_type type,
 			cpystr(ct != nullptr ? ct : topic)});
 	}
 	if (newBody && !shape.writes(PR_BODY) && !shape.writes(PR_HTML)) {
-		auto body = smart_body(*newBody, *ref);
+		auto body = smart_body(*newBody, *ref, culture());
 		if (newBody->BodyType == Enum::HTML) {
 			if (body.size() > UINT32_MAX)
 				throw InputError(E3256);
@@ -7912,6 +7909,41 @@ void EWSContext::updated(const std::string& dir, const sMessageEntryId& mid, sSh
 	shape.write(TAGGED_PROPVAL{PR_PREDECESSOR_CHANGE_LIST, newPclContainer});
 
 	shape.write(TAGGED_PROPVAL{PidTagChangeNumber, construct<uint64_t>(changeNum)});
+}
+
+/**
+ * @brief      Add update tags to the shape
+ *
+ * @param      dir       Home directory of user or domain
+ * @param      mid       Message ID
+ * @param      shape     Shape to add the tags to
+ */
+void EWSContext::updated(const std::string &dir, uint64_t mid, sShape &shape) const
+{
+	updated(dir, sMessageEntryId(getItemEntryId(dir, mid)), shape);
+}
+
+/**
+ * @brief      Write properties of an existing message as a new change
+ *
+ * @param      dir       Home directory of user or domain
+ * @param      username  User to write the properties as
+ * @param      mid       Message ID
+ * @param      props     Properties to write
+ *
+ * @return     false if exmdb could not write the properties
+ */
+bool EWSContext::setItemProps(const std::string &dir, const char *username,
+    uint64_t mid, const TPROPVAL_ARRAY &props) const
+{
+	sShape shape;
+	for (const auto &prop : props)
+		shape.write(prop);
+	updated(dir, mid, shape);
+	const auto all = shape.write();
+	PROBLEM_ARRAY problems;
+	return m_plugin.exmdb.set_message_properties(dir.c_str(), username,
+	       CP_ACP, mid, &all, &problems);
 }
 
 

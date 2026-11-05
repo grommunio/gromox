@@ -139,6 +139,7 @@ class EWSPlugin {
 	std::shared_ptr<ExmdbInstance> loadAttachmentInstance(const std::string&, uint64_t, uint64_t, uint32_t) const;
 	std::shared_ptr<ExmdbInstance> loadEmbeddedInstance(const std::string &, const std::shared_ptr<ExmdbInstance> &) const;
 	std::shared_ptr<ExmdbInstance> loadMessageInstance(const std::string&, uint64_t, uint64_t) const;
+	std::shared_ptr<ExmdbInstance> loadCurrentMessageInstance(const std::string &, uint64_t, uint64_t, bool = false) const;
 	void unloadMessageInstance(const std::string&, uint64_t) const;
 	void unloadAttachmentInstance(const std::string &, uint64_t, uint32_t) const;
 	Structures::sFolderEntryId mkFolderEntryId(const Structures::sMailboxInfo&, uint64_t) const;
@@ -381,6 +382,7 @@ class EWSContext {
 	void cancelRemovedAttendees(const std::string&, const Structures::sFolderSpec&, uint64_t, const TARRAY_SET&, bool) const;
 	void sendMeetingUpdate(const std::string&, const Structures::sFolderSpec&, uint64_t, const TARRAY_SET *, bool, uint32_t, bool) const;
 	static void setUnsendable(TPROPVAL_ARRAY &, proptag_t, const std::vector<TPROPVAL_ARRAY *> &);
+	void markInvited(const std::string &, const Structures::sFolderSpec &, uint64_t) const;
 	uint32_t nextSequence(const std::string&, const Structures::sFolderSpec&, uint64_t, bool, uint64_t) const;
 	std::string rcptAddress(const TPROPVAL_ARRAY &) const;
 	bool sendMeetingResponse(const Structures::tItemId&, MESSAGE_CONTENT&, bool) const;
@@ -396,6 +398,9 @@ class EWSContext {
 	bool unsubscribe(const Structures::tSubscriptionId&) const;
 	void updated(const std::string&, const Structures::sFolderSpec&) const;
 	void updated(const std::string&, const Structures::sMessageEntryId&, Structures::sShape&) const;
+	void updated(const std::string &, uint64_t, Structures::sShape &) const;
+	bool setItemProps(const std::string &, const char *, uint64_t, const TPROPVAL_ARRAY &) const;
+	void stampInstance(const std::string &, uint64_t, uint32_t) const;
 	void updateReminder(const std::string &, uint64_t, Structures::sShape &) const;
 	void validate(const std::string&, const Structures::sMessageEntryId&) const;
 	bool writeDelegatePermissions(const std::string&, const std::string&, const Structures::tDelegatePermissions&) const;

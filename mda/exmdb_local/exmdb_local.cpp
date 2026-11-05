@@ -30,6 +30,7 @@
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/rop_util.hpp>
+#include <gromox/ruleproc.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "exmdb_local.hpp"
@@ -40,12 +41,11 @@ using namespace gromox;
 DECLARE_HOOK_API(exmdb_local, );
 using namespace exmdb_local;
 
-static bool g_lda_twostep, g_lda_mrautoproc, g_lda_relay_unknown;
+static bool g_lda_mrautoproc, g_lda_relay_unknown;
 static char g_org_name[256];
 static thread_local alloc_context g_alloc_ctx;
 static thread_local const char *g_storedir;
 
-static ec_error_t (*exmdb_local_rules_execute)(const char *, const char *, const char *, eid_t, eid_t, unsigned int flags);
 static junk_rule_list g_junk_rules;
 
 void exmdb_local_init(const char *org_name)
@@ -397,9 +397,7 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 	pmsg->proplist.erase(PidTagChangeNumber);
 	uint64_t folder_id, message_id = 0;
 	uint32_t r32 = 0;
-	unsigned int flags = DELIVERY_DO_RULES_SV | DELIVERY_DO_NOTIF_SV;
-	if (g_lda_twostep)
-		flags = DELIVERY_DO_RULES_CL | DELIVERY_DO_NOTIF_CL;
+	unsigned int flags = DELIVERY_DO_RULES_CL | DELIVERY_DO_NOTIF_CL;
 	if (deliver_to_junk)
 		flags |= DELIVERY_FORCE_JUNK;
 	if (!exmdb_client_remote::deliver_message(home_dir,
@@ -487,14 +485,12 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 		return delivery_status::temp_fail;
 	}
 
-	if (g_lda_twostep) {
-		if (g_lda_mrautoproc)
-			flags |= DELIVERY_DO_MRAUTOPROC;
-		auto ec_err = exmdb_local_rules_execute(home_dir, pcontext->ctrl.from,
-		            address, folder_id, message_id, flags);
-		if (ec_err != ecSuccess)
-			mlog(LV_ERR, "TWOSTEP ruleproc unsuccessful: %s", mapi_strerror(ec_err));
-	}
+	if (g_lda_mrautoproc)
+		flags |= DELIVERY_DO_MRAUTOPROC;
+	auto ec_err = exmdb_local_rules_execute(home_dir, pcontext->ctrl.from,
+	              address, folder_id, message_id, flags);
+	if (ec_err != ecSuccess)
+		mlog(LV_ERR, "TWOSTEP ruleproc unsuccessful: %s", mapi_strerror(ec_err));
 	if (b_bounce_delivered)
 		return delivery_status::bounce_sent;
 	return delivery_status::ok;
@@ -528,7 +524,6 @@ void exmdb_local_log_info(const CONTROL_INFO &ctrl,
 
 static constexpr cfg_directive exmdb_local_cfg_defaults[] = {
 	{"lda_mrautoproc", "1", CFG_BOOL},
-	{"lda_twostep_ruleproc", "1", CFG_BOOL},
 	CFG_TABLE_END,
 };
 
@@ -548,11 +543,8 @@ bool HOOK_exmdb_local(enum plugin_op reason, const struct dlfuncs &ppdata)
 	switch (reason) {
 	case PLUGIN_INIT: {
 		LINK_HOOK_API(ppdata);
-		query_service2("rules_execute", exmdb_local_rules_execute);
-		if (exmdb_local_rules_execute == nullptr) {
-			mlog(LV_ERR, "exmdb_local: libgxs_ruleproc not initialized");
+		if (service_run_library({"libgxs_ruleproc.so", SVC_ruleproc}) != PLUGIN_LOAD_OK)
 			return false;
-		}
 		textmaps_init();
 		auto cfg = config_file_initd("gromox.cfg", get_config_path(), mdlgx_cfg_defaults);
 		if (cfg != nullptr) {
@@ -622,7 +614,6 @@ bool HOOK_exmdb_local(enum plugin_op reason, const struct dlfuncs &ppdata)
 		HX_unit_seconds(temp_buff, std::size(temp_buff), response_interval, 0);
 		mlog(LV_INFO, "exmdb_local: auto response interval is %s", temp_buff);
 
-		g_lda_twostep = pfile->get_ll("lda_twostep_ruleproc");
 		g_lda_mrautoproc = pfile->get_ll("lda_mrautoproc");
 
 		bounce_audit_init(response_capacity, response_interval);

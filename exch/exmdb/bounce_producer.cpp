@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2024–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstdio>
@@ -61,12 +61,12 @@ bool exmdb_bouncer_make_content(const char *from, const char *rcpt,
     std::string &subject, std::string &content) try
 {
 	void *pvalue;
-	char date_buff[128];
+	char mixed_buf[64];
 
 	sql_meta_result mres;
 	auto charset = mysql_adaptor_meta(from, WANTPRIV_METAONLY, mres) == 0 ?
 	               lang_to_charset(mres.lang.c_str()) : nullptr;
-	rfc1123_dstring(date_buff, std::size(date_buff), 0);
+	make_rfc_date(mixed_buf, std::size(mixed_buf));
 	if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP,
 	    psqlite, PR_MESSAGE_SIZE, &pvalue))
 		return FALSE;
@@ -90,7 +90,7 @@ bool exmdb_bouncer_make_content(const char *from, const char *rcpt,
 		return false;
 	auto cl_0 = HX::make_scope_exit([&]() { HXformat_free(fa); });
 	unsigned int immed = HXFORMAT_IMMED;
-	if (HXformat_add(fa, "time", date_buff,
+	if (HXformat_add(fa, "time", mixed_buf,
 	    HXTYPE_STRING | immed) < 0 ||
 	    HXformat_add(fa, "from", from, HXTYPE_STRING) < 0 ||
 	    HXformat_add(fa, "rcpt", rcpt, HXTYPE_STRING) < 0 ||
@@ -104,8 +104,8 @@ bool exmdb_bouncer_make_content(const char *from, const char *rcpt,
 	    exmdb_bouncer_attachs(psqlite, message_id).c_str(),
 	    HXTYPE_STRING | immed) < 0)
 		return false;
-	HX_unit_size(date_buff, std::size(date_buff), message_size, 1000, 0);
-	if (HXformat_add(fa, "length", date_buff, HXTYPE_STRING) < 0)
+	HX_unit_size(mixed_buf, std::size(mixed_buf), message_size, 1000, 0);
+	if (HXformat_add(fa, "length", mixed_buf, HXTYPE_STRING) < 0)
 		return false;
 
 	hxmc_t *replaced = nullptr;

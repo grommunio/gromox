@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021-2026 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <atomic>
@@ -823,7 +823,7 @@ BOOL mod_fastcgi_read_response(http_context *phttp)
 	auto &rq = phttp->request;
 	unsigned int tmp_len;
 	NDR_PULL ndr_pull;
-	char dstring[128], tmp_buff[80000], response_buff[65536];
+	char dstring[32], tmp_buff[80000], response_buff[65536];
 	char status_line[1024], *pbody, *ptoken, *ptoken1;
 	RECORD_HEADER header;
 	uint8_t header_buff[8];
@@ -993,7 +993,7 @@ BOOL mod_fastcgi_read_response(http_context *phttp)
 			rq.b_chunked =
 				strncasecmp(response_buff, "Content-Length:", 15) != 0 &&
 				strcasestr(response_buff, "\r\nContent-Length:") == nullptr;
-			rfc1123_dstring(dstring, std::size(dstring));
+			make_rfc_date(dstring, std::size(dstring));
 			if (phttp->request.imethod == http_method::head)
 				tmp_len = gx_snprintf(tmp_buff, std::size(tmp_buff),
 								"HTTP/1.1 %s\r\n"

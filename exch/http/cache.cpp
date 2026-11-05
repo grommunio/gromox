@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021-2026 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cerrno>
@@ -43,6 +43,7 @@
 #define BOUNDARY_STRING				"00000000000000000001"
 
 using namespace gromox;
+using LLU = unsigned long long;
 
 namespace {
 struct cache_item {
@@ -228,9 +229,7 @@ static bool mod_cache_serialize_etag(const struct stat &sb, char *etag, size_t l
 		return false;
 	snprintf(etag, len, "%x-%llx-%llx-%llx",
 	         static_cast<unsigned int>(sb.st_dev),
-	         static_cast<unsigned long long>(sb.st_ino),
-	         static_cast<unsigned long long>(sb.st_size),
-	         static_cast<unsigned long long>(sb.st_mtime));
+	         LLU{sb.st_ino}, LLU(sb.st_size), LLU{sb.st_mtime});
 	return true;
 }
 
@@ -241,13 +240,14 @@ mod_cache_get_others_field(const http_request::other_map &m, const char *k)
 	return i != m.end() ? i->second.c_str() : nullptr;
 }
 
-static BOOL mod_cache_parse_rfc1123_dstring(
+static BOOL mod_cache_parse_rfc_date(
 	const char *dstring, time_t *pmtime)
 {
 	struct tm tmp_tm;
 	auto cur_time = time(nullptr);
 	if (gmtime_r(&cur_time, &tmp_tm) == nullptr)
 		tmp_tm = {};
+	/* RFC 7231 (§7.1.1.1) wants to be single-zone (GMT) */
 	if (strptime(dstring, "%a, %d %b %Y %T GMT", &tmp_tm) == nullptr)
 		return FALSE;	
 	*pmtime = timegm(&tmp_tm);
@@ -256,17 +256,12 @@ static BOOL mod_cache_parse_rfc1123_dstring(
 
 static BOOL mod_cache_response_single_header(http_context *phttp) try
 {
-	char etag[128];
-	struct tm tmp_tm;
-	char date_string[128];
+	char etag[128], date_string[32], modified_string[32];
 	cache_context *pcontext;
-	char modified_string[128];
 	
 	pcontext = mod_cache_get_cache_context(phttp);
-	rfc1123_dstring(date_string, std::size(date_string));
-	if (gmtime_r(&pcontext->pitem->sb.st_mtime, &tmp_tm) == nullptr)
-		tmp_tm = {};
-	rfc1123_dstring(modified_string, std::size(modified_string), tmp_tm);
+	make_rfc_date(date_string, std::size(date_string));
+	make_rfc_date(modified_string, std::size(modified_string), pcontext->pitem->sb.st_mtime);
 	auto pcontent_type = pcontext->pitem->content_type;
 	bool emit_206 = pcontext->offset != 0 ||
 	                pcontext->until != static_cast<uint64_t>(pcontext->pitem->sb.st_size);
@@ -277,8 +272,7 @@ static BOOL mod_cache_response_single_header(http_context *phttp) try
 		"Accept-Ranges: bytes\r\n"
 		"Last-Modified: {}\r\n",
 		emit_206 ? "206 Partial Content\r\n" : "200 OK\r\n",
-		date_string, pcontext->until - pcontext->offset,
-		modified_string);
+		date_string, pcontext->until - pcontext->offset, modified_string);
 	if (mod_cache_serialize_etag(pcontext->pitem->sb, etag, std::size(etag)))
 		rsp += fmt::format("ETag: \"{}\"\r\n", etag);
 	if (phttp->request.imethod == http_method::options)
@@ -288,7 +282,7 @@ static BOOL mod_cache_response_single_header(http_context *phttp) try
 	if (emit_206)
 		rsp += fmt::format("Content-Range: bytes {}-{}/{}\r\n\r\n",
 		       pcontext->offset, pcontext->until - 1,
-		       static_cast<unsigned long long>(pcontext->pitem->sb.st_size));
+		       LLU(pcontext->pitem->sb.st_size));
 	else
 		rsp += "\r\n";
 	return phttp->stream_out.write(rsp.c_str(), rsp.size()) == STREAM_WRITE_OK ? TRUE : false;
@@ -316,7 +310,7 @@ static uint32_t mod_cache_calculate_content_length(cache_context *pcontext)
 		/* Content-Range: bytes x-x/xxx\r\n */
 		content_length += 23 + snprintf(num_buff, std::size(num_buff), "%u-%u/%llu",
 		                  pcontext->range[i].begin, pcontext->range[i].end,
-		                  static_cast<unsigned long long>(pcontext->pitem->sb.st_size));
+		                  LLU(pcontext->pitem->sb.st_size));
 		content_length += 2; /* \r\n */
 		content_length += pcontext->range[i].end - pcontext->range[i].begin + 1;
 		content_length += 2; /* \r\n */
@@ -328,18 +322,13 @@ static uint32_t mod_cache_calculate_content_length(cache_context *pcontext)
 
 static BOOL mod_cache_response_multiple_header(http_context *phttp) try
 {
-	char etag[128];
-	struct tm tmp_tm;
-	char date_string[128];
+	char etag[128], date_string[32], modified_string[32];
 	uint32_t content_length;
 	cache_context *pcontext;
-	char modified_string[128];
 	
 	pcontext = mod_cache_get_cache_context(phttp);
-	rfc1123_dstring(date_string, std::size(date_string));
-	if (gmtime_r(&pcontext->pitem->sb.st_mtime, &tmp_tm) == nullptr)
-		tmp_tm = {};
-	rfc1123_dstring(modified_string, std::size(modified_string), tmp_tm);
+	make_rfc_date(date_string, std::size(date_string));
+	make_rfc_date(modified_string, std::size(modified_string), pcontext->pitem->sb.st_mtime);
 	content_length =  mod_cache_calculate_content_length(pcontext);	
 	auto rsp = fmt::format(
 	           "HTTP/1.1 206 Partial Content\r\n"
@@ -347,7 +336,8 @@ static BOOL mod_cache_response_multiple_header(http_context *phttp) try
 	           "Content-Type: multipart/byteranges; boundary=%s\r\n"
 	           "Content-Length: %u\r\n"
 	           "Last-Modified: %s\r\n",
-	           date_string, BOUNDARY_STRING, content_length, modified_string);
+	           date_string, BOUNDARY_STRING, content_length,
+	           modified_string);
 	if (mod_cache_serialize_etag(pcontext->pitem->sb, etag, std::size(etag)))
 		rsp += fmt::format("ETag: \"{}\"\r\n", etag);
 	return phttp->stream_out.write(rsp.c_str(), rsp.size()) == STREAM_WRITE_OK ? TRUE : false;
@@ -484,7 +474,7 @@ http_status mod_cache_take_request(http_context *phttp)
 			return http_status::server_error;
 		else if (!S_ISREG(node_stat.st_mode))
 			return http_status::forbidden;
-		else if (static_cast<unsigned long long>(node_stat.st_size) >= UINT32_MAX)
+		else if (LLU(node_stat.st_size) >= UINT32_MAX)
 			return http_status::server_error;
 		static_assert(UINT32_MAX <= SIZE_MAX);
 	}
@@ -513,7 +503,7 @@ http_status mod_cache_take_request(http_context *phttp)
 			if (stat4_eq(sb, node_stat))
 				return http_status::not_modified;
 		} else if ((val = mod_cache_get_others_field(phttp->request.f_others, "If-Modified-Since")) != nullptr &&
-		    mod_cache_parse_rfc1123_dstring(val, &sb.st_mtime)) {
+		    mod_cache_parse_rfc_date(val, &sb.st_mtime)) {
 			if (sb.st_mtime == node_stat.st_mtime)
 				return http_status::not_modified;
 		}
@@ -653,7 +643,7 @@ BOOL mod_cache_read_response(http_context *phttp)
 					BOUNDARY_STRING, pcontent_type,
 					pcontext->range[pcontext->range_pos].begin,
 					pcontext->range[pcontext->range_pos].end,
-				          static_cast<unsigned long long>(pcontext->pitem->sb.st_size));
+					LLU(pcontext->pitem->sb.st_size));
 			} else {
 				tmp_len = gx_snprintf(tmp_buff, std::size(tmp_buff),
 					"\r\n--%s--\r\n",

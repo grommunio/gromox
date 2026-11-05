@@ -1266,6 +1266,29 @@ static void updateOccRef(const EWSContext &ctx, const tItemId &refId,
 		oid.basedate, proplist, {});
 }
 
+/**
+ * @brief      Put the current ChangeKey of a message into its response item
+ *
+ * @param      ctx   Request context
+ * @param      dir   Store directory
+ * @param      mid   Message ID
+ * @param      item  Response item of the message
+ */
+static void refresh_changekey(const EWSContext &ctx, const std::string &dir,
+    uint64_t mid, sItem &item) try
+{
+	auto ck = ctx.getItemProp<const BINARY>(dir, mid, PR_CHANGE_KEY);
+	if (ck == nullptr)
+		return;
+	std::visit([&](auto &i) {
+		if constexpr (std::is_base_of_v<tItem, std::decay_t<decltype(i)>>)
+			if (i.ItemId)
+				i.ItemId->ChangeKey.emplace(ck);
+	}, item);
+} catch (const DispatchError &) {
+	/* The mails are out, so keep the older ChangeKey rather than fail */
+}
+
 static void updateRef(const EWSContext &ctx, const tItemId &refId,
     uint32_t resp, std::string &refDir, std::optional<sMessageEntryId> &refMid,
     bool send_message, std::optional<sOccurrenceId> &declinedOcc,
@@ -1333,7 +1356,6 @@ static void updateRef(const EWSContext &ctx, const tItemId &refId,
 		{PR_PROCESSED, processed},
 	};
 	TPROPVAL_ARRAY proplist{std::size(props), props};
-	PROBLEM_ARRAY problems;
 	auto cls = ctx.getItemProp<char>(rdir, mid.messageId(), PR_MESSAGE_CLASS);
 	/*
 	 * A declined Meeting object leaves the calendar once the reply is out.
@@ -1363,8 +1385,7 @@ static void updateRef(const EWSContext &ctx, const tItemId &refId,
 		    !(calRights & frightsEditAny))
 			throw EWSError::AccessDenied(E3603);
 	}
-	if (!ctx.plugin().exmdb.set_message_properties(rdir.c_str(), username, CP_ACP,
-		mid.messageId(), &proplist, &problems))
+	if (!ctx.setItemProps(rdir, username, mid.messageId(), proplist))
 		throw EWSError::ItemSave(E3409);
 	if (resp == respAccepted || resp == respTentative) {
 		auto cal = ctx.createCalendarItemFromMeetingRequest(refId, resp,
@@ -1385,8 +1406,7 @@ static void updateRef(const EWSContext &ctx, const tItemId &refId,
 				{PROP_TAG(PT_LONG, cpid(NtBusyStatus)), bstat},
 			};
 			TPROPVAL_ARRAY calProps{std::size(cprops), cprops};
-			if (!ctx.plugin().exmdb.set_message_properties(calDir.c_str(),
-			    username, CP_ACP, *declinedCal, &calProps, &problems))
+			if (!ctx.setItemProps(calDir, username, *declinedCal, calProps))
 				throw EWSError::ItemSave(E3582);
 		}
 		calItem->emplace(calDir, *declinedCal);
@@ -1681,9 +1701,7 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 				{PR_MESSAGE_DELIVERY_TIME, now},
 			};
 			TPROPVAL_ARRAY proplist{std::size(props), props};
-			PROBLEM_ARRAY problems;
-			if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
-				username, CP_ACP, newMid, &proplist, &problems))
+			if (!ctx.setItemProps(dir, username, newMid, proplist))
 				throw EWSError::ItemSave(E3410);
 			MESSAGE_CONTENT *sendcontent = nullptr;
 			if (!ctx.plugin().exmdb.read_message(dir.c_str(),
@@ -1692,14 +1710,9 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 				throw EWSError::ItemNotFound(E3391);
 			ctx.send(dir, messageId, *sendcontent);
 			/* Exchange reports MeetingRequestWasSent from now on */
-			auto invited = ctx.getNamedPropId(dir, NtFInvited, true);
-			const TAGGED_PROPVAL ival = {PROP_TAG(PT_BOOLEAN, invited), deconst(&byte_value_one)};
-			const TPROPVAL_ARRAY ilist = {1, deconst(&ival)};
-			if (invited == 0 ||
-			    !ctx.plugin().exmdb.set_message_properties(dir.c_str(),
-			    ctx.effectiveUser(*targetFolder), CP_ACP, messageId,
-			    &ilist, &problems))
-				mlog(LV_ERR, "[ews] %s: cannot set PidLidFInvited", dir.c_str());
+			ctx.markInvited(dir, *targetFolder, messageId);
+			if (!msg.Items.empty())
+				refresh_changekey(ctx, dir, messageId, msg.Items.back());
 		}
 		if (std::holds_alternative<tCalendarItem>(item) &&
 		    request.SendMeetingInvitations == Enum::SendOnlyToAll) {
@@ -1744,7 +1757,7 @@ void process(mCreateAttachmentRequest &&request, XMLElement *response,
 		ctx.assertCanReadPrivate(dir, parentFolder, rights, mid.messageId());
 
 		for (const tFileAttachment &att : request.Attachments) try {
-			auto mInst = ctx.plugin().loadMessageInstance(dir,
+			auto mInst = ctx.plugin().loadCurrentMessageInstance(dir,
 			             parentFolder.folderId, mid.messageId());
 			uint32_t aInstId = 0, aNum = 0;
 			if (!ctx.plugin().exmdb.create_attachment_instance(dir.c_str(),
@@ -1778,18 +1791,10 @@ void process(mCreateAttachmentRequest &&request, XMLElement *response,
 			if (!ctx.plugin().exmdb.flush_instance(dir.c_str(),
 			    aInstId, &err) || err != ecSuccess)
 				throw EWSError::ItemSave(E3431);
+			ctx.stampInstance(dir, mid.messageId(), mInst->instanceId);
 			if (!ctx.plugin().exmdb.flush_instance(dir.c_str(),
 			    mInst->instanceId, &err) || err != ecSuccess)
 				throw EWSError::ItemSave(E3476);
-
-			sShape shape;
-			ctx.updated(dir, mid, shape);
-			TPROPVAL_ARRAY msgProps = shape.write();
-			PROBLEM_ARRAY msgProblems;
-			if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
-			    ctx.effectiveUser(parentFolder), CP_ACP, mid.messageId(),
-			    &msgProps, &msgProblems))
-				throw EWSError::ItemSave(E3411);
 
 			mCreateAttachmentResponseMessage msg;
 			sAttachmentId aid(ctx.getItemEntryId(dir, mid.messageId()), aNum);
@@ -1832,11 +1837,12 @@ void process(mDeleteAttachmentRequest &&request, XMLElement *response, const EWS
 			throw EWSError::AccessDenied(E3444);
 		ctx.assertCanReadPrivate(dir, parentFolder, rights, aid.messageId());
 
-		auto mInst = ctx.plugin().loadMessageInstance(dir,
-		             parentFolder.folderId, aid.messageId());
+		auto mInst = ctx.plugin().loadCurrentMessageInstance(dir,
+		             parentFolder.folderId, aid.messageId(), true);
 		if (!ctx.plugin().exmdb.delete_message_instance_attachment(dir.c_str(),
 		    mInst->instanceId, aid.attachment_num))
 			throw EWSError::ItemSave(E3432);
+		ctx.stampInstance(dir, aid.messageId(), mInst->instanceId);
 		ec_error_t err;
 		if (!ctx.plugin().exmdb.flush_instance(dir.c_str(),
 		    mInst->instanceId, &err) || err != ecSuccess)
@@ -1847,15 +1853,6 @@ void process(mDeleteAttachmentRequest &&request, XMLElement *response, const EWS
 		 */
 		ctx.plugin().unloadAttachmentInstance(dir, aid.messageId(),
 			aid.attachment_num);
-
-		sShape shape;
-		ctx.updated(dir, aid, shape);
-		TPROPVAL_ARRAY msgProps = shape.write();
-		PROBLEM_ARRAY msgProblems;
-		if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
-		    ctx.effectiveUser(parentFolder), CP_ACP, aid.messageId(),
-		    &msgProps, &msgProblems))
-			throw EWSError::ItemSave(E3412);
 
 		static constexpr proptag_t propids[] = {PR_ENTRYID, PR_CHANGE_KEY};
 		static constexpr PROPTAG_ARRAY proptags = {std::size(propids), deconst(propids)};
@@ -2753,29 +2750,43 @@ const char *RulesEnv::resolve_address(Rules::Address &a)
 
 bool RulesEnv::folder_ref(const MOVECOPY_ACTION &mc, Rules::FolderRef &ref, bool &trash) try
 {
-	TAGGED_PROPVAL eid{};
+	std::string tdir;
+	uint64_t fid = 0;
+	sBase64Binary eid;
 	if (mc.same_store) {
 		auto sv = static_cast<const SVREID *>(mc.pfolder_eid);
 		if (sv == nullptr || sv->pbin != nullptr)
 			return false;
-		trash = rop_util_get_gc_value(sv->folder_id) == PRIVATE_FID_DELETED_ITEMS;
-		eid = ctx.getFolderEntryId(dir, sv->folder_id);
-		ref.id = base64_encode(tFolderId(sBase64Binary(eid), tBaseItemId::ID_FOLDER).serializeId());
-		/* Outlook for Mac crashes on a rule folder without ChangeKey */
-		auto ck = ctx.getFolderProp<BINARY>(dir, sv->folder_id, PR_CHANGE_KEY);
-		if (ck != nullptr)
-			ref.change_key = base64_encode({ck->pc, ck->cb});
-		return true;
+		tdir = dir;
+		fid = sv->folder_id;
+		eid = sBase64Binary(ctx.getFolderEntryId(dir, fid));
+	} else {
+		auto se = mc.pstore_eid;
+		auto bin = static_cast<const BINARY *>(mc.pfolder_eid);
+		if (se == nullptr || bin == nullptr || se->pserver_name == nullptr ||
+		    se->wrapped_provider_uid != g_muidStorePrivate)
+			return false;
+		sFolderEntryId feid(bin->pv, bin->cb);
+		if (!feid.isPrivate())
+			return false;
+		eid = sBase64Binary(bin);
+		auto spec = ctx.resolveFolder(tFolderId(eid, tBaseItemId::ID_FOLDER));
+		tdir = ctx.getDir(spec);
+		fid = spec.folderId;
 	}
-	auto se = mc.pstore_eid;
-	auto bin = static_cast<const BINARY *>(mc.pfolder_eid);
-	if (se == nullptr || bin == nullptr || se->pserver_name == nullptr ||
-	    se->wrapped_provider_uid != g_muidStorePrivate)
+	/*
+	 * Exchange cannot move into another mailbox, and Outlook for Mac
+	 * offers to delete such rules. Report them as not supported.
+	 */
+	if (tdir != dir || !sFolderEntryId(eid.data(), eid.size()).isPrivate())
 		return false;
-	sFolderEntryId feid(bin->pv, bin->cb);
-	if (!feid.isPrivate())
+	trash = rop_util_get_gc_value(fid) == PRIVATE_FID_DELETED_ITEMS;
+	/* Outlook for Mac crashes on a rule folder without ChangeKey */
+	auto ck = ctx.getFolderProp<BINARY>(tdir, fid, PR_CHANGE_KEY);
+	if (ck == nullptr)
 		return false;
-	ref.id = base64_encode(tFolderId(sBase64Binary(bin), tBaseItemId::ID_FOLDER).serializeId());
+	ref.id = base64_encode(tFolderId(std::move(eid), tBaseItemId::ID_FOLDER).serializeId());
+	ref.change_key = base64_encode(*ck);
 	return true;
 } catch (const std::exception &) {
 	return false;
@@ -2810,8 +2821,10 @@ std::pair<std::string, std::string>
 rules_mailbox(const EWSContext &ctx, const std::optional<std::string> &smtp)
 {
 	std::string user = smtp && !smtp->empty() ? *smtp : ctx.auth_info().username;
-	auto dir = ctx.get_maildir(user);
-	if (!(ctx.permissions(dir, rules_inbox) & frightsOwner))
+	sFolderSpec inbox(user, rules_inbox);
+	inbox.location = sFolderSpec::PRIVATE;
+	auto dir = ctx.getDir(inbox);
+	if (!(ctx.permissions(dir, inbox.folderId) & frightsOwner))
 		throw EWSError::AccessDenied(E3607);
 	return {std::move(dir), std::move(user)};
 }
@@ -3689,36 +3702,40 @@ void process(mUpdateUserConfigurationRequest &&request, XMLElement *response,
 		if (rowCount == 0)
 			throw EWSError::ItemNotFound(E3395);
 
-		static constexpr proptag_t midTag = PidTagMid;
+		static constexpr proptag_t rowTags[] = {PidTagMid, PR_ENTRYID};
 		TARRAY_SET rows;
 		if (!exmdb.query_table(dir.c_str(), username, CP_UTF8,
-		    tableId, {&midTag, 1}, 0, 1, &rows))
+		    tableId, {rowTags, std::size(rowTags)}, 0, 1, &rows))
 			throw EWSError::ItemNotFound(E3396);
 		if (rows.count == 0 || rows.pparray[0] == nullptr)
 			throw EWSError::ItemNotFound(E3397);
 		auto mid = rows.pparray[0]->get<const uint64_t>(PidTagMid);
 		if (mid == nullptr)
 			throw EWSError::ItemNotFound(E3398);
+		auto entryId = rows.pparray[0]->find(PR_ENTRYID);
+		if (entryId == nullptr)
+			throw EWSError::ItemNotFound(E3613);
 
-		std::vector<TAGGED_PROPVAL> props;
+		sShape shape;
 		auto& userConfiguration = request.UserConfiguration;
 		if (userConfiguration.XmlData) {
 			auto bin = EWSContext::construct<BINARY>(BINARY{
 			           static_cast<uint32_t>(userConfiguration.XmlData->size()),
 			           {EWSContext::alloc<char>(userConfiguration.XmlData->size())}});
 			memcpy(bin->pc, userConfiguration.XmlData->data(), bin->cb);
-			props.push_back({PR_ROAMING_XMLSTREAM, bin});
+			shape.write(TAGGED_PROPVAL{PR_ROAMING_XMLSTREAM, bin});
 		}
 		if (userConfiguration.BinaryData) {
 			auto bin = EWSContext::construct<BINARY>(BINARY{
 			           static_cast<uint32_t>(userConfiguration.BinaryData->size()),
 			           {EWSContext::alloc<char>(userConfiguration.BinaryData->size())}});
 			memcpy(bin->pc, userConfiguration.BinaryData->data(), bin->cb);
-			props.push_back({PR_ROAMING_BINARYSTREAM, bin});
+			shape.write(TAGGED_PROPVAL{PR_ROAMING_BINARYSTREAM, bin});
 		}
 
-		if (!props.empty()) {
-			const TPROPVAL_ARRAY propArray = {static_cast<uint16_t>(props.size()), props.data()};
+		if (userConfiguration.XmlData || userConfiguration.BinaryData) {
+			ctx.updated(dir, sMessageEntryId(*entryId), shape);
+			const TPROPVAL_ARRAY propArray = shape.write();
 			PROBLEM_ARRAY problems;
 			if (!exmdb.set_message_properties(dir.c_str(),
 			    username, CP_ACP, *mid, &propArray, &problems))
@@ -4720,11 +4737,16 @@ void process(mSendItemRequest &&request, XMLElement *response, const EWSContext 
 				{PR_READ, deconst(&byte_value_one)},
 			};
 			const TPROPVAL_ARRAY proplist = {std::size(sprops), deconst(sprops)};
+			/* The copy made by the move gets a change number of its own */
+			bool move = saveFid != 0 && saveFid != folder.folderId;
 			PROBLEM_ARRAY problems;
-			if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
-			    username, CP_ACP, meid.messageId(), &proplist, &problems))
+			bool ok = move ?
+			          ctx.plugin().exmdb.set_message_properties(dir.c_str(),
+			          username, CP_ACP, meid.messageId(), &proplist, &problems) :
+			          ctx.setItemProps(dir, username, meid.messageId(), proplist);
+			if (!ok)
 				throw EWSError::ItemSave(E3498);
-			if (saveFid != 0 && saveFid != folder.folderId)
+			if (move)
 				ctx.moveCopyItem(dir, meid, saveFid, false);
 		}
 
@@ -5244,10 +5266,6 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 				ctx.updateMessageRecipients(dir, parentFolder,
 				    mid.messageId(), shape);
 		}
-		if (occ_basedate != 0)
-			msg.Items.emplace_back(ctx.loadOccurrence(dir, parentFolder.folderId, mid.messageId(), occ_basedate, idOnly));
-		else
-			msg.Items.emplace_back(ctx.loadItem(dir, mid.folderId(), mid.messageId(), idOnly));
 		/* An attendee's copy sends nothing, like in Exchange */
 		if (orgCopy && occ_basedate != 0) {
 			ctx.sendOccurrenceUpdate(dir, mid, parentFolder,
@@ -5285,6 +5303,11 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 			    mid.messageId(), *oldRcpts,
 			    mode == Enum::SendToAllAndSaveCopy ||
 			    mode == Enum::SendToChangedAndSaveCopy);
+		/* The sends write to the meeting, so load it after them */
+		if (occ_basedate != 0)
+			msg.Items.emplace_back(ctx.loadOccurrence(dir, parentFolder.folderId, mid.messageId(), occ_basedate, idOnly));
+		else
+			msg.Items.emplace_back(ctx.loadItem(dir, mid.folderId(), mid.messageId(), idOnly));
 		if (occ_basedate == 0 && request.MessageDisposition &&
 		    (*request.MessageDisposition == Enum::SendOnly ||
 		    *request.MessageDisposition == Enum::SendAndSaveCopy))

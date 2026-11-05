@@ -16,6 +16,7 @@ global:
 
 	extern "C++" {
 		gromox::ab_tree::*;
+		gromox::exmdb_local_rules_execute*;
 		midb_agent::*;
 		mysql_adaptor_*;
 		sql_user::*;

@@ -1,6 +1,8 @@
 #pragma once
 #include <memory>
 #include <string>
+#include <string_view>
+#include <utility>
 #include <vector>
 #include <vmime/message.hpp>
 #include <vmime/parsingContext.hpp>
@@ -29,6 +31,14 @@ extern GX_EXPORT vmime::generationContext vmail_default_genctx();
 extern GX_EXPORT std::string vmail_to_string(const vmime::message &);
 extern GX_EXPORT std::string vmail_to_string(const vmime::header &);
 extern GX_EXPORT bool vmail_to_mail(const vmime::message &, MAIL &);
+
+/* Header lines of a message that a reply or forward quotes */
+using quote_header = std::vector<std::pair<std::string, std::string>>;
+
+extern GX_EXPORT std::string rcpt_display_list(const TARRAY_SET *, uint32_t type);
+extern GX_EXPORT quote_header make_quote_header(const message_content &, const char *lang);
+extern GX_EXPORT std::string quote_plain(const quote_header &, std::string_view text);
+extern GX_EXPORT ec_error_t quote_html(const quote_header &, std::string &html);
 
 extern GX_EXPORT unsigned int g_oxvcard_pedantic;
 extern GX_EXPORT bool g_oxcmail_smtp_addrtype;

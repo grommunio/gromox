@@ -11,7 +11,7 @@ TARRAY_SET* tarray_set_init()
 		return NULL;
 	}
 	pset->count = 0;
-	auto count = strange_roundup(pset->count, SR_GROW_TPROPVAL_ARRAY);
+	auto count = gx_capacity(pset->count, SR_GROW_TPROPVAL_ARRAY);
 	pset->pparray = gromox::me_alloc<TPROPVAL_ARRAY *>(count);
 	if (NULL == pset->pparray) {
 		free(pset);
@@ -53,10 +53,10 @@ ec_error_t tarray_set::append_move(tpropval_array_ptr &&pproplist)
 	
 	if (pset->count >= 0xFF00)
 		return ecInsufficientResrc;
-	auto z = strange_roundup(pset->count, SR_GROW_TPROPVAL_ARRAY);
-	if (pset->count + 1 >= z) {
-		z += SR_GROW_TPROPVAL_ARRAY;
-		auto list = gromox::re_alloc<TPROPVAL_ARRAY *>(pset->pparray, z);
+	auto cap = gx_capacity(pset->count, SR_GROW_TPROPVAL_ARRAY);
+	if (pset->count >= cap) {
+		cap = gx_capacity(pset->count + 1, SR_GROW_TPROPVAL_ARRAY);
+		auto list = gromox::re_alloc<TPROPVAL_ARRAY *>(pset->pparray, cap);
 		if (list == nullptr)
 			return ecMAPIOOM;
 		pset->pparray = list;

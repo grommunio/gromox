@@ -47,6 +47,23 @@ Enhancements:
   match.
 * EWS: GetInboxRules now returns the Inbox rules and UpdateInboxRules is
   implemented, so Outlook for Mac and eM Client can manage server rules.
+* ruleproc: forward rules now send a new "FW: " message from the mailbox
+  owner that quotes the original, in the language of the mailbox, like
+  Exchange does. Redirects, forwards as attachment, meeting messages and
+  S/MIME messages still go out unchanged.
+* ruleproc: forwards as attachment are now wrapped like in Exchange, with the
+  "FW: " subject of the mailbox and the original message kept byte for byte.
+* ruleproc: forwards now list the mailboxes they passed through in
+  X-MS-Exchange-Inbox-Rules-Loop, so chains of forwarding mailboxes work and
+  loops still end, also together with Exchange.
+* EWS: the quoted header of replies and forwards now follows the mailbox
+  culture and is placed inside the body of the original HTML.
+* oxcmail: long address lists, Subject, References, In-Reply-To, passthrough
+  headers and encoded attachment file names are now folded instead of being
+  emitted as one line of any length.
+* lib: property lists, row sets, attachment lists and NSPI rows now double
+  their capacity when they grow. Growing by a fixed 100 slots made building
+  large sets quadratic, in time everywhere and in memory for nsp and zcore.
 
 Changes:
 
@@ -67,6 +84,19 @@ Changes:
 
 Fixes:
 
+* EWS: UpdateUserConfiguration kept the old change number of the
+  configuration message, so cached Outlook never picked up categories added
+  in eM Client or Outlook for Mac.
+* EWS: GetUserConfiguration returned the UserConfiguration element in the
+  types namespace and its folder id without a namespace. Clients built on
+  the EWS Managed API such as eM Client rejected the response and could not
+  sync their categories.
+* EWS: meeting responses, attendee and recipient changes, sent meeting
+  updates and SendItem left the change number of the item alone, so cached
+  Outlook and other syncing clients missed these changes.
+* EWS: CreateAttachment and DeleteAttachment could undo changes made to the
+  item during the previous 30 seconds, like the sequence number of a sent
+  meeting update or a save by another client.
 * EWS: AcceptItem, TentativelyAcceptItem, DeclineItem, SuppressReadReceipt
   and CancelCalendarItem now refuse private items of others for users who
   are not allowed to see private items.
@@ -94,7 +124,7 @@ Fixes:
 * ruleproc: a failing rule no longer stops the remaining rules and the
   new-mail notification in the TwoStep processor.
 * ruleproc: OP_FORWARD in the TwoStep processor no longer loops between
-  mailboxes and forwards the message as received, keeping signatures intact.
+  mailboxes.
 * ruleproc: gromox.cfg is now read from the config_file_path of the hosting
   program instead of always /etc/gromox.
 * email_lib: embedded message/rfc822 parts are no longer serialized empty, so
@@ -148,6 +178,33 @@ Fixes:
   rule takes effect.
 * zcore: rule updates rejected for exceeding max_rule_number are now
   reported as failures.
+* EWS: MimeContent now includes the stored transport headers, such as
+  Received, Authentication-Results and DKIM-Signature, so Apple Mail and
+  Outlook for Mac show them in the message source.
+* ruleproc: messages with a null envelope sender, such as bounces, are no
+  longer forwarded. A forward target that bounced made the bounce loop.
+* ruleproc: rule replies no longer answer list, bulk and auto-submitted mail
+  and now carry Auto-Submitted themselves.
+* ruleproc: after a rule moves a message into another mailbox, later rule
+  actions and meeting processing no longer act on that other mailbox.
+* ruleproc: the TwoStep processor now honours
+  ``exmdb_provider.cfg:enable_dam=0`` and no longer writes deferred action
+  messages that pile up unseen.
+* ruleproc: extended move, copy and reply rules that point into another
+  mailbox are now disabled instead of acting on an unrelated local object.
+* ruleproc: declines for ``decline_recurring`` are now only sent to senders
+  with free/busy rights on the calendar.
+* ruleproc: extended rule conditions comparing values of different types no
+  longer crash delivery, and conditions on multivalue properties such as
+  Keywords now match.
+* ruleproc: a sender is now only recorded in the Out of Office history when a
+  reply was actually sent.
+* ruleproc: meeting autoprocessing no longer replaces the organizer's meeting
+  with an attendee copy when an attendee forwards a request or cancellation
+  to the organizer.
+* ruleproc: responses to recurring meetings now carry PidLidTimeZoneStruct.
+* oxcmail: Content-Disposition no longer ends in a separator and an empty
+  line when there is no modification time.
 
 
 Gromox 3.13 (2026-10-28)

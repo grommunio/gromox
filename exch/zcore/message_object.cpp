@@ -16,6 +16,7 @@
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/pcl.hpp>
 #include <gromox/rop_util.hpp>
+#include <gromox/ruleproc.hpp>
 #include <gromox/util.hpp>
 #include "common_util.hpp"
 #include "exmdb_client.hpp"
@@ -355,8 +356,9 @@ ec_error_t message_object::save() try
 		when the message is first saved to the folder */
 	if (is_new && !b_fai && pmessage->message_id != 0 &&
 	    !pmessage->pstore->b_private)
-		exmdb_client->rule_new_message(dir, pinfo->get_username(),
-			pmessage->cpid, pmessage->folder_id, pmessage->message_id);
+		exmdb_local_rules_execute(dir, pinfo->get_username(), nullptr,
+			pmessage->folder_id, pmessage->message_id,
+			DELIVERY_DO_RULES_CL);
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
@@ -404,13 +406,28 @@ ec_error_t message_object::write_message(const MESSAGE_CONTENT &content)
 	PROBLEM_ARRAY tmp_problems;
 	
 	auto msgctnt = content;
-	msgctnt.proplist.ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt->proplist.count);
+	msgctnt.proplist.ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt->proplist.count + 1);
 	if (msgctnt.proplist.ppropval == nullptr)
 		return ecServerOOM;
 	memcpy(msgctnt.proplist.ppropval, pmsgctnt->proplist.ppropval,
 				sizeof(TAGGED_PROPVAL)*pmsgctnt->proplist.count);
 	for (auto t : trimtags)
 		common_util_remove_propvals(&msgctnt.proplist, t);
+	/* oxcical/oxvcard output lacks it, keep the instance's value */
+	if (!msgctnt.proplist.has(PR_CREATION_TIME)) {
+		uint64_t *crtime = nullptr;
+		if (!exmdb_client_get_instance_property(pmessage->pstore->get_dir(),
+		    pmessage->instance_id, PR_CREATION_TIME,
+		    reinterpret_cast<void **>(&crtime)))
+			return ecRpcFailed;
+		if (crtime == nullptr) {
+			crtime = cu_alloc<uint64_t>();
+			if (crtime == nullptr)
+				return ecServerOOM;
+			*crtime = rop_util_current_nttime();
+		}
+		msgctnt.proplist.emplace_back(PR_CREATION_TIME, crtime);
+	}
 	if (!exmdb_client->clear_message_instance(pmessage->pstore->get_dir(),
 	    pmessage->instance_id))
 		return ecRpcFailed;
@@ -880,7 +897,9 @@ ec_error_t message_object::remove_properties(proptag_cspan pproptags) try
 	std::vector<uint16_t> poriginal_indices;
 	for (unsigned int i = 0; i < pproptags.size(); ++i) {
 		const auto tag = pproptags[i];
-		if (msgo_is_readonly_prop(pmessage, tag)) {
+		/* New messages may set PR_CREATION_TIME, but not lose it */
+		if (msgo_is_readonly_prop(pmessage, tag) ||
+		    tag == PR_CREATION_TIME) {
 			problems.pproblem[problems.count++].index = i;
 			continue;
 		}
