@@ -1333,7 +1333,6 @@ static void updateRef(const EWSContext &ctx, const tItemId &refId,
 		{PR_PROCESSED, processed},
 	};
 	TPROPVAL_ARRAY proplist{std::size(props), props};
-	PROBLEM_ARRAY problems;
 	auto cls = ctx.getItemProp<char>(rdir, mid.messageId(), PR_MESSAGE_CLASS);
 	/*
 	 * A declined Meeting object leaves the calendar once the reply is out.
@@ -1363,8 +1362,7 @@ static void updateRef(const EWSContext &ctx, const tItemId &refId,
 		    !(calRights & frightsEditAny))
 			throw EWSError::AccessDenied(E3603);
 	}
-	if (!ctx.plugin().exmdb.set_message_properties(rdir.c_str(), username, CP_ACP,
-		mid.messageId(), &proplist, &problems))
+	if (!ctx.setItemProps(rdir, username, mid.messageId(), proplist))
 		throw EWSError::ItemSave(E3409);
 	if (resp == respAccepted || resp == respTentative) {
 		auto cal = ctx.createCalendarItemFromMeetingRequest(refId, resp,
@@ -1385,8 +1383,7 @@ static void updateRef(const EWSContext &ctx, const tItemId &refId,
 				{PROP_TAG(PT_LONG, cpid(NtBusyStatus)), bstat},
 			};
 			TPROPVAL_ARRAY calProps{std::size(cprops), cprops};
-			if (!ctx.plugin().exmdb.set_message_properties(calDir.c_str(),
-			    username, CP_ACP, *declinedCal, &calProps, &problems))
+			if (!ctx.setItemProps(calDir, username, *declinedCal, calProps))
 				throw EWSError::ItemSave(E3582);
 		}
 		calItem->emplace(calDir, *declinedCal);

@@ -7900,6 +7900,41 @@ void EWSContext::updated(const std::string& dir, const sMessageEntryId& mid, sSh
 	shape.write(TAGGED_PROPVAL{PidTagChangeNumber, construct<uint64_t>(changeNum)});
 }
 
+/**
+ * @brief      Add update tags to the shape
+ *
+ * @param      dir       Home directory of user or domain
+ * @param      mid       Message ID
+ * @param      shape     Shape to add the tags to
+ */
+void EWSContext::updated(const std::string &dir, uint64_t mid, sShape &shape) const
+{
+	updated(dir, sMessageEntryId(getItemEntryId(dir, mid)), shape);
+}
+
+/**
+ * @brief      Write properties of an existing message as a new change
+ *
+ * @param      dir       Home directory of user or domain
+ * @param      username  User to write the properties as
+ * @param      mid       Message ID
+ * @param      props     Properties to write
+ *
+ * @return     false if exmdb could not write the properties
+ */
+bool EWSContext::setItemProps(const std::string &dir, const char *username,
+    uint64_t mid, const TPROPVAL_ARRAY &props) const
+{
+	sShape shape;
+	for (const auto &prop : props)
+		shape.write(prop);
+	updated(dir, mid, shape);
+	const auto all = shape.write();
+	PROBLEM_ARRAY problems;
+	return m_plugin.exmdb.set_message_properties(dir.c_str(), username,
+	       CP_ACP, mid, &all, &problems);
+}
+
 
 /**
  * @brief      Write delegate permissions to folder ACLs
