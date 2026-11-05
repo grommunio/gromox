@@ -56,10 +56,12 @@ needing to know user passwords.
 .IP \(bu 4
 \fIldap\fP (old name: \fBexternid\fP): authmgr will selectively pick
 LDAP/MySQL, depending on whether the externid column in the user database has a
-value or contains just the empty string. The particular value is ignored and
-only meaningful to the importer.
+value (the empty string is also a value) or is NULL. The particular value is
+ignored and only meaningful to the importer.
 .IP \(bu 4
-\fIpam\fP: authmgr will selectively pick PAM/MySQL. The PAM service name will
+\fIpam\fP: for a user whose externid column has a value, authmgr verifies
+the password through PAM. authmgr rejects a user whose externid column is
+NULL, and does not use the MySQL password column. The PAM service name will
 be "gromox". Be sure that pam_gromox.so is \fBnot\fP invoked as part of that
 PAM service stack, or it will lead to infinite recursion.
 .SH Signals
