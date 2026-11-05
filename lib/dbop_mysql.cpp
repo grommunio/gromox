@@ -391,6 +391,20 @@ static constexpr char tbl_disabled_plugins_133[] =
 "  CONSTRAINT `domain_ibfk_1` FOREIGN KEY (`domain_id`) REFERENCES `domains` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
 ") DEFAULT CHARSET=utf8mb4";
 
+static constexpr char tbl_dsgw_134[] =
+"CREATE TABLE `domain_smtp_gateway` ("
+"  `domain_id` int(10) unsigned NOT NULL,"
+"  `host` varchar(255) NOT NULL,"
+"  `port` int(11) NOT NULL DEFAULT 25,"
+"  `encryption` varchar(32) NOT NULL DEFAULT 'none',"
+"  `username` varchar(255) DEFAULT NULL,"
+"  `password` varchar(255) DEFAULT NULL,"
+"  `enabled` tinyint(1) NOT NULL DEFAULT 1,"
+"  `description` varchar(255) DEFAULT NULL,"
+"  PRIMARY KEY (`domain_id`),"
+"  CONSTRAINT `domain_smtp_gateway_ibfk_1` FOREIGN KEY (`domain_id`) REFERENCES `domains` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+") DEFAULT CHARSET=utf8mb4";
+
 static constexpr struct tbl_init tbl_init_0[] = {
 	{"aliases", tbl_alias_0},
 	{"associations", tbl_assoc_0},
@@ -609,6 +623,7 @@ static constexpr struct tbl_init tbl_init_top[] = {
 	{"orgparam", tbl_orgparam_109},
 	{"altnames", tbl_altnames_129},
 	{"disabled_plugins", tbl_disabled_plugins_133},
+	{"domain_smtp_gateway", tbl_dsgw_134},
 	{nullptr},
 };
 
@@ -790,6 +805,7 @@ static constexpr tbl_upgradefn tbl_upgrade_list[] = {
 	{131, "UPDATE users SET altname=NULL"},
 	{132, "ALTER TABLE `associations` ADD INDEX `username` (`username`)"},
 	{133, tbl_disabled_plugins_133},
+	{134, tbl_dsgw_134},
 	{0, nullptr},
 };
 
