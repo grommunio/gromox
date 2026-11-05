@@ -549,8 +549,6 @@ E(3407, "failed to duplicate content for cancellation send");
 E(3408, "failed to duplicate content for meeting request send");
 E(3409, "failed to set response properties on meeting item");
 E(3410, "failed to set properties on sent meeting request");
-E(3411, "failed to update message properties after attachment create");
-E(3412, "failed to update message properties after attachment delete");
 E(3413, "failed to allocate message id for user configuration");
 E(3414, "failed to allocate change number for user configuration");
 E(3415, "failed to write user configuration message");

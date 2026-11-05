@@ -1791,18 +1791,10 @@ void process(mCreateAttachmentRequest &&request, XMLElement *response,
 			if (!ctx.plugin().exmdb.flush_instance(dir.c_str(),
 			    aInstId, &err) || err != ecSuccess)
 				throw EWSError::ItemSave(E3431);
+			ctx.stampInstance(dir, mid.messageId(), mInst->instanceId);
 			if (!ctx.plugin().exmdb.flush_instance(dir.c_str(),
 			    mInst->instanceId, &err) || err != ecSuccess)
 				throw EWSError::ItemSave(E3476);
-
-			sShape shape;
-			ctx.updated(dir, mid, shape);
-			TPROPVAL_ARRAY msgProps = shape.write();
-			PROBLEM_ARRAY msgProblems;
-			if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
-			    ctx.effectiveUser(parentFolder), CP_ACP, mid.messageId(),
-			    &msgProps, &msgProblems))
-				throw EWSError::ItemSave(E3411);
 
 			mCreateAttachmentResponseMessage msg;
 			sAttachmentId aid(ctx.getItemEntryId(dir, mid.messageId()), aNum);
@@ -1850,6 +1842,7 @@ void process(mDeleteAttachmentRequest &&request, XMLElement *response, const EWS
 		if (!ctx.plugin().exmdb.delete_message_instance_attachment(dir.c_str(),
 		    mInst->instanceId, aid.attachment_num))
 			throw EWSError::ItemSave(E3432);
+		ctx.stampInstance(dir, aid.messageId(), mInst->instanceId);
 		ec_error_t err;
 		if (!ctx.plugin().exmdb.flush_instance(dir.c_str(),
 		    mInst->instanceId, &err) || err != ecSuccess)
@@ -1860,15 +1853,6 @@ void process(mDeleteAttachmentRequest &&request, XMLElement *response, const EWS
 		 */
 		ctx.plugin().unloadAttachmentInstance(dir, aid.messageId(),
 			aid.attachment_num);
-
-		sShape shape;
-		ctx.updated(dir, aid, shape);
-		TPROPVAL_ARRAY msgProps = shape.write();
-		PROBLEM_ARRAY msgProblems;
-		if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
-		    ctx.effectiveUser(parentFolder), CP_ACP, aid.messageId(),
-		    &msgProps, &msgProblems))
-			throw EWSError::ItemSave(E3412);
 
 		static constexpr proptag_t propids[] = {PR_ENTRYID, PR_CHANGE_KEY};
 		static constexpr PROPTAG_ARRAY proptags = {std::size(propids), deconst(propids)};
