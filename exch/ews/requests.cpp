@@ -4914,6 +4914,22 @@ static bool attendees_only(const tItemChange &change)
 	return true;
 }
 
+/**
+ * @brief      Check whether an ItemChange only sets the read flag
+ */
+static bool read_flag_only(const tItemChange &change)
+{
+	for (const auto &update : change.Updates) {
+		auto set = std::get_if<tSetItemField>(&update);
+		if (set == nullptr)
+			return false;
+		auto uri = std::get_if<tFieldURI>(&set->fieldURI.asVariant());
+		if (uri == nullptr || uri->FieldURI != "message:IsRead")
+			return false;
+	}
+	return !change.Updates.empty();
+}
+
 static void process_upditem_2(mUpdateItemRequest &request, const EWSContext &ctx,
     const std::string &dir, const char *username, sMessageEntryId &mid)
 {
@@ -5208,7 +5224,8 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 				throw EWSError::ItemSave(E3446);
 		} else {
 			ctx.updateReminder(dir, mid.messageId(), shape);
-			ctx.updated(dir, mid, shape);
+			if (!read_flag_only(change))
+				ctx.updated(dir, mid, shape);
 			TPROPVAL_ARRAY props = shape.write();
 			const auto &tagsRm = shape.remove_vec();
 			PROBLEM_ARRAY problems;
