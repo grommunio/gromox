@@ -2490,6 +2490,8 @@ void tTask::update(const sShape& shape)
 		StartDate.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
 	fromProp(shape.get(NtTaskComplete), IsComplete);
 	fromProp(shape.get(NtTaskFRecurring), IsRecurring);
+	if (!IsRecurring && shape.requested(shape.tag(NtTaskFRecurring)))
+		IsRecurring.emplace(false);
 	fromProp(shape.get(NtMileage), Mileage);
 	fromProp(shape.get(NtTaskOwner), Owner);
 	fromProp(shape.get(NtPercentComplete), PercentComplete);
