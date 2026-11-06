@@ -2490,11 +2490,15 @@ void tTask::update(const sShape& shape)
 		StartDate.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
 	fromProp(shape.get(NtTaskComplete), IsComplete);
 	fromProp(shape.get(NtTaskFRecurring), IsRecurring);
+	if (!IsRecurring && shape.requested(shape.tag(NtTaskFRecurring)))
+		IsRecurring.emplace(false);
 	fromProp(shape.get(NtMileage), Mileage);
 	fromProp(shape.get(NtTaskOwner), Owner);
 	fromProp(shape.get(NtPercentComplete), PercentComplete);
 	if (PercentComplete)
 		*PercentComplete *= 100.0;
+	else if (shape.requested(shape.tag(NtPercentComplete)))
+		PercentComplete.emplace(0);
 	if ((prop = shape.get(NtTaskStatus))) {
 		const uint32_t* taskStatus = static_cast<const uint32_t*>(prop->pvalue);
 		Enum::TaskStatusType statusType = Enum::NotStarted;
@@ -2505,6 +2509,8 @@ void tTask::update(const sShape& shape)
 			case tsvDeferred:   statusType = Enum::Deferred; break;
 		}
 		Status.emplace(statusType);
+	} else if (shape.requested(shape.tag(NtTaskStatus))) {
+		Status.emplace(Enum::NotStarted);
 	}
 	fromProp(shape.get(NtTaskEstimatedEffort), TotalWork);
 	if ((prop = shape.get(NtTaskRecurrence))) {
