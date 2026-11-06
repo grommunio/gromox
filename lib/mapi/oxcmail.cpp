@@ -2800,44 +2800,6 @@ static bool line_over_998(std::string_view v, size_t col)
 	return col + v.size() > vmime::lineLengthLimits::max;
 }
 
-static bool set_text(MIME *phead, const char *tag, const std::string &s)
-{
-	vmime::text t(s, vmime::charsets::UTF_8);
-	if (!plain_ascii(s))
-		return set_folded(phead, tag, t);
-	/* fold at spaces only, rather than encode a long word */
-	vmime::text w;
-	w.appendWord(vmime::make_shared<vmime::word>(s, vmime::charsets::US_ASCII));
-	auto v = vmail_fold_text(w, strlen(tag) + 2,
-	         vmime::lineLengthLimits::convenient,
-	         vmime::text::FORCE_NO_ENCODING);
-	if (v.find("\\\r\n") != v.npos || line_over_998(v, strlen(tag) + 2))
-		return phead->set_field(tag, vmail_fold_text(t, strlen(tag) + 2,
-		       vmime::lineLengthLimits::convenient,
-		       vmime::text::FORCE_ENCODING));
-	return phead->set_field(tag, std::move(v));
-}
-
-/*
- * Plain names are quoted as they are. Others become one encoded word,
- * leaving room for the closing quote and ';'.
- */
-static std::string enc_param(const char *s, size_t col)
-{
-	if (plain_ascii(s)) {
-		std::string r;
-		for (; *s != '\0'; ++s) {
-			if (*s == '"' || *s == '\\')
-				r += '\\';
-			r += *s;
-		}
-		return r;
-	}
-	vmime::text t;
-	t.appendWord(vmime::make_shared<vmime::word>(s, vmime::charsets::UTF_8));
-	return vmail_fold_text(t, col, 76, vmime::text::FORCE_ENCODING);
-}
-
 /* Passthrough values fold at whitespace only */
 static bool set_raw(MIME *phead, const char *tag, const char *v)
 {
@@ -2860,66 +2822,6 @@ static std::string squeeze_ws(std::string_view v)
 	}
 	if (!out.empty() && out.back() == ' ')
 		out.pop_back();
-	return out;
-}
-
-/* The first id stays on the header line, readers keep a fold before it */
-static bool set_msgids(MIME *phead, const char *tag, const char *raw)
-{
-	/* Some MUAs separate the ids by commas */
-	std::string v = raw;
-	for (size_t i = 0, depth = 0; i < v.size(); ++i)
-		if (v[i] == '<')
-			++depth;
-		else if (v[i] == '>' && depth > 0)
-			--depth;
-		else if (v[i] == ',' && depth == 0)
-			v[i] = ' ';
-	vmime::messageIdSequence ids;
-	ids.parse(v);
-	if (ids.isEmpty())
-		return set_raw(phead, tag, raw);
-	auto out = vmail_fold(*ids.getMessageIdAt(0), 0);
-	ids.removeMessageId(0);
-	if (!ids.isEmpty()) {
-		auto rest = vmail_fold(ids, strlen(tag) + 3 + out.size(), true);
-		out += rest.starts_with("\r\n") ? rest : " " + rest;
-	}
-	/* vmime drops or makes up ids when the list is malformed */
-	if (squeeze_ws(out) != squeeze_ws(v))
-		return set_raw(phead, tag, raw);
-	return phead->set_field(tag, std::move(out));
-}
-
-/* Each keyword on its own, a comma inside an encoded-word separates nothing */
-static std::string fold_keywords(const STRING_ARRAY &sa)
-{
-	std::string out;
-	size_t col = strlen("Keywords: "), last = 0;
-	for (size_t i = 0; i < sa.count; ++i)
-		if (sa.ppstr[i] != nullptr)
-			last = i;
-	for (size_t i = 0; i < sa.count; ++i) {
-		if (sa.ppstr[i] == nullptr)
-			continue;
-		vmime::text t(sa.ppstr[i], vmime::charsets::UTF_8);
-		/* leave room for the comma that follows */
-		size_t max = vmime::lineLengthLimits::convenient - (i != last);
-		if (!out.empty()) {
-			auto kw = vmail_fold_text(t, col + 2, max);
-			if (kw.find('\n') == kw.npos && col + 2 + kw.size() <= max) {
-				out += ", " + kw;
-				col += 2 + kw.size();
-				continue;
-			}
-			out += ",\r\n ";
-			col = 1;
-		}
-		auto kw = vmail_fold_text(t, col, max);
-		auto nl = kw.rfind('\n');
-		col = nl == kw.npos ? col + kw.size() : kw.size() - nl - 1;
-		out += std::move(kw);
-	}
 	return out;
 }
 

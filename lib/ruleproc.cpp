@@ -1309,20 +1309,6 @@ static bool rx_delivered_before(vmime::header &head, const char *rcpt)
 	return false;
 }
 
-/* The forwarding mailboxes named in @orig, plus @owner */
-static std::vector<std::string> rx_loop_trace(const MIME *orig, const char *owner)
-{
-	std::vector<std::string> out;
-	auto num = orig != nullptr ? orig->get_field_num(rx_loop_hdr) : 0;
-	for (int i = 0; i < num; ++i) {
-		std::string v;
-		if (orig->search_field(rx_loop_hdr, i, v))
-			out.push_back(std::move(v));
-	}
-	out.emplace_back(owner);
-	return out;
-}
-
 static std::string mr_owner_lang(const rxparam &);
 
 /* Bodies of @orig with its header block quoted on top, into @out */
@@ -1662,7 +1648,6 @@ static ec_error_t op_forward2(rxparam &par, const rule_node &rule,
 
 	auto vmail = vmime::make_shared<vmime::message>();
 	auto eml = par.get_eml();
-	bool head_kept = false;
 	if (eml != nullptr) {
 		/*
 		 * Send the message as received, which keeps signatures intact
@@ -1688,7 +1673,6 @@ static ec_error_t op_forward2(rxparam &par, const rule_node &rule,
 				pre += "X-MS-Exchange-Organization-AutoForwarded: true\r\n";
 			vmail = vmime::make_shared<vmime::message>();
 			vmail->parse(vpctx, pre + *eml);
-			head_kept = true;
 		}
 	} else {
 		auto log_id = "f" + std::to_string(rop_util_get_gc_value(par.cur.fid)) +
