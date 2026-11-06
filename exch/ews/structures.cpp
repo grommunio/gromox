@@ -3090,7 +3090,7 @@ decltype(tChangeDescription::fields) tChangeDescription::fields = {{
 	{"OfficeLocation", {[](auto &&...args) STATIC_IN_CXX23 { convText(PR_OFFICE_LOCATION, args...); }}},
 	{"OptionalAttendees", {[](const tinyxml2::XMLElement *xml, sShape &shape) STATIC_IN_CXX23 { shape.optionalAttendees = xml; }, "CalendarItem"}},
 	{"Owner", {[](auto &&...args) STATIC_IN_CXX23 { convText(NtTaskOwner, args...); }, "Task"}},
-	{"PercentComplete", {[](auto &&...args) STATIC_IN_CXX23 { convDouble(NtPercentComplete, args...); }, "Task"}},
+	{"PercentComplete", {[](auto &&...args) STATIC_IN_CXX23 { convPercentComplete(args...); }, "Task"}},
 	{"PermissionSet", {[](const tinyxml2::XMLElement *xml, sShape &shape) STATIC_IN_CXX23 { shape.calendarPermissionSet = xml; }, "CalendarFolder"}},
 	{"PermissionSet", {[](const tinyxml2::XMLElement *xml, sShape &shape) STATIC_IN_CXX23 { shape.permissionSet = xml; }}},
 	{"PostalAddressIndex", {[](auto &&...args) STATIC_IN_CXX23 { convEnumIndex<Enum::PhysicalAddressIndexType>(NtPostalAddressIndex, args...); }}},
@@ -3355,11 +3355,19 @@ void tChangeDescription::convInt32(const PROPERTY_NAME &name, const XMLElement *
 		shape.write(mkProp(tag, static_cast<int32_t>(strtol(znul(v->GetText()), nullptr, 10))));
 }
 
-void tChangeDescription::convDouble(const PROPERTY_NAME &name, const XMLElement *v, sShape &shape)
+/**
+ * @brief      Property conversion function for task:PercentComplete
+ *
+ * EWS uses 0 to 100, PidLidPercentComplete stores 0.0 to 1.0.
+ */
+void tChangeDescription::convPercentComplete(const XMLElement *v, sShape &shape)
 {
-	auto tag = shape.tag(name);
+	double pc = strtod(znul(v->GetText()), nullptr);
+	if (!(pc >= 0 && pc <= 100))
+		throw EWSError::InvalidPercentCompleteValue(E3624);
+	auto tag = shape.tag(NtPercentComplete);
 	if (tag)
-		shape.write(TAGGED_PROPVAL{tag, EWSContext::construct<double>(strtod(znul(v->GetText()), nullptr))});
+		shape.write(TAGGED_PROPVAL{tag, EWSContext::construct<double>(pc / 100.0)});
 }
 
 void tChangeDescription::convFlag(const XMLElement *v, sShape &shape)
