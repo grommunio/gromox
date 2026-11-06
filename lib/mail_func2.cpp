@@ -125,8 +125,29 @@ vmime::parsingContext vmail_default_parsectx()
 vmime::generationContext vmail_default_genctx()
 {
 	vmime::generationContext c;
-	/* Outlook is unable to read RFC 2184/2231. */
-	c.setEncodedParameterValueMode(vmime::generationContext::EncodedParameterValueModes::PARAMETER_VALUE_RFC2231_AND_RFC2047);
+	/*
+	 * RFC 1049: First spec for Content-Type.
+	 * RFC 1341 p. 40: Mentions of the name= parameter for Content-Type.
+	 * RFC 1521 §7.4.1: Hint at a future Content-Disposition header.
+	 * RFC 1806 (June 1995): First spec for Content-Disposition, including
+	 * the filename= parameter.
+	 * RFC 2184 (Aug 1997): First spec for parameter continuations and
+	 * charsets (asterisk syntax).
+	 *
+	 * When an IMF/.eml file is passed to OL, it locally parses it and
+	 * constructs a temporary MAPI message in PRIVATE_FID_ROOT.
+	 *
+	 * OL2010 14.0.7268.500 and OL2016 (16.0.5569.1000) MSO
+	 * (16.0.5569.1003) recognize RFC 1806 but not RFC 2184/2231, despite
+	 * the spec being over 10 years old at that point. OL will use
+	 * PR_ATTACHMENT_DESCRIPTION or "Untitled attachment %05u", appending
+	 * .dat if needed.
+	 *
+	 * OL2019 MSO v2312 16.0.17126.20126,
+	 * OL2021 MSO v2608 16.0.20326.20072 and EXC 15.2 (2562.17) understand
+	 * asterisk syntax.
+	 */
+	//c.setEncodedParameterValueMode(vmime::generationContext::EncodedParameterValueModes::PARAMETER_VALUE_RFC2231_AND_RFC2047);
 	/* Outlook is also unable to parse Content-ID:\n id... */
 	c.setWrapMessageId(false);
 	return c;
