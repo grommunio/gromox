@@ -2497,6 +2497,8 @@ void tTask::update(const sShape& shape)
 	fromProp(shape.get(NtPercentComplete), PercentComplete);
 	if (PercentComplete)
 		*PercentComplete *= 100.0;
+	else if (shape.requested(shape.tag(NtPercentComplete)))
+		PercentComplete.emplace(0);
 	if ((prop = shape.get(NtTaskStatus))) {
 		const uint32_t* taskStatus = static_cast<const uint32_t*>(prop->pvalue);
 		Enum::TaskStatusType statusType = Enum::NotStarted;
@@ -2507,6 +2509,8 @@ void tTask::update(const sShape& shape)
 			case tsvDeferred:   statusType = Enum::Deferred; break;
 		}
 		Status.emplace(statusType);
+	} else if (shape.requested(shape.tag(NtTaskStatus))) {
+		Status.emplace(Enum::NotStarted);
 	}
 	fromProp(shape.get(NtTaskEstimatedEffort), TotalWork);
 	if ((prop = shape.get(NtTaskRecurrence))) {
