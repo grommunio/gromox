@@ -1116,6 +1116,8 @@ BOOL exmdb_server::write_message_instance(const char *dir,
 		case PR_CODE_PAGE_ID:
 		case PidTagParentFolderId:
 		case PR_INSTANCE_SVREID:
+		case PR_SOURCE_KEY:
+		case PR_PARENT_SOURCE_KEY:
 		case PR_HAS_NAMED_PROPERTIES:
 		case PR_MESSAGE_SIZE:
 		case PR_HASATTACH:
@@ -2326,6 +2328,8 @@ static BOOL set_xns_props_msg(instance_node *pinstance,
 		case PR_CODE_PAGE_ID:
 		case PidTagParentFolderId:
 		case PR_INSTANCE_SVREID:
+		case PR_SOURCE_KEY:
+		case PR_PARENT_SOURCE_KEY:
 		case PR_HAS_NAMED_PROPERTIES:
 		case PR_MESSAGE_SIZE:
 		case PR_HASATTACH:

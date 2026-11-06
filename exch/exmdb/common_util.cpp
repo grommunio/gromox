@@ -3226,6 +3226,7 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 			case PR_FOLDER_TYPE:
 			case PR_HAS_RULES:
 			case PR_FOLDER_PATHNAME:
+			case PR_SOURCE_KEY:
 			case PR_PARENT_SOURCE_KEY:
 			case PR_MESSAGE_SIZE_EXTENDED:
 			case PR_ASSOC_MESSAGE_SIZE_EXTENDED:
@@ -3265,6 +3266,7 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 			case PidTagFolderId:
 			case PidTagParentFolderId:
 			case PR_INSTANCE_SVREID:
+			case PR_SOURCE_KEY:
 			case PR_PARENT_SOURCE_KEY:
 			case PR_HAS_NAMED_PROPERTIES:
 			case PidTagMid:

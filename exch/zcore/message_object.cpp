@@ -395,7 +395,8 @@ static constexpr proptag_t trimtags[] = {
 	PidTagMid, PR_DISPLAY_TO, PR_DISPLAY_CC,
 	PR_DISPLAY_BCC, PR_MESSAGE_SIZE, PR_HASATTACH,
 	PR_CHANGE_KEY, PidTagChangeNumber,
-	PR_PREDECESSOR_CHANGE_LIST,
+	PR_PREDECESSOR_CHANGE_LIST, PR_SOURCE_KEY,
+	PR_PARENT_SOURCE_KEY,
 };
 
 ec_error_t message_object::write_message(const MESSAGE_CONTENT &content)
@@ -639,6 +640,7 @@ static BOOL msgo_is_readonly_prop(const message_object *pmessage,
 	case PR_OBJECT_TYPE:
 	case PR_PARENT_ENTRYID:
 	case PR_PARENT_SOURCE_KEY:
+	case PR_SOURCE_KEY:
 	case PR_STORE_ENTRYID:
 	case PR_STORE_RECORD_KEY:
 	case PR_RECORD_KEY:
@@ -649,7 +651,6 @@ static BOOL msgo_is_readonly_prop(const message_object *pmessage,
 	case PR_CREATION_TIME:
 	case PR_LAST_MODIFICATION_TIME:
 	case PR_PREDECESSOR_CHANGE_LIST:
-	case PR_SOURCE_KEY:
 		if (pmessage->b_new)
 			return FALSE;
 		return TRUE;

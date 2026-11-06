@@ -184,6 +184,7 @@ fastupctx_object_write_message(fastupctx_object *pctx, uint64_t folder_id)
 		PR_MESSAGE_SIZE_EXTENDED, PR_HAS_NAMED_PROPERTIES,
 		PR_HASATTACH, PR_ENTRYID, PidTagFolderId,
 		PR_OBJECT_TYPE, PR_PARENT_ENTRYID, PR_STORE_RECORD_KEY,
+		PR_SOURCE_KEY, PR_PARENT_SOURCE_KEY,
 	};
 	for (auto t : tags)
 		pproplist->erase(t);

@@ -756,6 +756,7 @@ bool message_object::is_readonly_prop(proptag_t proptag) const
 	case PR_OBJECT_TYPE:
 	case PR_PARENT_ENTRYID:
 	case PR_PARENT_SOURCE_KEY:
+	case PR_SOURCE_KEY:
 	case PR_STORE_ENTRYID:
 	case PR_STORE_RECORD_KEY:
 	case PR_RECORD_KEY:
@@ -766,7 +767,6 @@ bool message_object::is_readonly_prop(proptag_t proptag) const
 	case PR_CREATION_TIME:
 	case PR_LAST_MODIFICATION_TIME:
 	case PR_PREDECESSOR_CHANGE_LIST:
-	case PR_SOURCE_KEY:
 		return !pmessage->b_new && pmessage->pstate == nullptr;
 	case PR_READ:
 		return pmessage->pembedding != nullptr;
