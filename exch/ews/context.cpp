@@ -7598,6 +7598,9 @@ void EWSContext::toContent(const std::string &dir, tTask &item, sShape &shape,
 		            construct<uint8_t>(*item.IsComplete ? 1 : 0)});
 	writeProp(shape, item.Mileage, NtMileage, PT_UNICODE);
 	writeProp(shape, item.Owner, NtTaskOwner, PT_UNICODE);
+	if (item.PercentComplete && !(*item.PercentComplete >= 0 &&
+	    *item.PercentComplete <= 100))
+		throw EWSError::InvalidPercentCompleteValue(E3624);
 	if (item.PercentComplete)
 		shape.write(NtPercentComplete, TAGGED_PROPVAL{PT_DOUBLE,
 		            construct<double>(*item.PercentComplete / 100.0)});

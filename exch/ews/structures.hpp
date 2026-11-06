@@ -1506,7 +1506,7 @@ struct tChangeDescription {
 	static void convText(const PROPERTY_NAME &, const tinyxml2::XMLElement *, sShape &);
 	static void convTzAttr(const PROPERTY_NAME &, const tinyxml2::XMLElement *, sShape &);
 	static void convInt32(const PROPERTY_NAME &, const tinyxml2::XMLElement *, sShape &);
-	static void convDouble(const PROPERTY_NAME &, const tinyxml2::XMLElement *, sShape &);
+	static void convPercentComplete(const tinyxml2::XMLElement *, sShape &);
 	template<typename ET, typename PT=uint32_t>
 	static void convEnumIndex(proptag_t, const tinyxml2::XMLElement *, sShape &);
 	template<typename ET, typename PT=uint32_t>
