@@ -5237,8 +5237,11 @@ void tItem::update(const sShape& shape)
 	fromProp(shape.get(PR_SUBJECT), Subject);
 
 	auto xprthdr = shape.get<const char>(PR_TRANSPORT_MESSAGE_HEADERS);
-	if (xprthdr != nullptr)
-		InternetMessageHeaders.emplace(tInternetMessageHeader::parse(xprthdr));
+	if (xprthdr != nullptr) {
+		auto hdrs = tInternetMessageHeader::parse(xprthdr);
+		if (!hdrs.empty())
+			InternetMessageHeaders.emplace(std::move(hdrs));
+	}
 	auto categories = shape.get<const STRING_ARRAY>(NtCategories);
 	if (categories != nullptr) {
 		Categories.emplace(categories->count);
