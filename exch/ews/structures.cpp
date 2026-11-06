@@ -5418,6 +5418,8 @@ void tItem::update(const sShape& shape)
 		Sensitivity = *v32 == SENSITIVITY_PRIVATE ? Enum::Private :
 		              *v32 == SENSITIVITY_COMPANY_CONFIDENTIAL ? Enum::Confidential :
 		              *v32 == SENSITIVITY_PERSONAL ? Enum::Personal : Enum::Normal;
+	else if (shape.requested(PR_SENSITIVITY))
+		Sensitivity = Enum::Normal; /* Exchange stamps it on every item */
 	fromProp(shape.get(PR_SUBJECT), Subject);
 
 	auto xprthdr = shape.get<const char>(PR_TRANSPORT_MESSAGE_HEADERS);
