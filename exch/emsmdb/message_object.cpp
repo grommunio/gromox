@@ -831,6 +831,11 @@ static ec_error_t message_object_get_calculated_property(const message_object *p
 			return ecNotFound;
 		*ppvalue = deconst(&pmessage->message_id);
 		return ecSuccess;
+	case PR_SOURCE_KEY:
+		if (pmessage->pembedding != nullptr || pmessage->message_id == 0)
+			return ecNotFound;
+		*ppvalue = cu_mid_to_sk(*pmessage->plogon, pmessage->message_id);
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PR_RECORD_KEY:
 		if (pmessage->message_id == 0)
 			return ecNotFound;
@@ -906,13 +911,6 @@ ec_error_t message_object::get_props(uint32_t size_limit,
 			ppropvals->count, tmp_propvals.ppropval,
 			sizeof(TAGGED_PROPVAL)*tmp_propvals.count);
 		ppropvals->count += tmp_propvals.count;
-	}
-	if (pmessage->pembedding == nullptr && pproptags.has(PR_SOURCE_KEY) &&
-	    !ppropvals->has(PR_SOURCE_KEY)) {
-		auto v = cu_mid_to_sk(*pmessage->plogon, pmessage->message_id);
-		if (v == nullptr)
-			return ecError;
-		ppropvals->emplace_back(PR_SOURCE_KEY, v);
 	}
 	if (pproptags.has(PR_MESSAGE_LOCALE_ID) &&
 	    !ppropvals->has(PR_MESSAGE_LOCALE_ID)) {
@@ -1129,7 +1127,8 @@ ec_error_t message_object::copy_to(message_object *pmessage_src,
 		PR_DISPLAY_CC, PR_DISPLAY_CC_A, PR_DISPLAY_BCC,
 		PR_DISPLAY_BCC_A, PR_MESSAGE_SIZE,
 		PR_HASATTACH, PR_CHANGE_KEY, PidTagChangeNumber,
-		PR_PREDECESSOR_CHANGE_LIST,
+		PR_PREDECESSOR_CHANGE_LIST, PR_SOURCE_KEY,
+		PR_PARENT_SOURCE_KEY,
 	};
 	for (auto t : tags)
 		common_util_remove_propvals(&msgctnt.proplist, t);

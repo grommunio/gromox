@@ -691,14 +691,12 @@ static bool icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 			if (cu_set_propval(&pembedded->proplist, PidTagMid, &message_id) != ecSuccess ||
 			    cu_set_propval(&pembedded->proplist, PR_PARENT_SOURCE_KEY, pvalue) != ecSuccess)
 				return false;
-			if (!pembedded->proplist.has(PR_SOURCE_KEY)) {
-				auto psk = cu_mid_to_sk(*pctx->pstream->plogon, message_id);
-				if (psk == nullptr)
-					return FALSE;
-				if (cu_set_propval(&pembedded->proplist,
-				    PR_SOURCE_KEY, psk) != ecSuccess)
-					return false;
-			}
+			auto psk = cu_mid_to_sk(*pctx->pstream->plogon, message_id);
+			if (psk == nullptr)
+				return false;
+			if (cu_set_propval(&pembedded->proplist,
+			    PR_SOURCE_KEY, psk) != ecSuccess)
+				return false;
 			if (!icsdownctx_object_extract_msgctntinfo(*pembedded,
 			    pctx->extra_flags, message_id, &chgheader, &progmsg))
 				return FALSE;
@@ -737,36 +735,25 @@ static bool icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 	if (!(pctx->sync_flags & SYNC_NO_FOREIGN_KEYS)) {
 		if (!exmdb_client->get_folder_property(dir,
 		    CP_ACP, folder_id, PR_SOURCE_KEY, &pvalue))
-			return FALSE;	
+			return false;
 		if (NULL == pvalue) {
 			pvalue = cu_fid_to_sk(*pctx->pstream->plogon, folder_id);
 			if (pvalue == nullptr)
 				return FALSE;
 		}
-		if (cu_set_propval(&pmsgctnt->proplist, PR_PARENT_SOURCE_KEY,
-		    pvalue) != ecSuccess)
-			return false;
-		if (!pmsgctnt->proplist.has(PR_SOURCE_KEY)) {
-			pvalue = cu_mid_to_sk(*pctx->pstream->plogon, message_id);
-			if (pvalue == nullptr)
-				return FALSE;
-			if (cu_set_propval(&pmsgctnt->proplist, PR_SOURCE_KEY,
-			    pvalue) != ecSuccess)
-				return false;
-		}
 	} else {
 		pvalue = cu_fid_to_sk(*pctx->pstream->plogon, folder_id);
 		if (pvalue == nullptr)
 			return FALSE;
-		if (cu_set_propval(&pmsgctnt->proplist, PR_PARENT_SOURCE_KEY,
-		    pvalue) != ecSuccess)
-			return false;
-		pvalue = cu_mid_to_sk(*pctx->pstream->plogon, message_id);
-		if (pvalue == nullptr)
-			return FALSE;
-		if (cu_set_propval(&pmsgctnt->proplist, PR_SOURCE_KEY, pvalue) != ecSuccess)
-			return false;
 	}
+	if (cu_set_propval(&pmsgctnt->proplist, PR_PARENT_SOURCE_KEY,
+	    pvalue) != ecSuccess)
+		return false;
+	pvalue = cu_mid_to_sk(*pctx->pstream->plogon, message_id);
+	if (pvalue == nullptr)
+		return false;
+	if (cu_set_propval(&pmsgctnt->proplist, PR_SOURCE_KEY, pvalue) != ecSuccess)
+		return false;
 	if (!icsdownctx_object_extract_msgctntinfo(*pmsgctnt,
 	    pctx->extra_flags, message_id, &chgheader, &progmsg))
 		return FALSE;
