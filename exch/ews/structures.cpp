@@ -981,7 +981,7 @@ void sCalendarMeetingRequestCommon::update(const sShape &shape)
 	fromProp(shape.get(NtFInvited), MeetingRequestWasSent);
 	fromProp(shape.get(NtMeetingWorkspaceUrl), MeetingWorkspaceUrl);
 	fromProp(shape.get(NtNetShowUrl), NetShowUrl);
-	fromProp(shape.get(NtTimeZone), TimeZone);
+	fromProp(shape.get(NtTimeZoneDescription), TimeZone);
 	fromProp(shape.get(NtRecurrencePattern), When);
 
 
@@ -4679,7 +4679,7 @@ decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
 	{"calendar:StartTimeZone", {NtAppointmentTimeZoneDefinitionStartDisplay, PT_BINARY}},
 	{"calendar:StartTimeZoneId", {NtCalendarTimeZone, PT_UNICODE}},
 	{"calendar:StartTimeZoneId", {NtAppointmentTimeZoneDefinitionStartDisplay, PT_BINARY}},
-	{"calendar:TimeZone", {NtTimeZone, PT_UNICODE}},
+	{"calendar:TimeZone", {NtTimeZoneDescription, PT_UNICODE}},
 	{"calendar:UID", {NtGlobalObjectId, PT_BINARY}},
 	{"calendar:When", {NtRecurrencePattern, PT_UNICODE}},
 	{"contacts:CompleteName", {NtYomiFirstName, PT_UNICODE}},
@@ -5346,7 +5346,7 @@ decltype(tItemResponseShape::namedTagsAllProperties) tItemResponseShape::namedTa
 	{&NtAppointmentReplyTime, PT_SYSTIME},
 	{&NtAppointmentSequence, PT_LONG},
 	{&NtAppointmentDuration, PT_LONG},
-	{&NtTimeZone, PT_UNICODE},
+	{&NtTimeZoneDescription, PT_UNICODE},
 	{&NtConferencingType, PT_LONG},
 	{&NtConferencingCheck, PT_BOOLEAN},
 	{&NtMeetingWorkspaceUrl, PT_UNICODE},
