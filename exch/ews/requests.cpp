@@ -4950,6 +4950,8 @@ static void process_upditem_2(mUpdateItemRequest &request, const EWSContext &ctx
 	if (flags != nullptr && *flags & MSGFLAG_UNSENT)
 		sprops.push_back({PR_MESSAGE_FLAGS,
 			EWSContext::construct<uint32_t>(*flags & ~MSGFLAG_UNSENT)});
+	/* sendcontent is reread below, keep the value */
+	const uint32_t unsentFlags = flags != nullptr && *flags & MSGFLAG_UNSENT ? *flags : 0;
 
 	std::vector<proptag_t> drop;
 	auto ident = ctx.submitIdentity(dir, sendcontent->proplist, drop);
@@ -4967,8 +4969,25 @@ static void process_upditem_2(mUpdateItemRequest &request, const EWSContext &ctx
 	    username, CP_ACP, mid.messageId(), &sendcontent) ||
 	    sendcontent == nullptr)
 		throw EWSError::ItemNotFound(E3466);
-	ctx.validate_sendas_perms(*sendcontent);
-	ctx.send(dir, rop_util_get_gc_value(mid.messageId()), *sendcontent);
+	try {
+		ctx.validate_sendas_perms(*sendcontent);
+		ctx.send(dir, rop_util_get_gc_value(mid.messageId()), *sendcontent);
+	} catch (...) {
+		/*
+		 * A message that was not sent must stay a draft, otherwise
+		 * clients show it read-only and it can be neither edited nor
+		 * sent again.
+		 */
+		if (unsentFlags != 0) {
+			TAGGED_PROPVAL prop{PR_MESSAGE_FLAGS,
+				EWSContext::construct<uint32_t>(unsentFlags)};
+			const TPROPVAL_ARRAY plist = {1, &prop};
+			PROBLEM_ARRAY probs;
+			ctx.plugin().exmdb.set_message_properties(dir.c_str(),
+				username, CP_ACP, mid.messageId(), &plist, &probs);
+		}
+		throw;
+	}
 
 	if (*request.MessageDisposition == Enum::SendAndSaveCopy) {
 		sFolderSpec sentitems = ctx.resolveFolder(tDistinguishedFolderId(Enum::sentitems));
