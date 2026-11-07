@@ -182,8 +182,11 @@ vmime::generationContext vmail_default_genctx()
 	 * asterisk syntax.
 	 */
 	//c.setEncodedParameterValueMode(vmime::generationContext::EncodedParameterValueModes::PARAMETER_VALUE_RFC2231_AND_RFC2047);
-	/* Outlook is also unable to parse Content-ID:\n id... */
-	c.setWrapMessageId(false);
+	/*
+	 * Some places Outlook is said to fail parsing `Content-ID:\n id`, but we could not
+	 * retrigger that with the above versions. So...
+	 */
+	//c.setWrapMessageId(false);
 	return c;
 }
 
