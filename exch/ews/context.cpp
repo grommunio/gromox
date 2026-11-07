@@ -7584,39 +7584,29 @@ void EWSContext::toContent(const std::string &dir, tTask &item, sShape &shape,
 			*dest++ = deconst(c.c_str());
 		shape.write(NtCompanies, TAGGED_PROPVAL{PT_MV_UNICODE, sa});
 	}
-	if (item.CompleteDate)
-		shape.write(NtTaskDateCompleted, TAGGED_PROPVAL{PT_SYSTIME,
-		            construct<uint64_t>(toNT(*item.CompleteDate))});
 	if (item.DueDate)
 		shape.write(NtTaskDueDate, TAGGED_PROPVAL{PT_SYSTIME,
 		            construct<uint64_t>(toNT(*item.DueDate))});
 	if (item.StartDate)
 		shape.write(NtTaskStartDate, TAGGED_PROPVAL{PT_SYSTIME,
 		            construct<uint64_t>(toNT(*item.StartDate))});
+	/* Derived from the status, like Exchange */
 	if (item.IsComplete)
-		shape.write(NtTaskComplete, TAGGED_PROPVAL{PT_BOOLEAN,
-		            construct<uint8_t>(*item.IsComplete ? 1 : 0)});
+		throw EWSError::InvalidPropertySet(E3625);
 	writeProp(shape, item.Mileage, NtMileage, PT_UNICODE);
 	writeProp(shape, item.Owner, NtTaskOwner, PT_UNICODE);
 	if (item.PercentComplete && !(*item.PercentComplete >= 0 &&
 	    *item.PercentComplete <= 100))
 		throw EWSError::InvalidPercentCompleteValue(E3624);
+	/* Applied in schema order, each one adjusting the others */
+	sTaskState task;
+	if (item.CompleteDate)
+		task.setCompleteDate(toNT(*item.CompleteDate));
 	if (item.PercentComplete)
-		shape.write(NtPercentComplete, TAGGED_PROPVAL{PT_DOUBLE,
-		            construct<double>(*item.PercentComplete / 100.0)});
-	if (item.Status) {
-		uint32_t st = tsvNotStarted;
-		if (*item.Status == Enum::InProgress)
-			st = tsvInProgress;
-		else if (*item.Status == Enum::Completed)
-			st = tsvComplete;
-		else if (*item.Status == Enum::WaitingOnOthers)
-			st = tsvWaiting;
-		else if (*item.Status == Enum::Deferred)
-			st = tsvDeferred;
-		shape.write(NtTaskStatus, TAGGED_PROPVAL{PT_LONG,
-		            construct<uint32_t>(st)});
-	}
+		task.setPercent(*item.PercentComplete / 100.0);
+	if (item.Status)
+		task.setStatus(item.Status->index());
+	task.write(shape);
 	if (item.TotalWork)
 		shape.write(NtTaskEstimatedEffort, TAGGED_PROPVAL{PT_LONG,
 		            construct<int32_t>(*item.TotalWork)});

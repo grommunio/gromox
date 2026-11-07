@@ -701,6 +701,7 @@ E(3621, "the new zone would move the end before the start");
 E(3622, "the end of the item would precede its start");
 E(3623, "unknown time zone in the update");
 E(3624, "PercentComplete must be between 0 and 100");
+E(3625, "IsComplete is read-only, set Status or PercentComplete instead");
 
 #undef E
 }
