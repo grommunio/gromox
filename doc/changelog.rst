@@ -19,6 +19,8 @@ Behavior changes:
 
 Enhancements:
 
+* mbck: new check that reports stored PR_SOURCE_KEY/PR_PARENT_SOURCE_KEY rows
+  and, with ``-p``, deletes them.
 * ruleproc: the TwoStep processor now reports failed rules with deferred error
   messages and disables rules whose target folder is gone or whose forward has
   too many recipients.

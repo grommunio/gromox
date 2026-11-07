@@ -17,6 +17,13 @@ reservations are added.
 A second check validates that all indices that are supposed to exist do, in
 fact, exist. This is a read-only test, with no repair actions defined.
 .PP
+A third check looks for PR_SOURCE_KEY/PR_PARENT_SOURCE_KEY values stored in
+folder_properties and message_properties. Source keys are derived from object
+identifiers and are not supposed to be stored; earlier Gromox versions accepted
+them from clients and served them as the object's ICS identity. With the
+repair action selected, they are deleted. (The upgrade to schema version 32
+performs the same deletion.)
+.PP
 mbck is not a general SQLite integrity checker and does not verify message
 bodies or attachments in the cid directory.
 .PP

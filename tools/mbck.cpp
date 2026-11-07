@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2024–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdio>
 #include <cstdlib>
@@ -139,6 +139,37 @@ static ssize_t ck_indices_present(sqlite3 *db)
 	return pr;
 }
 
+/* Source keys are derived from object IDs; stored ones are stale client values. */
+static ssize_t ck_source_keys(sqlite3 *db)
+{
+	auto xt = gx_sql_begin(db, g_do_repair ? txn_mode::write : txn_mode::read);
+	ssize_t probs = 0;
+	printf("%s:", __func__);
+	for (const auto tbl : {"folder_properties", "message_properties"}) {
+		auto cond = fmt::format("FROM {} WHERE proptag IN ({},{})", tbl,
+		            static_cast<unsigned int>(PR_SOURCE_KEY),
+		            static_cast<unsigned int>(PR_PARENT_SOURCE_KEY));
+		auto stm = gx_sql_prep(db, "SELECT COUNT(*) " + cond);
+		if (stm == nullptr || stm.step() != SQLITE_ROW)
+			return -1;
+		auto n = stm.col_int64(0);
+		stm.finalize();
+		if (n == 0)
+			continue;
+		printf(" %s:%llu", tbl, LLU(n));
+		probs += n;
+		if (g_do_repair && gx_sql_exec(db, "DELETE " + cond) != SQLITE_OK)
+			return -1;
+	}
+	printf(" [%zu issues]", probs);
+	if (probs > 0 && g_do_repair)
+		printf(" [fixed]");
+	printf("\n");
+	if (xt.commit() != SQLITE_OK)
+		return -1;
+	return probs;
+}
+
 static ssize_t check_one_db(sqlite3 *db)
 {
 	auto ret = ck_allocated_eids(db);
@@ -146,6 +177,10 @@ static ssize_t check_one_db(sqlite3 *db)
 		return ret;
 	auto pr = ret;
 	ret = ck_indices_present(db);
+	if (ret < 0)
+		return ret;
+	pr += ret;
+	ret = ck_source_keys(db);
 	if (ret < 0)
 		return ret;
 	pr += ret;
