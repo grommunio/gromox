@@ -105,6 +105,12 @@ Fixes:
   the request also named read-only ones.
 * emsmdb: ropFastTransferSourceCopyMessages stream requests with SendEntryId
   flag erroneously lacked PR_SOURCE_KEY in the output.
+* emsmdb/exmdb: client-supplied PR_SOURCE_KEY values were persisted and served
+  as the ICS identity of messages (e.g. replies created through grommunio-sync
+  carried the key of the original mail), which made cached Outlook stop
+  synchronizing the folder with error 0x80040102 (ecNotSupported). Keys are now always derived from the
+  object ID and schema version 32 drops stored rows; affected objects are
+  downloaded once more by cached clients.
 * EWS: UpdateUserConfiguration kept the old change number of the
   configuration message, so cached Outlook never picked up categories added
   in eM Client or Outlook for Mac.

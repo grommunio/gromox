@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <climits>
@@ -431,6 +431,11 @@ static constexpr char tbl_deferredsends_31[] =
 "  FOREIGN KEY (message_id) REFERENCES messages (message_id) ON DELETE CASCADE ON UPDATE CASCADE);"
 "CREATE INDEX deferred_sends_time_index ON deferred_sends(due_time);";
 
+/* Source keys are derived from object IDs; persisted ones were client supplied. */
+static constexpr char tbl_dropsourcekeys_32[] =
+"DELETE FROM folder_properties WHERE proptag IN (0x65e00102,0x65e10102);" /* PR_SOURCE_KEY, PR_PARENT_SOURCE_KEY */
+"DELETE FROM message_properties WHERE proptag IN (0x65e00102,0x65e10102);";
+
 static constexpr char tbl_pub_folders_0[] =
 "CREATE TABLE folders ("
 "  folder_id INTEGER PRIMARY KEY,"
@@ -788,6 +793,7 @@ static constexpr tblite_upgradefn tbl_pvt_upgrade_list[] = {
 	{29, tbl_fixupperms_29},
 	{30, tbl_msgtimemidindex_30},
 	{31, tbl_deferredsends_31},
+	{32, tbl_dropsourcekeys_32},
 	/* advance schema numbers in lockstep with public stores */
 	TABLE_END,
 };
@@ -813,6 +819,7 @@ static constexpr tblite_upgradefn tbl_pub_upgrade_list[] = {
 	{27, tbl_convidindex_27},
 	{28, tbl_rebuildmsgtimeindex_28},
 	{30, tbl_msgtimemidindex_30},
+	{32, tbl_dropsourcekeys_32},
 	/* advance schema numbers in lockstep with private stores */
 	TABLE_END,
 };
