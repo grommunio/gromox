@@ -4907,6 +4907,56 @@ void process(mUnsubscribeRequest &&request, XMLElement *response, const EWSConte
 }
 
 /**
+ * @brief      Keep task status, percentage and completion in step
+ *
+ * Like Exchange, each change of one of them adjusts the others, in the
+ * order of the updates. The state starts from the stored item.
+ *
+ * @param      ctx    Request context
+ * @param      dir    Store directory
+ * @param      mid    Message ID of the task
+ * @param      set    Field just written to the shape
+ * @param      shape  Shape holding the written value
+ * @param      task   Task state, loaded on first use
+ */
+static void upd_task_state(const EWSContext &ctx, const std::string &dir,
+    uint64_t mid, const tSetItemField &set, const sShape &shape,
+    std::optional<sTaskState> &task)
+{
+	auto uri = std::get_if<tFieldURI>(&set.fieldURI.asVariant());
+	if (uri == nullptr)
+		return;
+	const auto &f = uri->FieldURI;
+	if (f != "task:PercentComplete" && f != "task:Status" &&
+	    f != "task:CompleteDate")
+		return;
+	auto stTag = shape.tag(NtTaskStatus);
+	auto pcTag = shape.tag(NtPercentComplete);
+	auto dcTag = shape.tag(NtTaskDateCompleted);
+	if (!task) {
+		const proptag_t tags[] = {stTag, pcTag, dcTag};
+		auto props = ctx.getItemProps(dir, mid, tags);
+		task.emplace();
+		if (auto v = props.get<const uint32_t>(stTag))
+			task->status = *v;
+		if (auto v = props.get<const double>(pcTag))
+			task->percent = *v;
+		if (auto v = props.get<const uint64_t>(dcTag))
+			task->completed = *v;
+	}
+	const TAGGED_PROPVAL *p;
+	if (f == "task:PercentComplete") {
+		if ((p = shape.writes(pcTag)) != nullptr)
+			task->setPercent(*static_cast<double *>(p->pvalue));
+	} else if (f == "task:Status") {
+		if ((p = shape.writes(stTag)) != nullptr)
+			task->setStatus(*static_cast<uint32_t *>(p->pvalue));
+	} else if ((p = shape.writes(dcTag)) != nullptr) {
+		task->setCompleteDate(*static_cast<uint64_t *>(p->pvalue));
+	}
+}
+
+/**
  * @brief      Apply DeleteItemField to a meeting attendee list
  *
  * An attendee list without Attendee children clears that kind, so
@@ -5424,12 +5474,23 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 		shape.add(NtRecurrenceType, PT_LONG);
 		shape.add(NtClipStart, PT_SYSTIME);
 		shape.add(NtClipEnd, PT_SYSTIME);
+		/* Written by sTaskState::write */
+		shape.add(NtTaskStatus, PT_LONG);
+		shape.add(NtPercentComplete, PT_DOUBLE);
+		shape.add(NtTaskComplete, PT_BOOLEAN);
+		shape.add(NtTaskDateCompleted, PT_SYSTIME);
 		ctx.getNamedTags(dir, shape, true);
+		std::optional<sTaskState> task;
 		for (const auto &update : change.Updates) {
-			if (std::holds_alternative<tSetItemField>(update))
-				std::get<tSetItemField>(update).put(shape);
+			if (auto set = std::get_if<tSetItemField>(&update)) {
+				set->put(shape);
+				upd_task_state(ctx, dir, mid.messageId(),
+					*set, shape, task);
+			}
 			delete_attendees(update, shape);
 		}
+		if (task)
+			task->write(shape);
 		tContact::genFields(shape);
 		std::optional<uint32_t> occBase;
 		if (change.ItemId.holds_alternative<tOccurrenceItemId>()) {

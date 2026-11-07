@@ -1571,6 +1571,22 @@ PROPTAG_ARRAY sShape::remove() const
 }
 
 /**
+ * @brief      Mark a property for deletion
+ *
+ * Drops a pending write of the same property.
+ *
+ * @param      tag    Tag to delete
+ */
+void sShape::remove(proptag_t tag)
+{
+	std::erase_if(wProps, [=](const TAGGED_PROPVAL &t) {
+		return t.proptag == tag;
+	});
+	if (std::find(dTags.begin(), dTags.end(), tag) == dTags.end())
+		dTags.emplace_back(tag);
+}
+
+/**
  * @brief      Whether the tag was originally requested
  *
  * @param      tag    Tag to check
@@ -3075,7 +3091,7 @@ decltype(tChangeDescription::fields) tChangeDescription::fields = {{
 	{"Importance", {[](auto &&...args) STATIC_IN_CXX23 { convEnumIndex<Enum::ImportanceChoicesType>(PR_IMPORTANCE, args...); }}},
 	{"Initials", {[](auto &&...args) STATIC_IN_CXX23 { convText(PR_INITIALS, args...); }}},
 	{"IsAllDayEvent", {[](auto &&...args) STATIC_IN_CXX23 { convBool(NtAppointmentSubType, args...); }}},
-	{"IsComplete", {[](auto &&...args) STATIC_IN_CXX23 { convBool(NtTaskComplete, args...); }, "Task"}},
+	{"IsComplete", {[](const tinyxml2::XMLElement *, sShape &) STATIC_IN_CXX23 { throw EWSError::InvalidPropertySet(E3625); }, "Task"}},
 	{"IsDeliveryReceiptRequested", {[](auto &&...args) STATIC_IN_CXX23 { convBool(PR_ORIGINATOR_DELIVERY_REPORT_REQUESTED, args...);}}},
 	{"IsRead", {[](auto &&...args) STATIC_IN_CXX23 { convBool(PR_READ, args...); }}},
 	{"IsReadReceiptRequested", {[](auto &&...args) STATIC_IN_CXX23 { convBool(PR_READ_RECEIPT_REQUESTED, args...); }}},
@@ -6250,6 +6266,83 @@ void tSetItemField::put(sShape& shape) const
 	} else {
 		convProp(item->Name(), child->Name(), child, shape);
 	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief      Set the percentage, 0.0 to 1.0
+ *
+ * 100% completes the task and 0% resets it. Anything in between starts
+ * a task that was not started or completed.
+ */
+void sTaskState::setPercent(double v)
+{
+	percent = v;
+	if (v >= 1)
+		status = tsvComplete;
+	else if (v <= 0)
+		status = tsvNotStarted;
+	else if (status == tsvNotStarted || status == tsvComplete)
+		status = tsvInProgress;
+	settle();
+}
+
+/**
+ * @brief      Set the status
+ *
+ * Completed implies 100% and Not Started 0%. The other states keep the
+ * percentage unless the task was complete.
+ */
+void sTaskState::setStatus(uint32_t v)
+{
+	status = v;
+	if (v == tsvComplete)
+		percent = 1;
+	else if (v == tsvNotStarted || percent >= 1)
+		percent = 0;
+	settle();
+}
+
+/**
+ * @brief      Set the completion date, which completes the task
+ */
+void sTaskState::setCompleteDate(uint64_t v)
+{
+	completed = v;
+	status = tsvComplete;
+	percent = 1;
+}
+
+/**
+ * @brief      Stamp or clear the completion date to match the status
+ */
+void sTaskState::settle()
+{
+	if (status != tsvComplete)
+		completed.reset();
+	else if (!completed)
+		completed = rop_util_current_nttime();
+}
+
+/**
+ * @brief      Write the task state to the shape
+ *
+ * The named properties must be registered in the shape.
+ */
+void sTaskState::write(sShape &shape) const
+{
+	shape.write(NtTaskStatus, TAGGED_PROPVAL{PT_LONG,
+		EWSContext::construct<uint32_t>(status)});
+	shape.write(NtPercentComplete, TAGGED_PROPVAL{PT_DOUBLE,
+		EWSContext::construct<double>(percent)});
+	shape.write(NtTaskComplete, TAGGED_PROPVAL{PT_BOOLEAN,
+		EWSContext::construct<uint8_t>(status == tsvComplete)});
+	if (completed)
+		shape.write(NtTaskDateCompleted, TAGGED_PROPVAL{PT_SYSTIME,
+			EWSContext::construct<uint64_t>(*completed)});
+	else if (auto tag = shape.tag(NtTaskDateCompleted))
+		shape.remove(tag);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

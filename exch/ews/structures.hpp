@@ -457,6 +457,7 @@ class sShape {
 	const TAGGED_PROPVAL* writes(const PROPERTY_NAME&) const;
 
 	PROPTAG_ARRAY remove() const;
+	void remove(proptag_t);
 	const std::vector<gromox::proptag_t> &remove_vec() const { return dTags; }
 
 	bool requested(proptag_t, uint8_t = FL_FIELD) const;
@@ -2203,6 +2204,26 @@ struct tTask : public tItem {
 	std::optional<Enum::TaskStatusType> Status;
 	std::optional<std::string> StatusDescription;
 	std::optional<int> TotalWork; // 0 <= TotalWork < 0x5AE980DF
+};
+
+/**
+ * @brief      Status, percentage and completion of a task
+ *
+ * Exchange keeps them in step whenever one of them is set, in the
+ * order the fields arrive.
+ */
+struct sTaskState {
+	void setPercent(double);
+	void setStatus(uint32_t);
+	void setCompleteDate(uint64_t);
+	void write(sShape &) const;
+
+	uint32_t status = 0; ///< PidLidTaskStatus
+	double percent = 0; ///< PidLidPercentComplete, 0.0 to 1.0
+	std::optional<uint64_t> completed; ///< PidLidTaskDateCompleted
+
+	private:
+	void settle();
 };
 
 /**
