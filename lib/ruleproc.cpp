@@ -966,7 +966,7 @@ static void rx_make_dem(rxparam &par, const rule_node &rule,
 			return;
 	}
 	uint64_t outmid = 0, outcn = 0;
-	auto e_result = ecSuccess;
+	ec_error_t e_result = ecSuccess;
 	if (!exmdb_client->write_message(dir, CP_ACP,
 	    eid_t(1, PRIVATE_FID_DEFERRED_ACTION), msg.get(), {},
 	    &outmid, &outcn, &e_result) || e_result != ecSuccess)
@@ -2143,7 +2143,7 @@ static ec_error_t op_delegate(rxparam &par, const rule_node &rule,
 		    rcpt_list, mysql_adaptor_userid_to_name, false) != ecSuccess)
 			return ecError;
 	}
-	auto ret = ecSuccess;
+	ec_error_t ret = ecSuccess;
 	for (const auto &addr : rcpt_list) {
 		auto err = par.delegate_to(addr.c_str());
 		if (err != ecSuccess && ret == ecSuccess)
@@ -4757,7 +4757,7 @@ ec_error_t rxparam::run()
 
 	if (m_flags & DELIVERY_DO_MRAUTOPROC && !moved_out) {
 		mr_policy res_policy;
-		auto err = ecSuccess;
+		ec_error_t err = ecSuccess;
 		if (ctnt == nullptr && (!exmdb_client->read_message(cur.dirc(),
 		    nullptr, CP_ACP, cur.mid, &ctnt) || ctnt == nullptr))
 			err = ecNotFound;
@@ -4930,7 +4930,7 @@ void rxparam::make_dams() try
 		    p.set(PR_RULE_IDS, &ids_bin) != ecSuccess)
 			return;
 		uint64_t outmid = 0, outcn = 0;
-		auto e_result = ecSuccess;
+		ec_error_t e_result = ecSuccess;
 		if (!exmdb_client->write_message(dir, CP_ACP,
 		    eid_t(1, PRIVATE_FID_DEFERRED_ACTION), msg.get(), {},
 		    &outmid, &outcn, &e_result) || e_result != ecSuccess) {

@@ -1497,13 +1497,13 @@ ec_error_t exmdb_execute_deferred_send(const char *dir, uint64_t mid_val) try
 	cvt.get_propids = message_get_propids;
 	cvt.get_propname = message_get_propname;
 	cvt.use_format_override(*ctnt);
-	auto ok = cvt.mapi_to_inet(*ctnt, vmail);
+	auto ret = cvt.mapi_to_inet(*ctnt, vmail);
 	g_sqlite_for_oxcmail = nullptr;
-	if (!ok)
-		return ecError;
+	if (ret != ecSuccess)
+		return ret;
 
-	auto ret = cu_send_vmail(vmail, g_exmdb_smtp_url.c_str(),
-	           ev_from, rcpt_list);
+	ret = cu_send_vmail(vmail, g_exmdb_smtp_url.c_str(),
+	      ev_from, rcpt_list);
 	if (ret != ecSuccess) {
 		mlog(LV_ERR, "E-1760: deferred send %s:m%llu via SMTP failed: %s",
 			dir, LLU{mid_val}, mapi_strerror(ret));
