@@ -62,22 +62,22 @@ struct GX_EXPORT HTTP_AUTH_INFO {
 
 /* Plugin is expected to use `using namespace ns;` too */
 #define DECLARE_HPM_API(ns, x) namespace ns { \
-	x decltype(dlfuncs::hpm.reg_intf) register_interface; \
-	x decltype(dlfuncs::hpm.get_conn) get_connection; \
-	x decltype(dlfuncs::hpm.get_req) get_request; \
-	x decltype(dlfuncs::hpm.get_auth_info) get_auth_info; \
-	x decltype(dlfuncs::hpm.write_response) write_response; \
-	x decltype(dlfuncs::hpm.wakeup_ctx) wakeup_context; \
-	x decltype(dlfuncs::hpm.activate_ctx) activate_context; \
-	x decltype(dlfuncs::get_host_ID) get_host_ID; \
-	x decltype(dlfuncs::get_config_path) get_config_path; \
-	x decltype(dlfuncs::get_data_path) get_data_path; \
-	x decltype(dlfuncs::get_context_num) get_context_num; \
-	x decltype(dlfuncs::hpm.set_ctx) set_context; \
-	x decltype(dlfuncs::hpm.set_ep_info) set_ep_info; \
-	x decltype(dlfuncs::ndr_stack_alloc) ndr_stack_alloc; \
-	x decltype(dlfuncs::rpc_new_stack) rpc_new_stack; \
-	x decltype(dlfuncs::rpc_free_stack) rpc_free_stack; \
+	x __attribute__((__unused__)) decltype(dlfuncs::hpm.reg_intf) register_interface; \
+	x __attribute__((__unused__)) decltype(dlfuncs::hpm.get_conn) get_connection; \
+	x __attribute__((__unused__)) decltype(dlfuncs::hpm.get_req) get_request; \
+	x __attribute__((__unused__)) decltype(dlfuncs::hpm.get_auth_info) get_auth_info; \
+	x __attribute__((__unused__)) decltype(dlfuncs::hpm.write_response) write_response; \
+	x __attribute__((__unused__)) decltype(dlfuncs::hpm.wakeup_ctx) wakeup_context; \
+	x __attribute__((__unused__)) decltype(dlfuncs::hpm.activate_ctx) activate_context; \
+	x __attribute__((__unused__)) decltype(dlfuncs::get_host_ID) get_host_ID; \
+	x __attribute__((__unused__)) decltype(dlfuncs::get_config_path) get_config_path; \
+	x __attribute__((__unused__)) decltype(dlfuncs::get_data_path) get_data_path; \
+	x __attribute__((__unused__)) decltype(dlfuncs::get_context_num) get_context_num; \
+	x __attribute__((__unused__)) decltype(dlfuncs::hpm.set_ctx) set_context; \
+	x __attribute__((__unused__)) decltype(dlfuncs::hpm.set_ep_info) set_ep_info; \
+	x __attribute__((__unused__)) decltype(dlfuncs::ndr_stack_alloc) ndr_stack_alloc; \
+	x __attribute__((__unused__)) decltype(dlfuncs::rpc_new_stack) rpc_new_stack; \
+	x __attribute__((__unused__)) decltype(dlfuncs::rpc_free_stack) rpc_free_stack; \
 }
 #define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(service_query((n), typeid(decltype(*(f))))))
 #define query_service1(n) query_service2(#n, n)

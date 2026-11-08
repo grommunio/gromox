@@ -16,23 +16,23 @@
 
 /* Plugin is expected to use `using namespace ns;` too */
 #define DECLARE_PROC_API(ns, x) namespace ns { \
-	x decltype(dlfuncs::proc.reg_ep) register_endpoint; \
-	x decltype(dlfuncs::proc.reg_intf) register_interface; \
-	x decltype(dlfuncs::get_host_ID) get_host_ID; \
-	x decltype(dlfuncs::get_config_path) get_config_path; \
-	x decltype(dlfuncs::get_data_path) get_data_path; \
-	x decltype(dlfuncs::get_context_num) get_context_num; \
-	x decltype(dlfuncs::proc.get_binding_handle) get_binding_handle; \
-	x decltype(dlfuncs::proc.get_rpc_info) get_rpc_info; \
-	x decltype(dlfuncs::proc.is_rpc_bigendian) is_rpc_bigendian; \
-	x decltype(dlfuncs::ndr_stack_alloc) ndr_stack_alloc; \
-	x decltype(dlfuncs::proc.apply_async_id) apply_async_id; \
-	x decltype(dlfuncs::proc.activate_async_id) activate_async_id; \
-	x decltype(dlfuncs::proc.cancel_async_id) cancel_async_id; \
-	x decltype(dlfuncs::proc.rpc_build_env) rpc_build_environment; \
-	x decltype(dlfuncs::rpc_new_stack) rpc_new_stack; \
-	x decltype(dlfuncs::rpc_free_stack) rpc_free_stack; \
-	x decltype(dlfuncs::proc.async_reply) async_reply; \
+	x __attribute__((__unused__)) decltype(dlfuncs::proc.reg_ep) register_endpoint; \
+	x __attribute__((__unused__)) decltype(dlfuncs::proc.reg_intf) register_interface; \
+	x __attribute__((__unused__)) decltype(dlfuncs::get_host_ID) get_host_ID; \
+	x __attribute__((__unused__)) decltype(dlfuncs::get_config_path) get_config_path; \
+	x __attribute__((__unused__)) decltype(dlfuncs::get_data_path) get_data_path; \
+	x __attribute__((__unused__)) decltype(dlfuncs::get_context_num) get_context_num; \
+	x __attribute__((__unused__)) decltype(dlfuncs::proc.get_binding_handle) get_binding_handle; \
+	x __attribute__((__unused__)) decltype(dlfuncs::proc.get_rpc_info) get_rpc_info; \
+	x __attribute__((__unused__)) decltype(dlfuncs::proc.is_rpc_bigendian) is_rpc_bigendian; \
+	x __attribute__((__unused__)) decltype(dlfuncs::ndr_stack_alloc) ndr_stack_alloc; \
+	x __attribute__((__unused__)) decltype(dlfuncs::proc.apply_async_id) apply_async_id; \
+	x __attribute__((__unused__)) decltype(dlfuncs::proc.activate_async_id) activate_async_id; \
+	x __attribute__((__unused__)) decltype(dlfuncs::proc.cancel_async_id) cancel_async_id; \
+	x __attribute__((__unused__)) decltype(dlfuncs::proc.rpc_build_env) rpc_build_environment; \
+	x __attribute__((__unused__)) decltype(dlfuncs::rpc_new_stack) rpc_new_stack; \
+	x __attribute__((__unused__)) decltype(dlfuncs::rpc_free_stack) rpc_free_stack; \
+	x __attribute__((__unused__)) decltype(dlfuncs::proc.async_reply) async_reply; \
 }
 #define register_service(n, f) service_register_service((n), reinterpret_cast<void *>(f), typeid(decltype(*(f))))
 #define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(service_query((n), typeid(decltype(*(f))))))

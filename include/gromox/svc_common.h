@@ -9,11 +9,11 @@
 
 /* Plugin is expected to use `using namespace ns;` too */
 #define	DECLARE_SVC_API(ns, x) namespace ns { \
-	x decltype(dlfuncs::get_config_path) get_config_path; \
-	x decltype(dlfuncs::get_data_path) get_data_path; \
-	x decltype(dlfuncs::get_context_num) get_context_num; \
-	x decltype(dlfuncs::get_host_ID) get_host_ID; \
-	x decltype(dlfuncs::ndr_stack_alloc) ndr_stack_alloc; \
+	x __attribute__((__unused__)) decltype(dlfuncs::get_config_path) get_config_path; \
+	x __attribute__((__unused__)) decltype(dlfuncs::get_data_path) get_data_path; \
+	x __attribute__((__unused__)) decltype(dlfuncs::get_context_num) get_context_num; \
+	x __attribute__((__unused__)) decltype(dlfuncs::get_host_ID) get_host_ID; \
+	x __attribute__((__unused__)) decltype(dlfuncs::ndr_stack_alloc) ndr_stack_alloc; \
 }
 #define register_service(n, f) service_register_service((n), reinterpret_cast<void *>(f), typeid(decltype(*(f))))
 #define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(service_query((n), typeid(decltype(*(f))))))

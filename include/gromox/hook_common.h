@@ -28,19 +28,19 @@ struct GX_EXPORT MESSAGE_CONTEXT {
 
 /* Plugin is expected to use `using namespace ns;` too */
 #define DECLARE_HOOK_API(ns, x) namespace ns { \
-	x decltype(dlfuncs::hook.register_hook) register_hook; \
-	x decltype(dlfuncs::hook.register_local) register_local; \
-	x decltype(dlfuncs::get_host_ID) get_host_ID; \
-	x decltype(dlfuncs::get_config_path) get_config_path; \
-	x decltype(dlfuncs::get_data_path) get_data_path; \
-	x decltype(dlfuncs::hook.get_admin_mailbox) get_admin_mailbox; \
-	x decltype(dlfuncs::hook.get_queue_path) get_queue_path; \
-	x decltype(dlfuncs::get_context_num) get_context_num; \
-	x decltype(dlfuncs::hook.get_threads_num) get_threads_num; \
-	x decltype(dlfuncs::hook.get_ctx) get_context; \
-	x decltype(dlfuncs::hook.put_ctx) put_context; \
-	x decltype(dlfuncs::hook.enqueue_ctx) enqueue_context; \
-	x decltype(dlfuncs::hook.throw_ctx) throw_context; \
+	x __attribute__((__unused__)) decltype(dlfuncs::hook.register_hook) register_hook; \
+	x __attribute__((__unused__)) decltype(dlfuncs::hook.register_local) register_local; \
+	x __attribute__((__unused__)) decltype(dlfuncs::get_host_ID) get_host_ID; \
+	x __attribute__((__unused__)) decltype(dlfuncs::get_config_path) get_config_path; \
+	x __attribute__((__unused__)) decltype(dlfuncs::get_data_path) get_data_path; \
+	x __attribute__((__unused__)) decltype(dlfuncs::hook.get_admin_mailbox) get_admin_mailbox; \
+	x __attribute__((__unused__)) decltype(dlfuncs::hook.get_queue_path) get_queue_path; \
+	x __attribute__((__unused__)) decltype(dlfuncs::get_context_num) get_context_num; \
+	x __attribute__((__unused__)) decltype(dlfuncs::hook.get_threads_num) get_threads_num; \
+	x __attribute__((__unused__)) decltype(dlfuncs::hook.get_ctx) get_context; \
+	x __attribute__((__unused__)) decltype(dlfuncs::hook.put_ctx) put_context; \
+	x __attribute__((__unused__)) decltype(dlfuncs::hook.enqueue_ctx) enqueue_context; \
+	x __attribute__((__unused__)) decltype(dlfuncs::hook.throw_ctx) throw_context; \
 }
 #define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(service_query((n), typeid(decltype(*(f))))))
 #define query_service1(n) query_service2(#n, n)
