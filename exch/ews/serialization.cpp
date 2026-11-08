@@ -1809,6 +1809,17 @@ void tCancelCalendarItem::serialize(tinyxml2::XMLElement *xml) const
 	XMLDUMPT(ReferenceItemId);
 }
 
+tRemoveItem::tRemoveItem(const tinyxml2::XMLElement *xml) :
+	tMessage(xml),
+	XMLINIT(ReferenceItemId)
+{}
+
+void tRemoveItem::serialize(tinyxml2::XMLElement *xml) const
+{
+	tMessage::serialize(xml);
+	XMLDUMPT(ReferenceItemId);
+}
+
 /* The flat SmartResponseType or a nested <t:Message> */
 static tMessage smart_message(const tinyxml2::XMLElement *xml)
 {

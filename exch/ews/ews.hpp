@@ -348,6 +348,7 @@ class EWSContext {
 	void updateAttendees(const std::string&, const Structures::sFolderSpec&, uint64_t, const Structures::sShape&, const TARRAY_SET&, bool) const;
 	void propagateAttendees(const std::string &, uint64_t, uint64_t, const std::vector<std::pair<std::string, uint32_t>> &, const std::vector<const TPROPVAL_ARRAY *> &) const;
 	void updateMessageRecipients(const std::string&, const Structures::sFolderSpec&, uint64_t, const Structures::sShape&) const;
+	void removeMeetingCancellation(const Structures::tItemId &) const;
 	void loadSpecial(const std::string&, uint64_t, Structures::tBaseFolderType&, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, Structures::tCalendarFolderType&, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, Structures::tContactsFolderType&, uint64_t) const;

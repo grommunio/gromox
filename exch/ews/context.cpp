@@ -3246,6 +3246,108 @@ void EWSContext::checkOccurrence(const std::string &dir, uint64_t mid,
 		throw EWSError::CalendarOccurrenceIsDeletedFromRecurrence(E3488);
 }
 
+static std::optional<uint32_t> goid_instance_basedate(const BINARY *goid_bin)
+{
+	if (goid_bin == nullptr || goid_bin->cb == 0)
+		return std::nullopt;
+	GLOBALOBJECTID goid{};
+	EXT_PULL ep;
+	ep.init(goid_bin->pb, goid_bin->cb, EWSContext::alloc, 0);
+	if (ep.g_goid(&goid) != pack_result::ok)
+		return std::nullopt;
+	if (goid.year == 0 || goid.month == 0 || goid.day == 0)
+		return std::nullopt;
+	struct tm date{};
+	date.tm_year = goid.year - 1900;
+	date.tm_mon  = goid.month - 1;
+	date.tm_mday = goid.day;
+	auto when = timegm(&date);
+	if (when == static_cast<time_t>(-1))
+		return std::nullopt;
+	return rop_util_unix_to_rtime(when) / 1440 * 1440;
+}
+
+/**
+ * @brief      Remove a cancelled meeting from the calendar
+ *
+ * Deletes the calendar item, or the one occurrence the cancellation
+ * names, and moves the cancellation to Deleted Items.
+ *
+ * @param      refId     Item ID of the meeting cancellation
+ */
+void EWSContext::removeMeetingCancellation(const tItemId &refId) const
+{
+	assertIdType(refId.type, tItemId::ID_ITEM);
+	sMessageEntryId cancellationId(refId.Id.data(), refId.Id.size());
+	sFolderSpec cancellationFolder = resolveFolder(cancellationId);
+	std::string dir = getDir(cancellationFolder);
+	validate(dir, cancellationId);
+	if (!(permissions(dir, cancellationFolder.folderId) & frightsDeleteAny))
+		throw EWSError::AccessDenied(E3131);
+	const char *username = effectiveUser(cancellationFolder);
+
+	MESSAGE_CONTENT *cancellation = nullptr;
+	if (!m_plugin.exmdb.read_message(dir.c_str(), username, CP_ACP,
+	    cancellationId.messageId(), &cancellation) ||
+	    cancellation == nullptr)
+		throw EWSError::ItemNotFound(E3143);
+	auto messageClass =
+	    cancellation->proplist.get<const char>(PR_MESSAGE_CLASS);
+	if (messageClass == nullptr ||
+	    class_match_prefix(messageClass,
+	    "IPM.Schedule.Meeting.Canceled") != 0)
+		throw EWSError::InvalidId(E3450);
+
+	sFolderSpec calendarFolder;
+	calendarFolder.folderId = eid_t(1, PRIVATE_FID_CALENDAR);
+	calendarFolder.location = sFolderSpec::PRIVATE;
+	calendarFolder.target = cancellationFolder.target ?
+	    cancellationFolder.target :
+	    std::optional<std::string>(m_auth_info.username);
+	std::string calendarDir = getDir(calendarFolder);
+	auto pidGoid = getNamedPropId(dir, NtGlobalObjectId);
+	auto occurrence = goid_instance_basedate(
+		cancellation->proplist.get<const BINARY>(PROP_TAG(PT_BINARY, pidGoid)));
+	auto calendarMid = findExistingByGoid(calendarFolder, calendarDir,
+	    *cancellation);
+	if (calendarMid &&
+	    !(permissions(calendarDir, calendarFolder.folderId) & frightsDeleteAny))
+		throw EWSError::AccessDenied(E3131);
+	if (calendarMid) {
+		/* getItemProp throws on a missing property, a single item has none */
+		auto recurTag = PROP_TAG(PT_BINARY,
+		                getNamedPropId(calendarDir, NtAppointmentRecur));
+		auto recurProps = getItemProps(calendarDir, *calendarMid,
+		                  proptag_cspan{&recurTag, 1});
+		bool recurring = recurProps.get<const BINARY>(recurTag) != nullptr;
+		if (occurrence && recurring)
+			deleteOccurrence(calendarDir, calendarFolder.folderId, *calendarMid, *occurrence);
+		else if (!occurrence) {
+			eid_t eid{*calendarMid};
+			EID_ARRAY eids{1, &eid};
+			BOOL partial = false;
+			if (!m_plugin.exmdb.delete_messages(calendarDir.c_str(), CP_ACP,
+			    effectiveUser(calendarFolder), calendarFolder.folderId, eids,
+			    TRUE, &partial) || partial)
+				throw EWSError::CannotDeleteObject(E3134);
+		}
+		m_plugin.unloadMessageInstance(calendarDir, *calendarMid);
+	}
+
+	sFolderSpec deletedItems =
+	    resolveFolder(tDistinguishedFolderId(Enum::deleteditems));
+	uint64_t newMid = 0;
+	if (!m_plugin.exmdb.allocate_message_id(dir.c_str(),
+	    deletedItems.folderId, &newMid))
+		throw EWSError::MoveCopyFailed(E3425);
+	BOOL moved = false;
+	if (!m_plugin.exmdb.movecopy_message(dir.c_str(), CP_ACP,
+	    cancellationId.messageId(), deletedItems.folderId, newMid, TRUE,
+	    &moved) || !moved)
+		throw EWSError::MoveCopyFailed(E3133);
+	m_plugin.unloadMessageInstance(dir, cancellationId.messageId());
+}
+
 /**
  * @brief      Delete a single occurrence from a recurring appointment
  *
