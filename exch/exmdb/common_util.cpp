@@ -4890,8 +4890,9 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 
 	snprintf(sql_string, std::size(sql_string), "INSERT INTO message_properties (message_id,"
 			" proptag, propval) SELECT %llu, proptag, propval FROM "
-			"message_properties WHERE message_id=%llu",
-			LLU{*pdst_mid}, LLU{message_id});
+			"message_properties WHERE message_id=%llu AND proptag NOT IN (%u,%u)",
+			LLU{*pdst_mid}, LLU{message_id}, static_cast<unsigned int>(PR_SOURCE_KEY),
+			static_cast<unsigned int>(PR_PARENT_SOURCE_KEY));
 	if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "SELECT recipient_id FROM"

@@ -1181,8 +1181,9 @@ static BOOL folder_copy_generic_folder(sqlite3 *psqlite,
 	pstmt.finalize();
 	snprintf(sql_string, std::size(sql_string), "INSERT INTO folder_properties "
 		"(folder_id, proptag, propval) SELECT %llu, proptag,"
-		" propval FROM folder_properties WHERE folder_id=%llu",
-		LLU{last_eid + 1}, LLU{src_fid});
+		" propval FROM folder_properties WHERE folder_id=%llu AND proptag NOT IN (%u,%u)",
+		LLU{last_eid + 1}, LLU{src_fid}, static_cast<unsigned int>(PR_SOURCE_KEY),
+		static_cast<unsigned int>(PR_PARENT_SOURCE_KEY));
 	if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
 	if (b_guest) {
@@ -1267,8 +1268,9 @@ static bool folder_copy_search_folder(db_conn &db, cpid_t cpid,
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "INSERT INTO folder_properties "
 		"(folder_id, proptag, propval) SELECT %llu, proptag,"
-		" propval FROM folder_properties WHERE folder_id=%llu",
-		LLU{last_eid}, LLU{src_fid});
+		" propval FROM folder_properties WHERE folder_id=%llu AND proptag NOT IN (%u,%u)",
+		LLU{last_eid}, LLU{src_fid}, static_cast<unsigned int>(PR_SOURCE_KEY),
+		static_cast<unsigned int>(PR_PARENT_SOURCE_KEY));
 	if (db.exec(sql_string) != SQLITE_OK)
 		return FALSE;
 	if (b_guest) {
