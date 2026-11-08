@@ -4694,7 +4694,7 @@ struct mUpdateItemRequest {
 
 	//<xs:element name="SavedItemFolderId" type="t:TargetFolderIdType" minOccurs="0"/>
 	std::vector<tItemChange> ItemChanges;
-	//<xs:attribute name="ConflictResolution" type="t:ConflictResolutionType" use="required"/>
+	std::optional<std::string> ConflictResolution; //Attribute
 	std::optional<Enum::MessageDispositionType> MessageDisposition;
 	std::optional<Enum::CalendarItemUpdateOperationType> SendMeetingInvitationsOrCancellations;
 	std::optional<bool> SuppressReadReceipts;

@@ -99,6 +99,7 @@ class EWSError : public DispatchError {
 	ERR(InvalidSubscription) ///< Subscription expired
 	ERR(InvalidSubscriptionRequest) ///< Inconsistent subscription request
 	ERR(InvalidSyncStateData) ///< Transmitted SyncState is invalid
+	ERR(IrresolvableConflict) ///< UpdateItem change key is not current
 	ERR(ItemCorrupt) ///< Item could not be loaded properly
 	ERR(ItemNotFound) ///< Requested message object does not exist
 	ERR(ItemPropertyRequestFailed) ///< Failed to retrieve item property
@@ -682,6 +683,7 @@ E(3610, "failed to delete the Outlook rule blob");
 E(3611, "failed to write the inbox rules");
 E(3612, "the inbox rule limit has been reached");
 E(3613, "user configuration message has no entry id");
+E(3618, "the item changed since the change key was issued");
 
 #undef E
 }
