@@ -2439,25 +2439,29 @@ static ec_error_t oxcical_import_internal(const char *method,
 	ical_time itime{};
 	piline = pmain_event->get_line("RECURRENCE-ID");
 	if (piline != nullptr) {
+		auto pvalue = piline->get_first_paramval("TZID");
+		auto rid_tz = ptz_component;
+		if (pvalue != nullptr && ptzid != nullptr &&
+		    strcasecmp(pvalue, ptzid) != 0) {
+			rid_tz = oxcical_find_vtimezone(pical, pvalue);
+			if (rid_tz == nullptr) {
+				errstr = fmt::format("E-2707: Timezone \"{}\" of RECURRENCE-ID was not declared", pvalue);
+				return ecInvalidParam;
+			}
+		}
 		/* A standalone occurrence update needs it just as much */
 		if (pexception != nullptr ||
 		    (pmain_event->get_line("RRULE") == nullptr &&
 		    pmain_event->get_line("X-MICROSOFT-RRULE") == nullptr)) {
-			err = oxcical_parse_recurrence_id(ptz_component,
+			err = oxcical_parse_recurrence_id(rid_tz,
 			      *piline, phash, &last_propid, pmsg, errstr);
 			if (err != ecSuccess) {
 				errstr.insert(0, "E-2706: ");
 				return err;
 			}
 		}
-		auto pvalue = piline->get_first_paramval("TZID");
-		if (pvalue != nullptr && ptzid != nullptr &&
-		    strcasecmp(pvalue, ptzid) != 0) {
-			errstr = "E-2707: Timezone mismatch on RECURRENCE-ID and TZID";
-			return ecInvalidParam;
-		}
 		if (pvalue != nullptr) {
-			err = oxcical_parse_dtvalue(ptz_component, *piline,
+			err = oxcical_parse_dtvalue(rid_tz, *piline,
 			      &itime, nullptr, errstr);
 			if (err != ecSuccess) {
 				errstr.insert(0, "E-2708: ");
