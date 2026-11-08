@@ -669,30 +669,28 @@ unsigned int STREAM::peek_buffer(char *pbuff, unsigned int size) const
  *	  forward the reading pointer.
  *	  @param
  *		  pstream [in]	  indicate the stream object
- *		  offset		  Forward offset. Caution: The offset must be smaller
- *					  than one block size.
+ *		  offset		  Forward offset, at most the unread length
  *	  @return
  *		  offset actual made
  */
 unsigned int STREAM::fwd_read_ptr(unsigned int offset)
 {
-	auto pstream = this;
-	if (offset > pstream->wr_total_pos - pstream->rd_total_pos &&
-	    offset < STREAM_BLOCK_SIZE)
-		offset = pstream->wr_total_pos - pstream->rd_total_pos;
-	else if (offset > STREAM_BLOCK_SIZE)
-		offset = STREAM_BLOCK_SIZE;
-	if (offset > STREAM_BLOCK_SIZE - pstream->rd_block_pos) {
-		++pstream->pnode_rd;
-		pstream->rd_block_pos = offset - (STREAM_BLOCK_SIZE -
-			pstream->rd_block_pos);
-	} else {
-		pstream->rd_block_pos += offset;
+	if (offset > wr_total_pos - rd_total_pos)
+		offset = wr_total_pos - rd_total_pos;
+	for (size_t left = offset; left > 0; ) {
+		size_t avail = STREAM_BLOCK_SIZE - rd_block_pos;
+		if (left < avail || pnode_rd == pnode_wr) {
+			rd_block_pos += left;
+			break;
+		}
+		left -= avail;
+		++pnode_rd;
+		rd_block_pos = 0;
 	}
-	pstream->rd_total_pos += offset;
-	if (pstream->block_line_pos > pstream->rd_total_pos) {
-		pstream->block_line_parse = pstream->rd_total_pos;
-		pstream->block_line_pos = pstream->rd_total_pos;
+	rd_total_pos += offset;
+	if (block_line_pos > rd_total_pos) {
+		block_line_parse = rd_total_pos;
+		block_line_pos = rd_total_pos;
 	}
 	return offset;
 }
