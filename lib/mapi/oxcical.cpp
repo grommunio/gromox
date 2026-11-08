@@ -2346,16 +2346,25 @@ static ec_error_t oxcical_import_internal(const char *method,
 		*pstart_itime = start_itime;
 
 	piline = pmain_event->get_line("DTEND");
+	auto ptz_end_component = ptz_component;
 	if (piline != nullptr) {
 		auto pvalue = piline->get_first_paramval("TZID");
-		bool parse_dtv = (pvalue == nullptr && ptzid == nullptr) ||
-		                 (pvalue != nullptr && ptzid != nullptr &&
-		                 strcasecmp(pvalue, ptzid) == 0);
-		if (!parse_dtv) {
+		if ((pvalue == nullptr) != (ptzid == nullptr)) {
 			errstr = "E-2199: oxcical_import: TZID present but VTIMEZONE not (or vice-versa)";
 			return ecInvalidParam;
 		}
-		err = oxcical_parse_dtvalue(ptz_component, *piline, &end_itime,
+		if (pvalue != nullptr && strcasecmp(pvalue, ptzid) != 0) {
+			if (pmain_event->get_line("RRULE") != nullptr) {
+				errstr = "E-2200: oxcical_import: a recurring event cannot end in another timezone";
+				return ecInvalidParam;
+			}
+			ptz_end_component = oxcical_find_vtimezone(pical, pvalue);
+			if (ptz_end_component == nullptr) {
+				errstr = fmt::format("E-2199: Timezone \"{}\" of DTEND was not declared", pvalue);
+				return ecInvalidParam;
+			}
+		}
+		err = oxcical_parse_dtvalue(ptz_end_component, *piline, &end_itime,
 		      &end_time, errstr);
 		if (err != ecSuccess) {
 			errstr.insert(0, "E-2198: ");
@@ -2393,8 +2402,8 @@ static ec_error_t oxcical_import_internal(const char *method,
 
 	if (pend_itime != nullptr)
 		*pend_itime = end_itime;
-	if (ptz_component != nullptr) {
-		err = oxcical_parse_tzdisplay(false, *ptz_component, phash,
+	if (ptz_end_component != nullptr) {
+		err = oxcical_parse_tzdisplay(false, *ptz_end_component, phash,
 		      &last_propid, pmsg, errstr);
 		if (err != ecSuccess)
 			return err;
