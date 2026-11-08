@@ -12,8 +12,8 @@ my $cgiuri = "POST /web/index2.php HTTP/1.1\r\n";
 my $txturi = "POST /web/version.txt HTTP/1.1\r\n";
 my $body_1 = "Content-Length: 1\r\n\r\na\r\n";
 my $body_2 = "Content-Length: 2\r\n\r\nbc\r\n";
-my $body_3 = "Transfer-Encoding: chunked\r\n\r\n3\r\nd\r\n0\r\n\r\n";
-my $body_4 = "Transfer-Encoding: chunked\r\n\r\n4\r\nef\r\n0\r\n\r\n";
+my $body_3 = "Transfer-Encoding: chunked\r\n\r\n1\r\nd\r\n0\r\n\r\n";
+my $body_4 = "Transfer-Encoding: chunked\r\n\r\n2\r\nef\r\n0\r\n\r\n";
 my @req = (
 	"GET /x HTTP/1.1\r\n\r\nGET /web/version.txt HTTP/1.1\r\n\r\n",
 	"$cgiuri$body_1$cgiuri$body_2",
