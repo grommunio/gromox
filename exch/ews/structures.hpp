@@ -755,7 +755,7 @@ struct tCalendarEventDetails {
 struct tCalendarEvent : public NS_EWS_Types {
 	static constexpr char NAME[] = "CalendarEvent";
 
-	tCalendarEvent(const freebusy_event&);
+	tCalendarEvent(const freebusy_event&, bool include_details = true);
 
 	void serialize(tinyxml2::XMLElement *) const;
 
@@ -3048,9 +3048,12 @@ struct tFolderResponseShape {
 /**
  * Types.xsd:6400
  */
+struct tFreeBusyViewOptions;
+
 struct tFreeBusyView {
 	tFreeBusyView() = default;
-	tFreeBusyView(const char*, const char*, const char*, time_t, time_t);
+	tFreeBusyView(const char*, const char*, const char*, time_t, time_t,
+	              const tFreeBusyViewOptions&);
 
 	void serialize(tinyxml2::XMLElement *) const;
 
@@ -3064,6 +3067,7 @@ struct tFreeBusyView {
  * Types.xsd:6348
  */
 struct tFreeBusyViewOptions {
+	tFreeBusyViewOptions() = default;
 	tFreeBusyViewOptions(const tinyxml2::XMLElement *);
 
 	tDuration TimeWindow;
