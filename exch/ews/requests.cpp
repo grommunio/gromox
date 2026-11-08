@@ -3385,6 +3385,11 @@ void process(mGetUserAvailabilityRequest &&request, XMLElement *response, const 
 	                        request.FreeBusyViewOptions->TimeWindow :
 	                        request.SuggestionsViewOptions->DetailedSuggestionsWindow;
 
+	tFreeBusyViewOptions default_view_options;
+	const auto &view_options = request.FreeBusyViewOptions ?
+	                           *request.FreeBusyViewOptions :
+	                           default_view_options;
+
 	const tSerializableTimeZone& timezone = *request.TimeZone;
 	const auto windowStart = timezone.remove(TimeWindow.StartTime);
 	const auto windowEnd = timezone.remove(TimeWindow.EndTime);
@@ -3405,7 +3410,8 @@ void process(mGetUserAvailabilityRequest &&request, XMLElement *response, const 
 		/* No user means the owner, see get_freebusy() */
 		tFreeBusyView fbv(maildir == ctx.auth_info().maildir ? nullptr :
 			ctx.auth_info().username, maildir.c_str(),
-			ctx.plugin().x500_org_name.c_str(), start, end);
+			ctx.plugin().x500_org_name.c_str(), start, end,
+			view_options);
 		mFreeBusyResponse& fbr = data.FreeBusyResponseArray->emplace_back(std::move(fbv));
 		if (fbr.FreeBusyView && fbr.FreeBusyView->CalendarEventArray) {
 			for (auto &event : *fbr.FreeBusyView->CalendarEventArray) {

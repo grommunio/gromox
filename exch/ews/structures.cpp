@@ -2696,7 +2696,8 @@ tConflictingMeeting::tConflictingMeeting(const freebusy_event &ev) :
 
 ///////////////////////////////////////////////////////////////////////////////
 
-tCalendarEvent::tCalendarEvent(const freebusy_event& fb_event) :
+tCalendarEvent::tCalendarEvent(const freebusy_event& fb_event,
+    bool include_details) :
 	StartTime(clock::from_time_t(fb_event.start_time)),
 	EndTime(clock::from_time_t(fb_event.end_time))
 {
@@ -2709,7 +2710,7 @@ tCalendarEvent::tCalendarEvent(const freebusy_event& fb_event) :
 		default:                 BusyType = "NoData"; break;
 	}
 
-	if (!fb_event.has_details)
+	if (!include_details || !fb_event.has_details)
 		return;
 
 	auto &details = CalendarEventDetails.emplace();
@@ -2859,26 +2860,47 @@ RESTRICTION* tCalendarView::restriction(const sGetNameId& getId) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
+static bool has_calendar_events(const Enum::FreeBusyViewType &view)
+{
+	return view == "FreeBusy" || view == "FreeBusyMerged" ||
+	       view == "Detailed" || view == "DetailedMerged";
+}
+
+static bool has_calendar_details(const Enum::FreeBusyViewType &view)
+{
+	return view == "Detailed" || view == "DetailedMerged";
+}
+
 tFreeBusyView::tFreeBusyView(const char *username, const char *dir,
-    const char *org, time_t start_time, time_t end_time)
+    const char *org, time_t start_time, time_t end_time,
+    const tFreeBusyViewOptions &options)
 {
 	std::vector<freebusy_event> fb_data;
 	auto err = get_freebusy(username, dir, org, start_time, end_time, fb_data);
 	if (err != ecSuccess)
 		throw EWSError::FreeBusyGenerationFailed(E3144);
 
-	FreeBusyViewType = std::all_of(fb_data.cbegin(), fb_data.cend(),
+	bool detailed = std::all_of(fb_data.cbegin(), fb_data.cend(),
 		[](const freebusy_event &fb_event) STATIC_IN_CXX23 {
 			return fb_event.has_details;
-		}) ? "Detailed" : "FreeBusy";
+		});
+	auto requested = options.RequestedView.value_or(
+		Enum::FreeBusyViewType(detailed ? "Detailed" : "FreeBusy"));
+	if (requested == "Detailed" && !detailed)
+		FreeBusyViewType = "FreeBusy";
+	else if (requested == "DetailedMerged" && !detailed)
+		FreeBusyViewType = "FreeBusyMerged";
+	else
+		FreeBusyViewType = requested;
 
 	/* Exchange omits an empty CalendarEventArray, and clients rely on it */
-	if (fb_data.empty())
+	if (fb_data.empty() || !has_calendar_events(FreeBusyViewType))
 		return;
 	auto &cal_events = CalendarEventArray.emplace();
 	cal_events.reserve(fb_data.size());
-
-	std::copy(fb_data.begin(), fb_data.end(), std::back_inserter(cal_events));
+	const auto include_details = has_calendar_details(FreeBusyViewType);
+	for (const auto &event : fb_data)
+		cal_events.emplace_back(event, include_details);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
