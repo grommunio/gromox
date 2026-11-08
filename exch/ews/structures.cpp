@@ -1053,27 +1053,38 @@ void sCalendarMeetingRequestCommon::update(const sShape &shape)
 		tzstart.reset();
 	if (tzend && tzend->keyname.empty())
 		tzend.reset();
-	std::string tzid = tzstart ? tzstart->keyname :
-	                   tzend ? tzend->keyname : std::string();
-	const char *str;
-	if (tzid.empty() && (str = shape.get<char>(NtCalendarTimeZone)) != nullptr)
-		tzid = str;
-	/* A description, not necessarily a zone name */
-	if (tzid.empty() && (str = shape.get<char>(NtTimeZoneDescription)) != nullptr)
-		tzid = str;
-	/* A single all-day item stored at UTC midnight without any zone */
-	auto u8allday = shape.get<uint8_t>(NtAppointmentSubType, sShape::FL_ANY);
-	if (tzid.empty() && u8allday != nullptr && *u8allday &&
-	    shape.get(NtAppointmentRecur) == nullptr &&
-	    (shape.requested(shape.tag(NtAppointmentTimeZoneDefinitionStartDisplay)) ||
-	    shape.requested(shape.tag(NtAppointmentTimeZoneDefinitionEndDisplay))) &&
-	    (u64 = shape.get<uint64_t>(NtCommonStart, sShape::FL_ANY)) != nullptr &&
-	    rop_util_nttime_to_unix(*u64) % 86400 == 0)
-		tzid = "UTC";
-	if (!tzid.empty()) {
-		timezoneId(tzid);
-		if (!tzstart && !tzend)
-			tzstart = TZDEF{tzid, {}};
+	const bool split_zones = tzstart && tzend &&
+	    tzstart->keyname != tzend->keyname;
+	if (split_zones) {
+		StartTimeZone = tTimeZoneDefinition(tzstart->keyname);
+		EndTimeZone = tTimeZoneDefinition(tzend->keyname);
+		StartTimeZoneId = tzstart->keyname;
+		EndTimeZoneId = tzend->keyname;
+	} else {
+		std::string tzid = tzstart ? tzstart->keyname :
+		                   tzend ? tzend->keyname : std::string();
+		const char *str;
+		if (tzid.empty() && (str = shape.get<char>(NtCalendarTimeZone)) != nullptr)
+			tzid = str;
+		/* A description, not necessarily a zone name */
+		if (tzid.empty() && (str = shape.get<char>(NtTimeZoneDescription)) != nullptr)
+			tzid = str;
+		/* A single all-day item stored at UTC midnight without any zone */
+		auto u8allday = shape.get<uint8_t>(NtAppointmentSubType, sShape::FL_ANY);
+		if (tzid.empty() && u8allday != nullptr && *u8allday &&
+		    shape.get(NtAppointmentRecur) == nullptr &&
+		    (shape.requested(shape.tag(NtAppointmentTimeZoneDefinitionStartDisplay)) ||
+		    shape.requested(shape.tag(NtAppointmentTimeZoneDefinitionEndDisplay))) &&
+		    (u64 = shape.get<uint64_t>(NtCommonStart, sShape::FL_ANY)) != nullptr &&
+		    rop_util_nttime_to_unix(*u64) % 86400 == 0)
+			tzid = "UTC";
+		if (!tzid.empty()) {
+			timezoneId(tzid);
+			if (!tzstart && !tzend)
+				tzstart = TZDEF{tzid, {}};
+		}
+	}
+	if (tzstart || tzend) {
 		for (auto tz : {&tzstart, &tzend}) {
 			if (!*tz || tTimeZoneDefinition::usable((*tz)->rules))
 				continue;
@@ -1675,6 +1686,9 @@ void sShape::clean(bool exception)
 {
 	for (auto &entry : props)
 		entry.second.prop = nullptr;
+	tzWrite = 0;
+	tzStartName.clear();
+	tzEndName.clear();
 	/* A private series makes all of its exceptions private */
 	if (exception)
 		applySeriesAccess();
@@ -2565,61 +2579,83 @@ void tCalendarItem::setDatetimeFields(sShape& shape)
 	std::optional<uint64_t> startTime, endTime;
 	fromProp(shape.writes(NtCommonStart), startTime);
 	fromProp(shape.writes(NtCommonEnd), endTime);
+	/* "blobs" and "offsets" are TZ_START and TZ_END masks of the sides they touch */
+	auto set_zone = [&](const std::string &name, uint8_t blobs, uint8_t offsets) {
+		auto buf = ianatz_to_tzdef(name.c_str());
+		if (buf == nullptr)
+			buf = wintz_to_tzdef(name.c_str());
+		if (buf == nullptr)
+			return;
+		size_t len = buf->size();
+		if (len > UINT32_MAX)
+			throw InputError(E3293);
+		BINARY *tmp_bin = EWSContext::construct<BINARY>(BINARY{static_cast<uint32_t>(buf->size()),
+			{deconst(buf->data())}});
+		bool to_start = blobs & sShape::TZ_START;
+		bool to_end = blobs & sShape::TZ_END;
+		if (to_start)
+			shape.write(NtAppointmentTimeZoneDefinitionStartDisplay,
+				TAGGED_PROPVAL{PT_BINARY, tmp_bin});
+		if (to_end)
+			shape.write(NtAppointmentTimeZoneDefinitionEndDisplay,
+				TAGGED_PROPVAL{PT_BINARY, tmp_bin});
+		if (to_start)
+			shape.write(NtAppointmentTimeZoneDefinitionRecur,
+				TAGGED_PROPVAL{PT_BINARY, tmp_bin});
+		EXT_PULL ext_pull;
+		TZDEF tzdef;
+		ext_pull.init(buf->data(), buf->size(), nullptr, EXT_FLAG_UTF16);
+		if (ext_pull.g_tzdef(&tzdef) != pack_result::ok)
+			throw EWSError::InternalServerError(E3294);
+		/*
+		 * Write PidLidTimeZoneStruct for freebusy and
+		 * recurrence expansion code.
+		 */
+		if (to_start && tzdef.rules.size() > 0) {
+			TZSTRUCT tzs{};
+			auto &rule = tzdef.rules.back();
+			tzs.bias = rule.bias;
+			tzs.daylightbias = rule.daylightbias;
+			tzs.standarddate = rule.standarddate;
+			tzs.daylightdate = rule.daylightdate;
+			tzs.standardyear = tzs.standarddate.year;
+			tzs.daylightyear = tzs.daylightdate.year;
+			auto tzdata = EWSContext::alloc<char>(48);
+			EXT_PUSH ep;
+			if (ep.init(tzdata, 48, 0) &&
+			    ep.p_tzstruct(tzs) == pack_result::ok)
+				shape.write(NtTimeZoneStruct,
+					TAGGED_PROPVAL{PT_BINARY,
+					EWSContext::construct<BINARY>(
+					BINARY{ep.m_offset, {tzdata}})});
+		}
+		auto& op = shape.offsetProps;
+		auto tag = shape.tag(NtCommonStart);
+		if ((offsets & sShape::TZ_START) && tag != 0 &&
+		    startTime.has_value() && ct_contains(op, tag))
+			tz_to_offset(tzdef, rop_util_nttime_to_unix(startTime.value()), startOffset);
+		tag = shape.tag(NtCommonEnd);
+		if ((offsets & sShape::TZ_END) && tag != 0 &&
+		    endTime.has_value() && ct_contains(op, tag))
+			tz_to_offset(tzdef, rop_util_nttime_to_unix(endTime.value()), endOffset);
+	};
 	if (shape.tag(NtCalendarTimeZone) != 0) {
 		std::optional<std::string> calTimezone;
 		fromProp(shape.writes(NtCalendarTimeZone), calTimezone);
 		if (calTimezone.has_value()) {
-			auto buf = ianatz_to_tzdef(calTimezone.value().c_str());
-			if (buf == nullptr)
-				buf = wintz_to_tzdef(calTimezone.value().c_str());
-			if (buf != nullptr) {
-				size_t len = buf->size();
-				if (len > UINT32_MAX)
-					throw InputError(E3293);
-				BINARY *tmp_bin = EWSContext::construct<BINARY>(BINARY{static_cast<uint32_t>(buf->size()),
-					{deconst(buf->data())}});
-				shape.write(NtAppointmentTimeZoneDefinitionStartDisplay,
-					TAGGED_PROPVAL{PT_BINARY, tmp_bin});
-				shape.write(NtAppointmentTimeZoneDefinitionEndDisplay,
-					TAGGED_PROPVAL{PT_BINARY, tmp_bin});
-				shape.write(NtAppointmentTimeZoneDefinitionRecur,
-					TAGGED_PROPVAL{PT_BINARY, tmp_bin});
-				EXT_PULL ext_pull;
-				TZDEF tzdef;
-				ext_pull.init(buf->data(), buf->size(), nullptr, EXT_FLAG_UTF16);
-				if (ext_pull.g_tzdef(&tzdef) != pack_result::ok)
-					throw EWSError::InternalServerError(E3294);
-				/*
-				 * Write PidLidTimeZoneStruct for freebusy and
-				 * recurrence expansion code.
-				 */
-				if (tzdef.rules.size() > 0) {
-					TZSTRUCT tzs{};
-					auto &rule = tzdef.rules.back();
-					tzs.bias = rule.bias;
-					tzs.daylightbias = rule.daylightbias;
-					tzs.standarddate = rule.standarddate;
-					tzs.daylightdate = rule.daylightdate;
-					tzs.standardyear = tzs.standarddate.year;
-					tzs.daylightyear = tzs.daylightdate.year;
-					auto tzdata = EWSContext::alloc<char>(48);
-					EXT_PUSH ep;
-					if (ep.init(tzdata, 48, 0) &&
-					    ep.p_tzstruct(tzs) == pack_result::ok)
-						shape.write(NtTimeZoneStruct,
-							TAGGED_PROPVAL{PT_BINARY,
-							EWSContext::construct<BINARY>(
-							BINARY{ep.m_offset, {tzdata}})});
-				}
-				auto& op = shape.offsetProps;
-				auto tag = shape.tag(NtCommonStart);
-				if (tag != 0 && startTime.has_value() &&
-				    ct_contains(op, tag))
-					tz_to_offset(tzdef, rop_util_nttime_to_unix(startTime.value()), startOffset);
-				tag = shape.tag(NtCommonEnd);
-				if (tag != 0 && endTime.has_value() &&
-				    ct_contains(op, tag))
-					tz_to_offset(tzdef, rop_util_nttime_to_unix(endTime.value()), endOffset);
+			constexpr uint8_t both = sShape::TZ_START | sShape::TZ_END;
+			auto side = shape.tzWrite;
+			/*
+			 * An update that names both zones holds both names,
+			 * but only the last one reached NtCalendarTimeZone.
+			 */
+			if ((side & both) == both && !shape.tzStartName.empty() &&
+			    !shape.tzEndName.empty() &&
+			    shape.tzStartName != shape.tzEndName) {
+				set_zone(shape.tzStartName, sShape::TZ_START, sShape::TZ_START);
+				set_zone(shape.tzEndName, sShape::TZ_END, sShape::TZ_END);
+			} else {
+				set_zone(calTimezone.value(), side == 0 ? both : side, both);
 			}
 		}
 	}
@@ -2936,8 +2972,17 @@ decltype(tChangeDescription::fields) tChangeDescription::fields = {{
 	{"DisplayName", {[](auto &&...args) STATIC_IN_CXX23 { convText(PR_DISPLAY_NAME, args...); }}},
 	{"DueDate", {[](auto &&...args) STATIC_IN_CXX23 { convDate(NtTaskDueDate, args...); }, "Task"}},
 	{"End", {[](auto &&...args) STATIC_IN_CXX23 { convDate(NtCommonEnd, args...); }}},
-	{"EndTimeZone", {[](auto &&...args) STATIC_IN_CXX23 { convTzAttr(NtCalendarTimeZone, args...); }}},
-	{"EndTimeZoneId", {[](auto &&...args) STATIC_IN_CXX23 { convText(NtCalendarTimeZone, args...); }}},
+	{"EndTimeZone", {[](const tinyxml2::XMLElement *xml, sShape &shape) STATIC_IN_CXX23 {
+		convTzAttr(NtCalendarTimeZone, xml, shape);
+		shape.tzWrite |= sShape::TZ_END;
+		if (auto id = xml->Attribute("Id"))
+			shape.tzEndName = id;
+	}}},
+	{"EndTimeZoneId", {[](const tinyxml2::XMLElement *xml, sShape &shape) STATIC_IN_CXX23 {
+		convText(NtCalendarTimeZone, xml, shape);
+		shape.tzWrite |= sShape::TZ_END;
+		shape.tzEndName = znul(xml->GetText());
+	}}},
 	{"FileAs", {[](auto &&...args) STATIC_IN_CXX23 { convText(NtFileAs, args...); }}},
 	{"FileAsMapping", {[](const tinyxml2::XMLElement *xml, sShape &shape) STATIC_IN_CXX23 {
 		if (auto tag = shape.tag(NtFileUnderId))
@@ -2980,8 +3025,17 @@ decltype(tChangeDescription::fields) tChangeDescription::fields = {{
 	{"SpouseName", {[](auto &&...args) STATIC_IN_CXX23 { convText(PR_SPOUSE_NAME, args...); }}},
 	{"Start", {[](auto &&...args) STATIC_IN_CXX23 { convDate(NtCommonStart, args...); }}},
 	{"StartDate", {[](auto &&...args) STATIC_IN_CXX23 { convDate(NtTaskStartDate, args...); }, "Task"}},
-	{"StartTimeZone", {[](auto &&...args) STATIC_IN_CXX23 { convTzAttr(NtCalendarTimeZone, args...); }}},
-	{"StartTimeZoneId", {[](auto &&...args) STATIC_IN_CXX23 { convText(NtCalendarTimeZone, args...); }}},
+	{"StartTimeZone", {[](const tinyxml2::XMLElement *xml, sShape &shape) STATIC_IN_CXX23 {
+		convTzAttr(NtCalendarTimeZone, xml, shape);
+		shape.tzWrite |= sShape::TZ_START;
+		if (auto id = xml->Attribute("Id"))
+			shape.tzStartName = id;
+	}}},
+	{"StartTimeZoneId", {[](const tinyxml2::XMLElement *xml, sShape &shape) STATIC_IN_CXX23 {
+		convText(NtCalendarTimeZone, xml, shape);
+		shape.tzWrite |= sShape::TZ_START;
+		shape.tzStartName = znul(xml->GetText());
+	}}},
 	{"Status", {[](auto &&...args) STATIC_IN_CXX23 { convEnumIndex<Enum::TaskStatusType>(NtTaskStatus, args...); }, "Task"}},
 	{"Subject", {[](auto &&...args) STATIC_IN_CXX23 { convText(PR_SUBJECT, args...); }}},
 	{"Surname", {[](auto &&...args) STATIC_IN_CXX23 { convText(PR_SURNAME, args...); }}},

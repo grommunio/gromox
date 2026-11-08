@@ -492,6 +492,11 @@ class sShape {
 	const tinyxml2::XMLElement *bccRecipients = nullptr; ///< BccRecipients for update
 	const char *x500Org = nullptr; ///< Organization for resolving EX addresses
 	std::vector<proptag_t> offsetProps; ///< Datetime related MAPI props which require timezone offset calculation
+	uint8_t tzWrite = 0; ///< Which calendar zone element this update named
+	std::string tzStartName; ///< Zone named for the start, if any
+	std::string tzEndName; ///< Zone named for the end, if any
+	static constexpr uint8_t TZ_START = 1 << 0;
+	static constexpr uint8_t TZ_END = 1 << 1;
 };
 
 /**
