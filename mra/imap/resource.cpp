@@ -171,7 +171,7 @@ static constexpr std::pair<unsigned int, const char *> g_default_code_table[] = 
 
 static std::unordered_map<unsigned int, std::string> g_def_code_table;
 static constexpr LANG_FOLDER g_lang_list[] =
-	{{"en", "us-ascii"}, {"zh_TW", "gbk"}, {"zh_CN", "big5"}, {"ja", "iso-2022-jp"}};
+	{{"en", "us-ascii"}, {"zh_TW", "big5"}, {"zh_CN", "gbk"}, {"ja", "iso-2022-jp"}};
 
 int resource_run()
 {
