@@ -107,20 +107,6 @@ static constexpr addr_tags tags_self = {
 	PR_DISPLAY_NAME, PR_ADDRTYPE, PR_EMAIL_ADDRESS, PR_SMTP_ADDRESS,
 	PR_ENTRYID,
 };
-static constexpr addr_tags tags_sender = {
-	PR_SENDER_NAME, PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS,
-	PR_SENDER_SMTP_ADDRESS, PR_SENDER_ENTRYID,
-};
-static constexpr addr_tags tags_sent_repr = {
-	PR_SENT_REPRESENTING_NAME, PR_SENT_REPRESENTING_ADDRTYPE,
-	PR_SENT_REPRESENTING_EMAIL_ADDRESS, PR_SENT_REPRESENTING_SMTP_ADDRESS,
-	PR_SENT_REPRESENTING_ENTRYID,
-};
-static constexpr addr_tags tags_read_rcpt = {
-	PidTagReadReceiptName, PidTagReadReceiptAddressType,
-	PidTagReadReceiptEmailAddress, PidTagReadReceiptSmtpAddress,
-	PR_READ_RECEIPT_ENTRYID,
-};
 
 }
 
@@ -2780,51 +2766,6 @@ std::unique_ptr<message_content, mc_delete> oxcmail_converter::inet_to_mapi(cons
 }
 #undef imp_null
 
-static bool set_folded(MIME *phead, const char *tag, const vmime::component &c)
-{
-	return phead->set_field(tag, vmail_fold(c, strlen(tag) + 2));
-}
-
-/* Printable ASCII that a reader cannot take for an encoded-word */
-static bool plain_ascii(std::string_view s)
-{
-	return s.find("=?") == s.npos && std::all_of(s.begin(), s.end(),
-	       [](unsigned char c) { return c >= 0x20 && c < 0x7f; });
-}
-
-static bool line_over_998(std::string_view v, size_t col)
-{
-	for (size_t e; (e = v.find("\r\n")) != v.npos; v.remove_prefix(e + 2), col = 0)
-		if (col + e > vmime::lineLengthLimits::max)
-			return true;
-	return col + v.size() > vmime::lineLengthLimits::max;
-}
-
-/* Passthrough values fold at whitespace only */
-static bool set_raw(MIME *phead, const char *tag, const char *v)
-{
-	if (strpbrk(v, "\r\n") != nullptr)
-		return phead->set_field(tag, v);
-	vmime::text t;
-	t.appendWord(vmime::make_shared<vmime::word>(v, vmime::charsets::US_ASCII));
-	return phead->set_field(tag, vmail_fold_text(t, strlen(tag) + 2,
-	       vmime::lineLengthLimits::convenient, vmime::text::FORCE_NO_ENCODING));
-}
-
-static std::string squeeze_ws(std::string_view v)
-{
-	std::string out;
-	for (auto c : v) {
-		if (!HX_isspace(c))
-			out += c;
-		else if (!out.empty() && out.back() != ' ')
-			out += ' ';
-	}
-	if (!out.empty() && out.back() == ' ')
-		out.pop_back();
-	return out;
-}
-
 BOOL oxcmail_get_smtp_address(const TPROPVAL_ARRAY &props,
     const addr_tags *ptags, const char *org, cvt_id2user id2user,
     std::string &username) try
@@ -3051,18 +2992,6 @@ void mime_skeleton::clear()
 	if (NULL != pskeleton->pattachments) {
 		attachment_list_free(pskeleton->pattachments);
 		pskeleton->pattachments = nullptr;
-	}
-}
-
-static inline const char *importance_to_text(const uint32_t *v)
-{
-	if (v == nullptr)
-		return nullptr;
-	switch (*v) {
-	case IMPORTANCE_LOW: return "Low";
-	case IMPORTANCE_NORMAL: return "Normal";
-	case IMPORTANCE_HIGH: return "High";
-	default: return nullptr;
 	}
 }
 
