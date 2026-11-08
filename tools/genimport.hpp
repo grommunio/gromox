@@ -72,10 +72,6 @@ struct tgt_folder {
 
 using gi_folder_map_t = std::unordered_map<uint64_t, tgt_folder>;
 
-enum {
-	DELIVERY_MRAUTOPROC = 0x10000U,
-};
-
 extern std::string g_dstuser, g_storedir_s;
 extern const char *g_storedir;
 extern unsigned int g_user_id, g_wet_run;

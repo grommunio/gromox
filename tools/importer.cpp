@@ -574,7 +574,7 @@ static int exm_message(const ob_desc &obd, MESSAGE_CONTENT &ctnt,
 	}
 	unsigned int mode = DELIVERY_DO_RULES_CL | DELIVERY_DO_NOTIF_CL;
 	if (g_mrautoproc)
-		mode |= DELIVERY_MRAUTOPROC;
+		mode |= DELIVERY_DO_MRAUTOPROC;
 	if (g_skip_rules)
 		mode &= ~DELIVERY_DO_RULES_CL;
 	if (g_skip_notif)
