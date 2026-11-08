@@ -3750,6 +3750,21 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 	content.proplist.count = emb_props.size();
 	content.proplist.ppropval = emb_props.data();
 
+	/*
+	 * The embedded exception is the occurrence the client reads.
+	 * Properties were copied from the series; the recipient table was not.
+	 */
+	tarray_set_ptr exc_rcpts;
+	TARRAY_SET master_rcpts{};
+	if (!exmdb.get_message_rcpts(dir.c_str(), mid, &master_rcpts))
+		throw EWSError::ItemSave(E3458);
+	if (master_rcpts.count > 0) {
+		exc_rcpts.reset(master_rcpts.dup());
+		if (exc_rcpts == nullptr)
+			throw EWSError::NotEnoughMemory(E3492);
+		content.children.prcpts = exc_rcpts.get();
+	}
+
 	/* Write attachment with embedded message */
 	ATTACHMENT_CONTENT ac{};
 	ac.proplist = att_list;
