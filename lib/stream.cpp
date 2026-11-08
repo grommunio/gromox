@@ -637,18 +637,18 @@ unsigned int STREAM::peek_buffer(char *pbuff, unsigned int size) const
 	/* if the read node is the last node of the mem file */
 	if (pstream->pnode_rd == pstream->pnode_wr) {
 		if (actual_size >= size) {
-			memcpy(pbuff, &pnode->cdata[rd_total_pos], size);
+			memcpy(pbuff, &pnode->cdata[rd_block_pos], size);
 			return size;
 		}
-		memcpy(pbuff, &pnode->cdata[rd_total_pos], actual_size);
+		memcpy(pbuff, &pnode->cdata[rd_block_pos], actual_size);
 		return actual_size;
 	}
 	unsigned int tmp_size = STREAM_BLOCK_SIZE - pstream->rd_block_pos;
 	if (tmp_size >= size) {
-		memcpy(pbuff, &pnode->cdata[rd_total_pos], size);
+		memcpy(pbuff, &pnode->cdata[rd_block_pos], size);
 		return size;
 	}
-	memcpy(pbuff, &pnode->cdata[rd_total_pos], tmp_size);
+	memcpy(pbuff, &pnode->cdata[rd_block_pos], tmp_size);
 	while (++pnode != pstream->pnode_wr) {
 		if (tmp_size + STREAM_BLOCK_SIZE >= size) {
 			memcpy(&pbuff[tmp_size], pnode->cdata, size - tmp_size);
