@@ -100,6 +100,7 @@ class EWSError : public DispatchError {
 	ERR(InvalidSubscription) ///< Subscription expired
 	ERR(InvalidSubscriptionRequest) ///< Inconsistent subscription request
 	ERR(InvalidSyncStateData) ///< Transmitted SyncState is invalid
+	ERR(IrresolvableConflict) ///< UpdateItem change key is not current
 	ERR(ItemCorrupt) ///< Item could not be loaded properly
 	ERR(ItemNotFound) ///< Requested message object does not exist
 	ERR(ItemPropertyRequestFailed) ///< Failed to retrieve item property
@@ -689,6 +690,7 @@ E(3615, "free/busy window longer than 62 days");
 E(3616, "failed to update the attendees of an exception");
 E(3617, "out of memory updating the attendees of an exception");
 inline std::string E3618(std::string_view name) {return fmt::format("E-3618: recipient \"{}\" is not resolved", name);}
+E(3620, "the item changed since the change key was issued");
 
 #undef E
 }

@@ -5201,6 +5201,21 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 		    upd_is_organizer_copy(ctx, dir, mid.messageId());
 		if (orgCopy)
 			ctx.validate_sendas_perms(ctx.storeOwner(dir));
+		/*
+		 * Only NeverOverwrite is refused. AutoResolve stays as it was:
+		 * a stale key says the item changed, not that the change
+		 * conflicts, and clients send AutoResolve by default.
+		 */
+		auto conflict = request.ConflictResolution.value_or("");
+		if (conflict == "NeverOverwrite" &&
+		    itemId.ChangeKey && !itemId.ChangeKey->empty()) {
+			proptag_t ckTag = PR_CHANGE_KEY;
+			auto props = ctx.getItemProps(dir, mid.messageId(), proptag_cspan{&ckTag, 1});
+			auto cur = props.get<const BINARY>(PR_CHANGE_KEY);
+			if (cur != nullptr && (cur->cb != itemId.ChangeKey->size() ||
+			    memcmp(cur->pb, itemId.ChangeKey->data(), cur->cb) != 0))
+				throw EWSError::IrresolvableConflict(E3620);
+		}
 		std::vector<proptag_t> hlTags;
 		TPROPVAL_ARRAY hlBefore{};
 		if (orgCopy && !change.ItemId.isOccurrence()) {
