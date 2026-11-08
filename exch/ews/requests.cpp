@@ -1525,6 +1525,14 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 			continue;
 		}
 
+		if (auto remove = std::get_if<tRemoveItem>(&item)) {
+			/* Response object: nothing is stored and nothing is sent */
+			if (remove->ReferenceItemId)
+				ctx.removeMeetingCancellation(*remove->ReferenceItemId);
+			data.ResponseMessages.emplace_back().success();
+			continue;
+		}
+
 		mCreateItemResponseMessage msg;
 		bool isMessageLike = is_message_like(item);
 		bool persist = !(isMessageLike && request.MessageDisposition == Enum::SendOnly);
