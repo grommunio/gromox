@@ -5432,6 +5432,8 @@ void tItemResponseShape::tags(sShape& shape) const
 			shape.add(*named.first, named.second, sShape::FL_FIELD);
 	}
 	if (baseShape >= 2) {
+		/* AllProperties holds the attendee lists, Default does not */
+		shape.special |= sShape::Attendees;
 		for (auto tag : tagsAllProperties)
 			shape.add(tag, sShape::FL_FIELD);
 		for (const auto& named : namedTagsAllProperties)
