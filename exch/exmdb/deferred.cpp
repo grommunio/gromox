@@ -33,6 +33,7 @@
 #include <gromox/mapierr.hpp>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/paths.h>
+#include <gromox/process.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/util.hpp>
 #include "db_engine.hpp"
