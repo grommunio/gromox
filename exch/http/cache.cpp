@@ -229,7 +229,7 @@ static bool mod_cache_serialize_etag(const struct stat &sb, char *etag, size_t l
 		return false;
 	snprintf(etag, len, "%x-%llx-%llx-%llx",
 	         static_cast<unsigned int>(sb.st_dev),
-	         LLU{sb.st_ino}, LLU(sb.st_size), LLU{sb.st_mtime});
+	         LLU{sb.st_ino}, LLU(sb.st_size), LLU(sb.st_mtime));
 	return true;
 }
 
