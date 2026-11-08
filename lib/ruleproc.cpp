@@ -2750,6 +2750,15 @@ static ec_error_t mr_send_response(rxparam &par, bool recurring_flg,
 		mlog(LV_ERR, "%s: no PR_SENT_REPRESENTING_SMTP_ADDRESS available", __func__);
 		return ecInvalidParam;
 	}
+	/*
+	 * oxcmail writes To: only for a row with PR_RECIPIENT_TYPE.
+	 * The organizer address is already in txt; the envelope uses it,
+	 * and the header did not.
+	 */
+	uint32_t rcpt_type = MAPI_TO;
+	if ((err = row->set(PR_RECIPIENT_TYPE, &rcpt_type)) != ecSuccess ||
+	    (err = row->set(PR_SMTP_ADDRESS, txt)) != ecSuccess)
+		return err;
 	/* ATTENDEE comes from SENT_REPRESENTING, From: from SENDER */
 	if (par.ev_to == nullptr || *par.ev_to == '\0') {
 		mlog(LV_ERR, "%s: no Envelope-To to identify the responder with", __func__);
