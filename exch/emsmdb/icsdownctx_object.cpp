@@ -253,50 +253,22 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 		if (lnum == nullptr)
 			return FALSE;
 		auto parent_fid = *lnum;
-		if (pctx->sync_flags & SYNC_NO_FOREIGN_KEYS) {
-			common_util_remove_propvals(&chg, PR_SOURCE_KEY);
-			auto psk = cu_fid_to_sk(*pctx->pstream->plogon, folder_id);
+		auto psk = cu_fid_to_sk(*pctx->pstream->plogon, folder_id);
+		if (psk == nullptr)
+			return false;
+		if (cu_set_propval(&chg, PR_SOURCE_KEY, psk) != ecSuccess)
+			return false;
+		if (pctx->pfolder->folder_id == parent_fid) {
+			tmp_bin.cb = 0;
+			tmp_bin.pb = NULL;
+			psk = &tmp_bin;
+		} else {
+			psk = cu_fid_to_sk(*pctx->pstream->plogon, parent_fid);
 			if (psk == nullptr)
 				return FALSE;
-			if (cu_set_propval(&chg, PR_SOURCE_KEY, psk) != ecSuccess)
-				return false;
-			if (pctx->pfolder->folder_id == parent_fid) {
-				tmp_bin.cb = 0;
-				tmp_bin.pb = NULL;
-				psk = &tmp_bin;
-			} else {
-				psk = cu_fid_to_sk(*pctx->pstream->plogon, parent_fid);
-				if (psk == nullptr)
-					return FALSE;
-			}
-			if (cu_set_propval(&chg, PR_PARENT_SOURCE_KEY, psk) != ecSuccess)
-				return false;
-		} else {
-			if (!chg.has(PR_SOURCE_KEY)) {
-				auto psk = cu_fid_to_sk(*pctx->pstream->plogon, folder_id);
-				if (psk == nullptr)
-					return FALSE;
-				if (cu_set_propval(&chg, PR_SOURCE_KEY, psk) != ecSuccess)
-					return false;
-			}
-			void *psk;
-			if (pctx->pfolder->folder_id == parent_fid) {
-				tmp_bin.cb = 0;
-				tmp_bin.pb = NULL;
-				psk = &tmp_bin;
-			} else {
-				if (!exmdb_client->get_folder_property(dir,
-				    CP_ACP, parent_fid, PR_SOURCE_KEY, &psk))
-					return FALSE;	
-				if (psk == nullptr) {
-					psk = cu_fid_to_sk(*pctx->pstream->plogon, parent_fid);
-					if (psk == nullptr)
-						return FALSE;
-				}
-			}
-			if (cu_set_propval(&chg, PR_PARENT_SOURCE_KEY, psk) != ecSuccess)
-				return false;
 		}
+		if (cu_set_propval(&chg, PR_PARENT_SOURCE_KEY, psk) != ecSuccess)
+			return false;
 		auto inboxy = pctx->pstream->plogon->is_private() &&
 		              (folder_id == eid_t(1, PRIVATE_FID_ROOT) ||
 		              folder_id == eid_t(1, PRIVATE_FID_INBOX));
@@ -664,15 +636,7 @@ static bool icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 	auto folder_id = pctx->pfolder->folder_id;
 	auto pstatus = pmsgctnt->proplist.get<uint32_t>(PR_MSG_STATUS);
 	if (*pstatus & MSGSTATUS_IN_CONFLICT) {
-		if (!(pctx->sync_flags & SYNC_NO_FOREIGN_KEYS)) {
-			if (!exmdb_client->get_folder_property(dir,
-			    CP_ACP, folder_id, PR_SOURCE_KEY, &pvalue))
-				return FALSE;	
-			if (pvalue == nullptr)
-				pvalue = cu_fid_to_sk(*pctx->pstream->plogon, folder_id);
-		} else {
-			pvalue = cu_fid_to_sk(*pctx->pstream->plogon, folder_id);
-		}
+		pvalue = cu_fid_to_sk(*pctx->pstream->plogon, folder_id);
 		if (pvalue == nullptr)
 			return FALSE;
 		for (auto &at : *pmsgctnt->children.pattachments) {
@@ -732,20 +696,9 @@ static bool icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 	memcpy(ppropval, pmsgctnt->proplist.ppropval,
 		sizeof(TAGGED_PROPVAL)*pmsgctnt->proplist.count);
 	pmsgctnt->proplist.ppropval = ppropval;
-	if (!(pctx->sync_flags & SYNC_NO_FOREIGN_KEYS)) {
-		if (!exmdb_client->get_folder_property(dir,
-		    CP_ACP, folder_id, PR_SOURCE_KEY, &pvalue))
-			return false;
-		if (NULL == pvalue) {
-			pvalue = cu_fid_to_sk(*pctx->pstream->plogon, folder_id);
-			if (pvalue == nullptr)
-				return FALSE;
-		}
-	} else {
-		pvalue = cu_fid_to_sk(*pctx->pstream->plogon, folder_id);
-		if (pvalue == nullptr)
-			return FALSE;
-	}
+	pvalue = cu_fid_to_sk(*pctx->pstream->plogon, folder_id);
+	if (pvalue == nullptr)
+		return false;
 	if (cu_set_propval(&pmsgctnt->proplist, PR_PARENT_SOURCE_KEY,
 	    pvalue) != ecSuccess)
 		return false;

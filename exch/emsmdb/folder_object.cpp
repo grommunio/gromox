@@ -215,6 +215,9 @@ static ec_error_t folder_object_get_calculated_property(const folder_object *pfo
 		*outvalue = cu_fid_to_entryid(*pfolder->plogon,
 		            *static_cast<uint64_t *>(pvalue));
 		return *outvalue != nullptr ? ecSuccess : ecError;
+	case PR_SOURCE_KEY:
+		*outvalue = cu_fid_to_sk(*pfolder->plogon, pfolder->folder_id);
+		return *outvalue != nullptr ? ecSuccess : ecError;
 	case PR_PARENT_SOURCE_KEY:
 		if (pfolder->folder_id == eid_t(1,
 		    pfolder->plogon->is_private() ? PRIVATE_FID_ROOT : PUBLIC_FID_ROOT)) {
@@ -227,17 +230,9 @@ static ec_error_t folder_object_get_calculated_property(const folder_object *pfo
 			return ecRpcFailed;
 		if (pvalue == nullptr)
 			return ecNotFound;
-		if (!exmdb_client->get_folder_property(dir,
-		    CP_ACP, *static_cast<uint64_t *>(pvalue), PR_SOURCE_KEY,
-		    outvalue))
-			return ecRpcFailed;
-		if (*outvalue == nullptr) {
-			*outvalue = cu_fid_to_sk(*pfolder->plogon,
-			            *static_cast<uint64_t *>(pvalue));
-			if (*outvalue == nullptr)
-				return ecError;
-		}
-		return ecSuccess;
+		*outvalue = cu_fid_to_sk(*pfolder->plogon,
+		            *static_cast<uint64_t *>(pvalue));
+		return *outvalue != nullptr ? ecSuccess : ecError;
 	case PR_STORE_RECORD_KEY:
 		*outvalue = common_util_guid_to_binary(pfolder->plogon->mailbox_guid);
 		return *outvalue != nullptr ? ecSuccess : ecServerOOM;
@@ -457,12 +452,6 @@ ec_error_t folder_object::get_props(proptag_cspan pproptags,
 			tmp_propvals.ppropval,
 			sizeof(TAGGED_PROPVAL)*tmp_propvals.count);
 		ppropvals->count += tmp_propvals.count;
-	}
-	if (pproptags.has(PR_SOURCE_KEY) && !ppropvals->has(PR_SOURCE_KEY)) {
-		auto v = cu_fid_to_sk(*pfolder->plogon, pfolder->folder_id);
-		if (v == nullptr)
-			return ecError;
-		ppropvals->emplace_back(PR_SOURCE_KEY, v);
 	}
 	return ecSuccess;
 }

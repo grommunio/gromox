@@ -817,15 +817,8 @@ static ec_error_t message_object_get_calculated_property(const message_object *p
 	case PR_PARENT_SOURCE_KEY:
 		if (pmessage->pembedding != nullptr)
 			return ecNotFound;
-		if (!exmdb_client->get_folder_property(pmessage->plogon->get_dir(),
-		    CP_ACP, pmessage->folder_id, PR_SOURCE_KEY, ppvalue))
-			return ecRpcFailed;
-		if (*ppvalue != nullptr)
-			return ecSuccess;
 		*ppvalue = cu_fid_to_sk(*pmessage->plogon, pmessage->folder_id);
-		if (*ppvalue == nullptr)
-			return ecError;
-		return ecSuccess;
+		return *ppvalue != nullptr ? ecSuccess : ecError;
 	case PidTagMid:
 		if (pmessage->message_id == 0)
 			return ecNotFound;
