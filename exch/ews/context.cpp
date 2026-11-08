@@ -3795,6 +3795,13 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 	content.proplist.count = emb_props.size();
 	content.proplist.ppropval = emb_props.data();
 
+	/* The exception carries the attendees of the series */
+	TARRAY_SET master_rcpts{};
+	if (!exmdb.get_message_rcpts(dir.c_str(), mid, &master_rcpts))
+		throw EWSError::ItemSave(E3458);
+	if (master_rcpts.count > 0)
+		content.children.prcpts = &master_rcpts;
+
 	/* Write attachment with embedded message */
 	ATTACHMENT_CONTENT ac{};
 	ac.proplist = att_list;
