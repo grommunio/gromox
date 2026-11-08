@@ -4702,7 +4702,6 @@ decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
 	{"item:ReminderDueBy", {NtReminderTime, PT_SYSTIME}},
 	{"item:ReminderIsSet", {NtReminderSet, PT_BOOLEAN}},
 	{"item:ReminderMinutesBeforeStart", {NtReminderDelta, PT_LONG}},
-	{"meeting:AssociatedCalendarItemId", {NtCleanGlobalObjectId, PT_BINARY}},
 	{"meeting:IsOrganizer", {NtCalendarIsOrganizer, PT_BOOLEAN}},
 	{"meeting:IsOutOfDate", {NtMeetingType, PT_LONG}},
 	{"meeting:RecurrenceId", {NtExceptionReplaceTime, PT_SYSTIME}},
@@ -4760,6 +4759,7 @@ decltype(tFieldURI::specialMap) tFieldURI::specialMap = {{
 	{"item:ResponseObjects", sShape::ResponseObjects},
 	{"item:TextBody", sShape::TextBody},
 	{"item:UniqueBody", sShape::UniqueBody},
+	{"meeting:AssociatedCalendarItemId", sShape::AssociatedCalendarItemId},
 	{"message:BccRecipients", sShape::BccRecipients},
 	{"message:CcRecipients", sShape::CcRecipients},
 	{"message:ReplyTo", sShape::ReplyToRecipients},
@@ -5425,6 +5425,7 @@ void tItemResponseShape::tags(sShape& shape) const
 	}
 	size_t baseShape = BaseShape.index();
 	if (baseShape >= 1) {
+		shape.special |= sShape::AssociatedCalendarItemId;
 		shape.add(PR_MESSAGE_CLASS, sShape::FL_FIELD);
 		for (auto tag : tagsDefault)
 			shape.add(tag, sShape::FL_FIELD);

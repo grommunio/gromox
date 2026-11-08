@@ -2589,7 +2589,8 @@ void EWSContext::loadSpecial(const std::string &dir, uint64_t fid,
     uint64_t mid, tMeetingMessage &meetMsg, uint64_t special) const
 {
 	loadSpecial(dir, fid, mid, static_cast<tMessage &>(meetMsg), special);
-	if (!meetMsg.UID || meetMsg.AssociatedCalendarItemId)
+	if (!(special & sShape::AssociatedCalendarItemId) ||
+	    meetMsg.AssociatedCalendarItemId)
 		return;
 	/*
 	 * Populate AssociatedCalendarItemId by searching the
