@@ -357,8 +357,8 @@ static int mjson_fetch_mime_structure(mjson_io &io, const MJSON_MIME *pmime,
 					       mjson_add_backslash(pmime->filename.c_str()) +
 					       "\"";
 				else
-					buf += fmt::format("\"NAME\" \"=?{}?b?{}?=\"",
-					       *email_charset != '\0' ? email_charset : charset,
+					/* MIME::get_filename converted it */
+					buf += fmt::format("\"NAME\" \"=?utf-8?b?{}?=\"",
 					       base64_encode(pmime->filename));
 			}
 			buf += ')';
