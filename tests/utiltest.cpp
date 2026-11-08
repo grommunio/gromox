@@ -1087,7 +1087,7 @@ static int t_array_growth()
 
 static int t_stream_skip()
 {
-	/* Skipping must cross blocks, see http request bodies over 64 KiB */
+	/* Skip and peek past the first block, see http request bodies over 64 KiB */
 	STREAM st;
 	std::string data(4 * STREAM_BLOCK_SIZE + 100, '\0');
 	for (size_t i = 0; i < data.size(); ++i)
@@ -1101,6 +1101,9 @@ static int t_stream_skip()
 		auto p = static_cast<const char *>(st.get_read_buf(&len));
 		assert(p != nullptr && len == 1 && *p == data[pos]);
 		++pos;
+		char peek[8];
+		assert(st.peek_buffer(peek, sizeof(peek)) == sizeof(peek));
+		assert(memcmp(peek, &data[pos], sizeof(peek)) == 0);
 	}
 	assert(st.fwd_read_ptr(UINT_MAX) == data.size() - pos);
 	unsigned int len = 1;
