@@ -2682,7 +2682,9 @@ static ec_error_t oxcical_import_internal(const char *method,
 			ei_new.originalstartdate = minutes;
 			ee_new.originalstartdate = minutes;
 			minutes = rop_util_unix_to_rtime(oxcical_wall_time(ptz_component, start_itime));
-			apr.recur_pat.pmodifiedinstancedates.emplace_back(minutes);
+			/* The day of the new start, MS-OXOCAL v22 2.2.1.44.1 */
+			apr.recur_pat.pmodifiedinstancedates.emplace_back(
+				minutes / 1440 * 1440);
 			ei_new.startdatetime = minutes;
 			ee_new.startdatetime = minutes;
 			minutes = rop_util_unix_to_rtime(oxcical_wall_time(ptz_component, end_itime));

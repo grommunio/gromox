@@ -871,9 +871,15 @@ static int ical_moved_exception_dates()
 		assert(apr.pexceptioninfo.size() == 1);
 		assert(apr.recur_pat.pmodifiedinstancedates.size() == 1);
 		auto &ei = apr.pexceptioninfo[0];
-		apr.recur_pat.pmodifiedinstancedates[0] = legacy ?
-			ei.originalstartdate / 1440 * 1440 :
-			ei.startdatetime / 1440 * 1440;
+		/* The import stores the day of the new start */
+		auto &mod = apr.recur_pat.pmodifiedinstancedates[0];
+		if (mod != ei.startdatetime / 1440 * 1440) {
+			fprintf(stderr, "modified date %u, expected %u\n",
+			        mod, ei.startdatetime / 1440 * 1440);
+			return EXIT_FAILURE;
+		}
+		if (legacy)
+			mod = ei.originalstartdate / 1440 * 1440;
 		EXT_PUSH ep;
 		assert(ep.init(nullptr, 0, EXT_FLAG_UTF16) &&
 		       ep.p_apptrecpat(apr) == pack_result::ok);
@@ -904,8 +910,8 @@ static int ical_moved_exception_dates()
 		assert(apr2.pexceptioninfo[0].startdatetime == ei.startdatetime);
 		assert(apr2.recur_pat.pdeletedinstancedates.size() == 1);
 		assert(apr2.recur_pat.pmodifiedinstancedates.size() == 1);
-		assert(apr2.recur_pat.pmodifiedinstancedates[0] / 1440 ==
-		       ei.startdatetime / 1440);
+		assert(apr2.recur_pat.pmodifiedinstancedates[0] ==
+		       ei.startdatetime / 1440 * 1440);
 	}
 	return EXIT_SUCCESS;
 }
