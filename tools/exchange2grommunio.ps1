@@ -829,6 +829,7 @@ foreach ($Mailbox in (Get-Mailbox -ResultSize Unlimited | Sort-Object -Property 
 			$Mailbox = $Mailbox.Alias
 		}
 
+		$ExportStartDate = (GET-DATE)
 		New-MailboxExportRequest -Mailbox $Mailbox -FilePath $WinSharedFolder\$MigMBox.pst -Priority $MigrationPriority -ExcludeDumpster -BadItemLimit $BadItemLimit | Format-Table -HideTableHeaders
 		Write-Host -NoNewline "[Wait] " -fore yellow
 		$MailboxesTotal++
@@ -873,7 +874,8 @@ foreach ($Mailbox in (Get-Mailbox -ResultSize Unlimited | Sort-Object -Property 
 		Get-MailboxExportRequest $Mailbox | Get-MailboxExportRequestStatistics -IncludeReport | ConvertTo-Json |Add-Content -Path $ExpLogFile
 		Get-MailboxExportRequest $Mailbox | Remove-MailboxExportRequest -Confirm:$false
 		Write-MLog "" white
-		Write-MLog "Export of mailbox $MigMBox took $nTimeout seconds." green
+		$Duration = [math]::ceiling($(NEW-TIMESPAN -Start $ExportStartDate -End (GET-DATE)).TotalSeconds)
+		Write-MLog "Export of mailbox $MigMBox took $Duration seconds." green
 
 		# Show size of exported mailbox in MB.
 		if (Test-Path $WinSharedFolder\$MigMBox.pst) {
