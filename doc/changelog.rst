@@ -84,6 +84,8 @@ Changes:
 
 Fixes:
 
+* emsmdb: an ICS delete batch containing a key of another replica was
+  rejected as a whole; the key is now skipped and the rest processed.
 * zcore: message copies between stores were given a change key with the GUID
   of the source store.
 * exmdb: a replica ID without a replguidmap entry was reported as found, with

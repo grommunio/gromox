@@ -1314,20 +1314,17 @@ ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 		if (plogon->is_private()) {
 			auto tmp_guid = rop_util_make_user_guid(plogon->account_id);
 			if (tmp_guid != tmp_xid.guid) {
-				mlog(LV_WARN, "W-2152: importdeletes expected store %s but got store+XID %s",
-				        bin2hex(tmp_guid).c_str(),
-				        bin2hex(&tmp_xid, tmp_xid.size).c_str());
-				return ecInvalidParam;
+				/*
+				 * An object with such GID cannot exist in the
+				 * Gromox model. Consider it deleted.
+				 */
+				continue;
 			}
 			eid = rop_util_make_eid(1, tmp_xid.local_to_gc());
 		} else if (sync_type == SYNC_TYPE_CONTENTS) {
 			auto tmp_guid = rop_util_make_domain_guid(plogon->account_id);
-			if (tmp_guid != tmp_xid.guid) {
-				mlog(LV_WARN, "W-2153: importdeletes expected store %s but got store+XID %s",
-				        bin2hex(tmp_guid).c_str(),
-				        bin2hex(&tmp_xid, tmp_xid.size).c_str());
-				return ecInvalidParam;
-			}
+			if (tmp_guid != tmp_xid.guid)
+				continue;
 			eid = rop_util_make_eid(1, tmp_xid.local_to_gc());
 		} else {
 			auto tmp_guid = rop_util_make_domain_guid(plogon->account_id);
