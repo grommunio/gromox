@@ -691,6 +691,10 @@ if ($OnlyCreateGrommunioMailbox ) {
 $ImportMboxes = $ImportMboxes.trim()
 $IgnoreMboxes = $IgnoreMboxes.trim()
 
+# Whole addresses, so that ann@example.com is not found in joann@example.com
+$ImportList = @($ImportMboxes.ToLower() -split '[\s,;]+' | Where-Object { $_ })
+$IgnoreList = @($IgnoreMboxes.ToLower() -split '[\s,;]+' | Where-Object { $_ })
+
 # Document settings in log
 #
 Write-MLog "Settings" none
@@ -756,9 +760,9 @@ foreach ($Mailbox in (Get-Mailbox -ResultSize Unlimited | Sort-Object -Property 
 	Write-Debug "`nMigMBox: $MigMBox`nImpLogFile: $ImpLogFile`nExpLogFile: $ExpLogFile"
 	# $MigMBox is now in lower case
 
-	if ($ImportMboxes.length -gt 5) {
+	if ($ImportList.Count -gt 0) {
 		# Use $ImportMboxes only if it contains a minimum of one mail address
-		if ($ImportMboxes.ToLower().contains($MigMBox)) {
+		if ($ImportList -contains $MigMBox) {
 			Write-MLog "Mailbox: $MigMBox found in `$ImportMboxes list." green
 		} else {
 			$MailboxesSkipped++
@@ -766,9 +770,9 @@ foreach ($Mailbox in (Get-Mailbox -ResultSize Unlimited | Sort-Object -Property 
 			Write-MLog "Ignoring mailbox: $MigMBox, mailbox not in `$ImportMboxes list." yellow
 			continue
 		}
-	} # if ($ImportMboxes.length -gt 5)
+	} # if ($ImportList.Count -gt 0)
 
-	if ($IgnoreMboxes.ToLower().contains($MigMBox)) {
+	if ($IgnoreList -contains $MigMBox) {
 		$MailboxesSkipped++
 		$MailboxesTotal++
 		Write-MLog "Ignoring mailbox: $MigMBox, found mailbox in `$IgnoreMboxes list." yellow
