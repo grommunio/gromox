@@ -366,6 +366,7 @@ ec_error_t rop_fasttransfersourcecopymessages(std::span<const eid_t> pmessage_id
 		return ecNullObject;
 	if (object_type != ems_objtype::folder)
 		return ecNotSupported;
+	auto [local_msgids, b_foreign] = filter_local_msgids(pmessage_ids);
 	auto username = plogon->eff_user();
 	if (username != STORE_OWNER_GRANTED) {
 		uint32_t permission = 0;
@@ -373,7 +374,7 @@ ec_error_t rop_fasttransfersourcecopymessages(std::span<const eid_t> pmessage_id
 		    pfolder->folder_id, username, &permission))
 			return ecError;
 		if (!(permission & (frightsReadAny | frightsOwner))) {
-			for (const auto msgid : pmessage_ids) {
+			for (const auto msgid : local_msgids) {
 				if (!exmdb_client->is_message_owner(plogon->get_dir(),
 				    msgid, username, &b_owner))
 					return ecError;
@@ -383,11 +384,10 @@ ec_error_t rop_fasttransfersourcecopymessages(std::span<const eid_t> pmessage_id
 		}
 	}
 
-	std::vector<eid_t> pmids(pmessage_ids.cbegin(), pmessage_ids.cend());
 	BOOL b_chginfo = (flags & FAST_COPY_MESSAGE_FLAG_SENDENTRYID) ? TRUE : false;
 	auto pctx = fastdownctx_object::create(plogon, send_options & 0x0F);
 	if (pctx == nullptr ||
-	    !pctx->make_messagelist(b_chginfo, std::move(pmids)))
+	    !pctx->make_messagelist(b_chginfo, std::move(local_msgids)))
 		return ecError;
 	auto hnd = plogmap->add_object_handle(logon_id, hin,
 	           {ems_objtype::fastdownctx, std::move(pctx)});

@@ -461,6 +461,8 @@ ec_error_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
 		return ecNotSupported;
 	if (plogon->logon_mode == logon_mode::guest)
 		return ecAccessDenied;
+	if (eid_t(message_id).replid() != 1)
+		return ecNotFound;
 	if (!exmdb_client->is_msg_present(plogon->get_dir(), folder_id,
 	    message_id, &b_exist))
 		return ecError;
@@ -538,6 +540,8 @@ ec_error_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
 		return ecSuccess;
 	eid_t fid_spooler(1, PRIVATE_FID_SPOOLER_QUEUE);
 	auto dir = plogon->get_dir();
+	if (eid_t(message_id).replid() != 1)
+		return ecNotInQueue;
 	if (!exmdb_client->is_msg_present(dir, fid_spooler, message_id, &b_exist))
 		return ecError;
 	if (!b_exist)

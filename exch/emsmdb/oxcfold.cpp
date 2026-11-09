@@ -2,6 +2,9 @@
 // SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
+#include <string>
+#include <utility>
+#include <vector>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/proc_common.h>
@@ -446,7 +449,7 @@ ec_error_t rop_getsearchcriteria(uint8_t use_unicode, uint8_t include_restrictio
 
 ec_error_t rop_movecopymessages(std::span<const eid_t> pmessage_ids,
     uint8_t want_asynchronous, uint8_t want_copy, uint8_t *ppartial_completion,
-    LOGMAP *plogmap, uint8_t logon_id, uint32_t hsrc, uint32_t hdst)
+    LOGMAP *plogmap, uint8_t logon_id, uint32_t hsrc, uint32_t hdst) try
 {
 	BOOL b_partial;
 	ems_objtype object_type;
@@ -484,12 +487,16 @@ ec_error_t rop_movecopymessages(std::span<const eid_t> pmessage_ids,
 			return ecAccessDenied;
 	}
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
+	auto [local_msgids, b_foreign] = filter_local_msgids(pmessage_ids);
 	if (!exmdb_client->movecopy_messages(plogon->get_dir(), pinfo->cpid,
 	    b_guest, rpc_user, psrc_folder->folder_id, pdst_folder->folder_id,
-	    b_copy, pmessage_ids, &b_partial))
+	    b_copy, local_msgids, &b_partial))
 		return ecError;
-	*ppartial_completion = !!b_partial;
+	*ppartial_completion = !!b_partial || b_foreign;
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return ecServerOOM;
 }
 
 ec_error_t rop_movefolder(uint8_t want_asynchronous, uint8_t use_unicode,
@@ -713,16 +720,22 @@ static ec_error_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
 		/* nothing */;
 	else
 		return ecAccessDenied;
+
 	if (0 == notify_non_read) {
+		auto [local_msgids, b_foreign] = filter_local_msgids(pmessage_ids);
 		if (!exmdb_client->delete_messages(dir, pinfo->cpid,
-		    username, pfolder->folder_id, pmessage_ids, b_hard, &b_partial))
+		    username, pfolder->folder_id, local_msgids, b_hard, &b_partial))
 			return ecError;
-		*ppartial_completion = !!b_partial;
+		*ppartial_completion = !!b_partial || b_foreign;
 		return ecSuccess;
 	}
 	b_partial = FALSE;
 	std::vector<eid_t> ids;
 	for (const auto msgid : pmessage_ids) {
+		if (msgid.replid() != 1) {
+			b_partial = TRUE;
+			continue;
+		}
 		if (username != STORE_OWNER_GRANTED) {
 			if (!exmdb_client->is_message_owner(dir, msgid, username, &b_owner))
 				return ecError;

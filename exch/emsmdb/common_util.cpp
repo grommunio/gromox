@@ -453,6 +453,8 @@ BOOL cu_entryid_to_mid(const logon_object &logon, const BINARY *pbin,
 	switch (tmp_entryid.eid_type) {
 	case EITLT_PRIVATE_MESSAGE:
 	case EITLT_PUBLIC_MESSAGE:
+		if (mreplid != 1)
+			return false;
 		*pfolder_id  = rop_util_make_eid(freplid, tmp_entryid.folder_gc);
 		*pmessage_id = rop_util_make_eid(mreplid, tmp_entryid.message_gc);
 		return TRUE;
@@ -1727,6 +1729,19 @@ static void mlog2(unsigned int level, const char *format, ...)
 	log_buf[sizeof(log_buf) - 1] = '\0';
 	mlog(level, "user=%s host=[%s]  %s",
 		rpc_info.username, rpc_info.client_addr, log_buf);
+}
+
+std::pair<std::vector<eid_t>, bool>
+filter_local_msgids(std::span<const eid_t> input)
+{
+	std::pair<std::vector<eid_t>, bool> output;
+	for (const auto mid : input) {
+		if (mid.replid() == 1)
+			output.first.emplace_back(mid);
+		else
+			output.second = true;
+	}
+	return output;
 }
 
 }

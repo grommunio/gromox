@@ -69,6 +69,8 @@ ec_error_t rop_openmessage(uint16_t cpraw, uint64_t folder_id,
 		return ecNullObject;
 	if (object_type != ems_objtype::logon && object_type != ems_objtype::folder)
 		return ecNotSupported;
+	if (eid_t(message_id).replid() != 1)
+		return ecNotFound;
 	if (!exmdb_client->is_msg_present(plogon->get_dir(), folder_id,
 	    message_id, &b_exist))
 		return ecError;
@@ -492,6 +494,8 @@ ec_error_t rop_setmessagestatus(uint64_t message_id, uint32_t message_status,
 	/* we do not check permission because it's maybe
 		not an important property for the message.
 		also, we don't know the message location */
+	if (eid_t(message_id).replid() != 1)
+		return ecNotFound;
 	if (!exmdb_client->get_message_property(plogon->get_dir(), nullptr,
 	    CP_ACP, message_id, PR_MSG_STATUS, &pvalue))
 		return ecError;
@@ -524,6 +528,8 @@ ec_error_t rop_getmessagestatus(uint64_t message_id, uint32_t *pmessage_status,
 		return ecNullObject;
 	if (object_type != ems_objtype::folder)
 		return ecNotSupported;
+	if (eid_t(message_id).replid() != 1)
+		return ecNotFound;
 	if (!exmdb_client->get_message_property(plogon->get_dir(), nullptr,
 	    CP_ACP, message_id, PR_MSG_STATUS, &pvalue))
 		return ecError;
@@ -677,7 +683,8 @@ ec_error_t rop_setreadflags(uint8_t want_asynchronous, uint8_t read_flags,
 		}
 	}
 	for (const auto msgid : final_ids)
-		if (!oxcmsg_setreadflag(plogon, msgid, read_flags))
+		if (msgid.replid() != 1 ||
+		    !oxcmsg_setreadflag(plogon, msgid, read_flags))
 			b_partial = TRUE;	
 	*ppartial_completion = !!b_partial;
 	return ecSuccess;

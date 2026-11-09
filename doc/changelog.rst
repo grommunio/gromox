@@ -92,6 +92,9 @@ Fixes:
   silently skipped the remaining folders.
 * emsmdb: an ICS delete batch containing a key of another replica was
   rejected as a whole; the key is now skipped and the rest processed.
+* emsmdb: a message ID carrying another replica's ID (e.g. derived from a key
+  of another mailbox) addressed the local message with the same counter; such
+  IDs are now reported as nonexistent.
 * zcore: message copies between stores were given a change key with the GUID
   of the source store.
 * exmdb: a replica ID without a replguidmap entry was reported as found, with
