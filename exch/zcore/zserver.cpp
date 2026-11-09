@@ -4729,12 +4729,13 @@ ec_error_t zs_importdeletion(GUID hsession,
 		if (pstore->b_private) {
 			auto tmp_guid = rop_util_make_user_guid(pstore->account_id);
 			if (tmp_guid != tmp_xid.guid)
-				return ecInvalidParam;
+				/* Such objects cannot exist in the Gromox model */
+				continue;
 			eid = rop_util_make_eid(1, tmp_xid.local_to_gc());
 		} else if (sync_type == SYNC_TYPE_CONTENTS) {
 			auto tmp_guid = rop_util_make_domain_guid(pstore->account_id);
 			if (tmp_guid != tmp_xid.guid)
-				return ecInvalidParam;
+				continue;
 			eid = rop_util_make_eid(1, tmp_xid.local_to_gc());
 		} else {
 			auto tmp_guid = rop_util_make_domain_guid(pstore->account_id);
