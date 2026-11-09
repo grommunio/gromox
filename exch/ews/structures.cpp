@@ -161,8 +161,17 @@ void fromProp(const TAGGED_PROPVAL* prop, T& target)
  */
 void fromProp(const TAGGED_PROPVAL* prop, std::optional<sTimePoint>& target)
 {
-	if (prop)
-		target.emplace(sTimePoint::fromNT(*static_cast<const uint64_t*>(prop->pvalue)));
+	/*
+	 * Stores can hold impossible times, e.g. negative ones from a
+	 * misparsed year. xs:dateTime readers fail on what they would turn
+	 * into, so treat anything after the year 9999 as absent.
+	 */
+	static constexpr uint64_t year10000 = 2650467744000000000ULL;
+	if (prop == nullptr)
+		return;
+	auto nt = *static_cast<const uint64_t *>(prop->pvalue);
+	if (nt < year10000)
+		target.emplace(sTimePoint::fromNT(nt));
 }
 
 /**
