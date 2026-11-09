@@ -23,7 +23,9 @@ struct GX_EXPORT CONTROL_INFO {
 
 struct GX_EXPORT MESSAGE_CONTEXT {
 	CONTROL_INFO ctrl;
+	std::string eml;
 	MAIL mail; /* Note limitations of MAIL's default ctor */
+	vmime::shared_ptr<vmime::message> vmail;
 };
 
 /* Plugin is expected to use `using namespace ns;` too */

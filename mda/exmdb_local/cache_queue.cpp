@@ -315,6 +315,16 @@ static void *mdl_thrwork(void *arg)
 				mlog(LV_ERR, "exmdb_local: partial read from %s", temp_path.c_str());
 				continue;
 			}
+			try {
+				auto vpctx = vmail_default_parsectx();
+				pcontext->vmail = vmime::make_shared<vmime::message>();
+				pcontext->vmail->parse(vpctx, std::string(pbuff, mess_len));
+			} catch (const vmime::exception &) {
+				free(pbuff);
+				mlog(LV_ERR, "exmdb_local: failed to retrieve message %s in "
+				       "cache queue into mail object", temp_path.c_str());
+				continue;
+			}
 			if (!pcontext->mail.refonly_parse(pbuff, mess_len)) {
 				free(pbuff);
 				mlog(LV_ERR, "exmdb_local: failed to retrieve message %s in "
