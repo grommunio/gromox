@@ -5414,9 +5414,11 @@ void tItem::update(const sShape& shape)
 	fromProp(shape.get(PR_LAST_MODIFICATION_TIME), LastModifiedTime);
 	fromProp(shape.get(PR_MESSAGE_CLASS), ItemClass);
 	fromProp(shape.get(PR_MESSAGE_DELIVERY_TIME), DateTimeReceived);
-	if (!DateTimeReceived)
+	/* Only for a client that asked for it, not e.g. for IdOnly */
+	bool wantRcvd = shape.requested(PR_MESSAGE_DELIVERY_TIME);
+	if (!DateTimeReceived && wantRcvd)
 		fromProp(shape.get(PR_CREATION_TIME, sShape::FL_ANY), DateTimeReceived);
-	if (!DateTimeReceived)
+	if (!DateTimeReceived && wantRcvd)
 		fromProp(shape.get(PR_LAST_MODIFICATION_TIME, sShape::FL_ANY), DateTimeReceived);
 	if ((v32 = shape.get<const uint32_t>(PR_MESSAGE_FLAGS))) {
 		IsSubmitted = *v32 & MSGFLAG_SUBMITTED;
