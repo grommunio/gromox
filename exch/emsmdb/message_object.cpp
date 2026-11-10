@@ -721,10 +721,11 @@ ec_error_t message_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
 	for (auto so : stream_list)
 		pproptags->emplace_back_nd(so->get_proptag());
 	for (auto t : {PR_ACCESS, PR_ACCESS_LEVEL, PidTagFolderId,
-	     PR_PARENT_SOURCE_KEY, PR_MESSAGE_LOCALE_ID, PR_MESSAGE_CODEPAGE})
+	     PR_MESSAGE_LOCALE_ID, PR_MESSAGE_CODEPAGE})
 		pproptags->emplace_back_nd(t);
 	if (pmessage->pembedding == nullptr)
-		pproptags->emplace_back_nd(PR_SOURCE_KEY);
+		for (auto t : {PR_SOURCE_KEY, PR_PARENT_SOURCE_KEY})
+			pproptags->emplace_back_nd(t);
 	return ecSuccess;
 }
 
@@ -814,6 +815,8 @@ static ec_error_t message_object_get_calculated_property(const message_object *p
 		*ppvalue = deconst(&pmessage->folder_id);
 		return ecSuccess;
 	case PR_PARENT_SOURCE_KEY:
+		if (pmessage->pembedding != nullptr)
+			return ecNotFound;
 		if (!exmdb_client->get_folder_property(pmessage->plogon->get_dir(),
 		    CP_ACP, pmessage->folder_id, PR_SOURCE_KEY, ppvalue))
 			return ecRpcFailed;

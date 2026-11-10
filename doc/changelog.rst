@@ -99,6 +99,8 @@ Fixes:
   of the source store.
 * exmdb: a replica ID without a replguidmap entry was reported as found, with
   the GUID left unset.
+* emsmdb, zcore: PR_PARENT_SOURCE_KEY of an embedded message was 22 zero bytes
+  instead of absent.
 * EWS: UpdateUserConfiguration kept the old change number of the
   configuration message, so cached Outlook never picked up categories added
   in eM Client or Outlook for Mac.

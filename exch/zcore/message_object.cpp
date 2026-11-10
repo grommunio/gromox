@@ -600,14 +600,15 @@ ec_error_t message_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	}
 	static constexpr proptag_t tags1[] = {
 		PR_ACCESS, PR_ENTRYID, PR_ACCESS_LEVEL, PR_OBJECT_TYPE,
-		PR_PARENT_ENTRYID, PR_PARENT_SOURCE_KEY, PR_RECORD_KEY,
+		PR_PARENT_ENTRYID, PR_RECORD_KEY,
 		PR_STORE_RECORD_KEY, PR_MAPPING_SIGNATURE, PR_STORE_ENTRYID,
 		PR_MESSAGE_LOCALE_ID, PR_MESSAGE_CODEPAGE,
 	};
 	for (auto t : tags1)
 		pproptags->emplace_back_nd(t);
 	if (pmessage->pembedding == nullptr)
-		pproptags->emplace_back_nd(PR_SOURCE_KEY);
+		for (auto t : {PR_SOURCE_KEY, PR_PARENT_SOURCE_KEY})
+			pproptags->emplace_back_nd(t);
 	return ecSuccess;
 }
 
@@ -704,6 +705,8 @@ static ec_error_t message_object_get_calculated_property(message_object *pmessag
 		*ppvalue = &pmessage->folder_id;
 		return ecSuccess;
 	case PR_PARENT_SOURCE_KEY:
+		if (pmessage->pembedding != nullptr)
+			return ecNotFound;
 		*ppvalue = cu_fid_to_sk(*pmessage->pstore, pmessage->folder_id);
 		return *ppvalue != nullptr ? ecSuccess : ecNotFound;
 	case PidTagMid:
