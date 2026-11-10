@@ -101,6 +101,8 @@ Fixes:
   the GUID left unset.
 * emsmdb, zcore: PR_PARENT_SOURCE_KEY of an embedded message was 22 zero bytes
   instead of absent.
+* emsmdb: RopCopyProperties reported ecNotFound for the wrong properties when
+  the request also named read-only ones.
 * EWS: UpdateUserConfiguration kept the old change number of the
   configuration message, so cached Outlook never picked up categories added
   in eM Client or Outlook for Mac.

@@ -618,7 +618,7 @@ ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 		if (err != ecSuccess)
 			return err;
 		for (size_t i = 0; i < proptags.count; ++i) {
-			const auto tag = pproptags[i];
+			const auto tag = proptags.pproptag[i];
 			if (!propvals.has(tag))
 				pproblems->emplace_back(poriginal_indices[i], tag, ecNotFound);
 		}
@@ -673,7 +673,7 @@ ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 		if (err != ecSuccess)
 			return err;
 		for (size_t i = 0; i < proptags.count; ++i) {
-			const auto tag = pproptags[i];
+			const auto tag = proptags.pproptag[i];
 			if (!propvals.has(tag))
 				pproblems->emplace_back(poriginal_indices[i], tag, ecNotFound);
 		}
@@ -711,7 +711,7 @@ ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 		if (err != ecSuccess)
 			return err;
 		for (size_t i = 0; i < proptags.count; ++i) {
-			const auto tag = pproptags[i];
+			const auto tag = proptags.pproptag[i];
 			if (!propvals.has(tag))
 				pproblems->emplace_back(poriginal_indices[i], tag, ecNotFound);
 		}
