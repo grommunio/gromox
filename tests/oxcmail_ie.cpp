@@ -910,6 +910,135 @@ static int ical_moved_exception_dates()
 	return EXIT_SUCCESS;
 }
 
+static constexpr char tz_berlin_ny[] =
+	"BEGIN:VTIMEZONE\r\nTZID:Europe/Berlin\r\n"
+	"BEGIN:DAYLIGHT\r\nTZOFFSETFROM:+0100\r\nTZOFFSETTO:+0200\r\n"
+	"DTSTART:19700329T020000\r\nRRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=3\r\nEND:DAYLIGHT\r\n"
+	"BEGIN:STANDARD\r\nTZOFFSETFROM:+0200\r\nTZOFFSETTO:+0100\r\n"
+	"DTSTART:19701025T030000\r\nRRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=10\r\nEND:STANDARD\r\n"
+	"END:VTIMEZONE\r\n"
+	"BEGIN:VTIMEZONE\r\nTZID:America/New_York\r\n"
+	"BEGIN:DAYLIGHT\r\nTZOFFSETFROM:-0500\r\nTZOFFSETTO:-0400\r\n"
+	"DTSTART:19700308T020000\r\nRRULE:FREQ=YEARLY;BYDAY=2SU;BYMONTH=3\r\nEND:DAYLIGHT\r\n"
+	"BEGIN:STANDARD\r\nTZOFFSETFROM:-0400\r\nTZOFFSETTO:-0500\r\n"
+	"DTSTART:19701101T020000\r\nRRULE:FREQ=YEARLY;BYDAY=1SU;BYMONTH=11\r\nEND:STANDARD\r\n"
+	"END:VTIMEZONE\r\n";
+
+/* The instance day stored in a GlobalObjectId */
+static unsigned int goid_day(const message_content &msg)
+{
+	static const PROPERTY_NAME namelist[] = {
+		{MNID_ID, PSETID_Meeting, PidLidGlobalObjectId},
+	};
+	PROPNAME_ARRAY na = {1, deconst(namelist)};
+	PROPID_ARRAY pids;
+	if (!ee_get_propids(&na, &pids))
+		return 0;
+	auto bin = msg.proplist.get<const BINARY>(PROP_TAG(PT_BINARY, pids[0]));
+	if (bin == nullptr || bin->cb < 20)
+		return 0;
+	return (bin->pb[16] << 8 | bin->pb[17]) * 10000 + bin->pb[18] * 100 +
+	       bin->pb[19];
+}
+
+/*
+ * RECURRENCE-ID may name a zone other than DTSTART. Exchange keeps the
+ * exception times, the original start and the instance day in the zone
+ * of the series.
+ */
+static int ical_rid_other_zone()
+{
+	fprintf(stderr, "=== ical_rid_other_zone\n");
+	/* Daily 10:00 Berlin, one exception per direction */
+	auto series = std::string("BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//EN\r\n") +
+		tz_berlin_ny +
+		"BEGIN:VEVENT\r\nUID:rid-zone\r\nDTSTAMP:20261114T120000Z\r\nSUMMARY:daily\r\n"
+		"DTSTART;TZID=Europe/Berlin:20261207T100000\r\nDTEND;TZID=Europe/Berlin:20261207T110000\r\n"
+		"RRULE:FREQ=DAILY;COUNT=5\r\nEND:VEVENT\r\n"
+		/* 04:00 New York is 10:00 Berlin */
+		"BEGIN:VEVENT\r\nUID:rid-zone\r\nDTSTAMP:20261114T120000Z\r\nSUMMARY:a\r\n"
+		"RECURRENCE-ID;TZID=America/New_York:20261209T040000\r\n"
+		"DTSTART;TZID=Europe/Berlin:20261209T140000\r\nDTEND;TZID=Europe/Berlin:20261209T150000\r\n"
+		"END:VEVENT\r\n"
+		/* 08:00 New York is 14:00 Berlin */
+		"BEGIN:VEVENT\r\nUID:rid-zone\r\nDTSTAMP:20261114T120000Z\r\nSUMMARY:b\r\n"
+		"RECURRENCE-ID;TZID=Europe/Berlin:20261210T100000\r\n"
+		"DTSTART;TZID=America/New_York:20261210T080000\r\nDTEND;TZID=America/New_York:20261210T090000\r\n"
+		"END:VEVENT\r\nEND:VCALENDAR\r\n";
+	auto msg = ical_load(std::move(series));
+	assert(msg != nullptr);
+	APPOINTMENT_RECUR_PAT apr{};
+	assert(ical_recur(*msg, apr));
+	assert(apr.pexceptioninfo.size() == 2);
+	static constexpr uint32_t want[][2] = {
+		{224021400, 224021640}, /* 12-09 10:00, 14:00 */
+		{224022840, 224023080}, /* 12-10 10:00, 14:00 */
+	};
+	for (size_t i = 0; i < 2; ++i) {
+		auto &ei = apr.pexceptioninfo[i];
+		if (ei.originalstartdate != want[i][0] ||
+		    ei.startdatetime != want[i][1] ||
+		    apr.recur_pat.pdeletedinstancedates[i] != want[i][0] / 1440 * 1440) {
+			fprintf(stderr, "exception %zu: original %u start %u\n",
+			        i, ei.originalstartdate, ei.startdatetime);
+			return EXIT_FAILURE;
+		}
+	}
+	auto atl = msg->children.pattachments;
+	assert(atl != nullptr && atl->count == 2);
+	for (unsigned int i = 0; i < 2; ++i) {
+		auto day = goid_day(*atl->pplist[i]->pembedded);
+		if (day != 20261209 + i) {
+			fprintf(stderr, "embedded exception %u: GOID day %u\n", i, day);
+			return EXIT_FAILURE;
+		}
+	}
+
+	/*
+	 * A lone occurrence update: 20:00 New York is the next day in
+	 * Berlin, where the series takes place.
+	 */
+	auto upd = std::string("BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//EN\r\nMETHOD:REQUEST\r\n") +
+		tz_berlin_ny +
+		"BEGIN:VEVENT\r\nUID:rid-zone-upd\r\nDTSTAMP:20261114T120000Z\r\nSUMMARY:upd\r\n"
+		"SEQUENCE:1\r\n"
+		"RECURRENCE-ID;TZID=America/New_York:20261208T200000\r\n"
+		"DTSTART;TZID=Europe/Berlin:20261209T050000\r\nDTEND;TZID=Europe/Berlin:20261209T060000\r\n"
+		"END:VEVENT\r\nEND:VCALENDAR\r\n";
+	msg = ical_load(std::move(upd));
+	assert(msg != nullptr);
+	static const PROPERTY_NAME rtname[] = {
+		{MNID_ID, PSETID_Appointment, PidLidExceptionReplaceTime},
+	};
+	PROPNAME_ARRAY na = {1, deconst(rtname)};
+	PROPID_ARRAY pids;
+	assert(ee_get_propids(&na, &pids));
+	auto rt = msg->proplist.get<const uint64_t>(PROP_TAG(PT_SYSTIME, pids[0]));
+	if (goid_day(*msg) != 20261209 || rt == nullptr ||
+	    *rt != rop_util_unix_to_nttime(1796778000)) {
+		fprintf(stderr, "update: GOID day %u\n", goid_day(*msg));
+		return EXIT_FAILURE;
+	}
+
+	/* An undeclared zone is refused when DTSTART names one */
+	auto bad = std::string("BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//EN\r\nMETHOD:REQUEST\r\n") +
+		tz_berlin_ny +
+		"BEGIN:VEVENT\r\nUID:rid-zone-bad\r\nDTSTAMP:20261114T120000Z\r\nSUMMARY:bad\r\n"
+		"RECURRENCE-ID;TZID=Asia/Tokyo:20261209T100000\r\n"
+		"DTSTART;TZID=Europe/Berlin:20261209T050000\r\nDTEND;TZID=Europe/Berlin:20261209T060000\r\n"
+		"END:VEVENT\r\nEND:VCALENDAR\r\n";
+	assert(ical_load(std::move(bad)) == nullptr);
+
+	/* ... and read like DTSTART when DTSTART names none, as before */
+	auto flt = std::string("BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//EN\r\nMETHOD:REQUEST\r\n"
+		"BEGIN:VEVENT\r\nUID:rid-zone-flt\r\nDTSTAMP:20261114T120000Z\r\nSUMMARY:flt\r\n"
+		"RECURRENCE-ID;TZID=Asia/Tokyo:20261209T100000\r\n"
+		"DTSTART:20261209T050000\r\nDTEND:20261209T060000\r\n"
+		"END:VEVENT\r\nEND:VCALENDAR\r\n");
+	assert(ical_load(std::move(flt)) != nullptr);
+	return EXIT_SUCCESS;
+}
+
 /*
  * A meeting response identifies the responder through
  * PR_SENT_REPRESENTING_SMTP_ADDRESS (the iCalendar ATTENDEE) and through
@@ -2793,7 +2922,8 @@ int main()
 		E(vexport_calendar), E(openpgp_roundtrip),
 		E(openpgp_legacy_layout),
 		E(ical_exception_roundtrip), E(ical_exception_origdate),
-		E(ical_moved_exception_dates), E(meeting_prefixes),
+		E(ical_moved_exception_dates), E(ical_rid_other_zone),
+		E(meeting_prefixes),
 		E(hdrfold_verbatim), E(fwd_prepend),
 		E(hdrfold_export), E(hdr_long_values),
 	};
