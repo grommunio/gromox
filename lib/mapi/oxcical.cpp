@@ -2514,10 +2514,14 @@ static ec_error_t oxcical_import_internal(const char *method,
 				errstr.insert(0, "E-2708: ");
 				return err;
 			}
-			/* The GlobalObjectId carries the day in the series */
-			auto stz = series_tz != nullptr ? series_tz :
-			           ptz_component;
-			itime = oxcical_series_time(stz, rid_tz, itime,
+			/*
+			 * An exception of a series carries the day in the
+			 * series zone. A lone occurrence update does not know
+			 * the series zone and keeps the day of its RECURRENCE-ID
+			 * like Exchange, ruleproc matches it by
+			 * PidLidExceptionReplaceTime.
+			 */
+			itime = oxcical_series_time(series_tz, rid_tz, itime,
 			        rid_time);
 		} else {
 			err = oxcical_parse_dtvalue(nullptr, *piline, &itime,

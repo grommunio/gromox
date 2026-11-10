@@ -996,7 +996,9 @@ static int ical_rid_other_zone()
 
 	/*
 	 * A lone occurrence update: 20:00 New York is the next day in
-	 * Berlin, where the series takes place.
+	 * Berlin, where the series takes place. The GlobalObjectId keeps
+	 * the New York day like Exchange, ruleproc maps the UTC
+	 * PidLidExceptionReplaceTime into the series zone.
 	 */
 	auto upd = std::string("BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//EN\r\nMETHOD:REQUEST\r\n") +
 		tz_berlin_ny +
@@ -1014,7 +1016,7 @@ static int ical_rid_other_zone()
 	PROPID_ARRAY pids;
 	assert(ee_get_propids(&na, &pids));
 	auto rt = msg->proplist.get<const uint64_t>(PROP_TAG(PT_SYSTIME, pids[0]));
-	if (goid_day(*msg) != 20261209 || rt == nullptr ||
+	if (goid_day(*msg) != 20261208 || rt == nullptr ||
 	    *rt != rop_util_unix_to_nttime(1796778000)) {
 		fprintf(stderr, "update: GOID day %u\n", goid_day(*msg));
 		return EXIT_FAILURE;
