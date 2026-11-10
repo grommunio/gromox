@@ -1644,7 +1644,7 @@ ec_error_t cu_remote_copy_message(store_object &src_store, uint64_t message_id,
 	auto err = cu_set_propval(&pmsgctnt->proplist, PidTagChangeNumber, &change_num);
 	if (err != ecSuccess)
 		return err;
-	auto pbin = cu_xid_to_bin({src_store.guid(), change_num});
+	auto pbin = cu_xid_to_bin({dst_store.guid(), change_num});
 	if (pbin == nullptr)
 		return ecError;
 	err = cu_set_propval(&pmsgctnt->proplist, PR_CHANGE_KEY, pbin);

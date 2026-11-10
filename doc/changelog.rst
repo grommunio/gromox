@@ -84,6 +84,8 @@ Changes:
 
 Fixes:
 
+* zcore: message copies between stores were given a change key with the GUID
+  of the source store.
 * exmdb: a replica ID without a replguidmap entry was reported as found, with
   the GUID left unset.
 * EWS: UpdateUserConfiguration kept the old change number of the
