@@ -1636,6 +1636,7 @@ ec_error_t cu_remote_copy_message(store_object &src_store, uint64_t message_id,
 		PR_HAS_NAMED_PROPERTIES, PR_HASATTACH,
 		PR_ENTRYID, PidTagFolderId, PR_OBJECT_TYPE,
 		PR_PARENT_ENTRYID, PR_STORE_RECORD_KEY,
+		PR_SOURCE_KEY, PR_PARENT_SOURCE_KEY,
 	};
 	for (auto t : tags)
 		common_util_remove_propvals(&pmsgctnt->proplist, t);
