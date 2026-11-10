@@ -84,6 +84,8 @@ Changes:
 
 Fixes:
 
+* exmdb: a replica ID without a replguidmap entry was reported as found, with
+  the GUID left unset.
 * EWS: UpdateUserConfiguration kept the old change number of the
   configuration message, so cached Outlook never picked up categories added
   in eM Client or Outlook for Mac.

@@ -102,7 +102,6 @@ BOOL exmdb_server::get_mapping_guid(const char *dir,
 	/* Only one SQL operation, no transaction needed. */
 	if (!common_util_get_mapping_guid(pdb->psqlite, replid, pb_found, pguid))
 		return FALSE;
-	*pb_found = TRUE;
 	return TRUE;
 }
 
