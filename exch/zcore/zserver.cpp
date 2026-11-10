@@ -4142,6 +4142,14 @@ ec_error_t zs_contentsync(GUID hsession, uint32_t hfolder, uint32_t *phobject)
 	if (mapi_type != zs_objtype::folder)
 		return ecNotSupported;
 	auto pstore = pfolder->pstore;
+	if (!pstore->owner_mode()) {
+		uint32_t permission = 0;
+		if (!exmdb_client->get_folder_perm(pstore->get_dir(),
+		    pfolder->folder_id, pinfo->get_username(), &permission))
+			return ecError;
+		if (!(permission & (frightsReadAny | frightsOwner)))
+			return ecAccessDenied;
+	}
 	auto hstore = pinfo->ptree->get_store_handle(pstore->b_private, pstore->account_id);
 	if (zh_is_error(hstore))
 		return zh_error(hstore);

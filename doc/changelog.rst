@@ -84,6 +84,8 @@ Changes:
 
 Fixes:
 
+* zcore: ICS content export of a folder no longer works with the Visible right
+  alone; ReadAny or Owner is required as for tables.
 * emsmdb: read state changes imported by a folder owner without the ReadAny
   right were dropped for messages of other users.
 * emsmdb: hierarchy ICS deletes stopped at a folder that had vanished and
