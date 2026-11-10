@@ -963,7 +963,7 @@ ec_error_t rop_syncimportreadstatechanges(uint16_t count,
 		if (!exmdb_client->get_folder_perm(dir,
 		    folder_id, eff_user, &permission))
 			return ecError;
-		if (permission & frightsReadAny)
+		if (permission & (frightsReadAny | frightsOwner))
 			eff_user = nullptr;
 	}
 	auto rds_user = plogon->readstate_user();

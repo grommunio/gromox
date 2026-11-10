@@ -84,6 +84,8 @@ Changes:
 
 Fixes:
 
+* emsmdb: read state changes imported by a folder owner without the ReadAny
+  right were dropped for messages of other users.
 * emsmdb: hierarchy ICS deletes stopped at a folder that had vanished and
   silently skipped the remaining folders.
 * emsmdb: an ICS delete batch containing a key of another replica was
