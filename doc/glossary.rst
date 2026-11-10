@@ -362,21 +362,28 @@ Instance key
 
 External Identifier, XID
 	The aggregation of a 128-bit "namespace GUID" plus a storage-specific
-	*GLOBCNT*/*CN*. Scope: all replicas of a mailbox. Limit: not defined
-	because aggregate. Total size: minimum 17 bytes, maximum 24 bytes.
-	[MS-OXCFXICS v25 §2.2.2.2] XIDs make an apperance in PR_CHANGE_KEY
-	and PR_PREDECESSOR_CHANGE_LIST (PCL). A XID without a GLOBCNT portion
-	is invalid.
-
-	EX: *Database GUID* + GCV/CN (6 bytes, MSB) = 22 bytes
-	OST: *Database GUID* + GCV/CN (4 bytes, MSB) = 20 bytes
+	*GLOBCNT*/*CN*. A XID is either a Global Identifier or a Foreign
+	Identifier. Scope: Likely global. Limit: not defined because aggregate.
+	Total size: minimum 17 bytes, maximum 24 bytes. [MS-OXCFXICS v25
+	§2.2.2.2] XIDs make an apperance in PR_CHANGE_KEY and
+	PR_PREDECESSOR_CHANGE_LIST (PCL). A XID without a GLOBCNT portion (i.e.
+	just 16 bytes) is invalid.
 
 Global Identifier, GID
 	The aggregation of the 128-bit *Database GUID* plus the 48-bit
-	*GLOBCNT*/*CN*. Scope: all replicas of a mailbox. Limit: not defined
-	because aggregate. Total size: 22 octets. [MS-OXCDATA v19 §2.2.1.3]
-	Only XIDs with size 22 are GIDs. [MS-OXCFXICS v25 p.13] In other words,
-	XIDs in .pst files cannot be considered GIDs.
+	*GLOBCNT*/*CN*. Scope: Likely global. Limit: not defined because
+	aggregate. Total size: 22 octets. [MS-OXCDATA v19 §2.2.1.3] Only XIDs
+	with size 22 are GIDs. [MS-OXCFXICS v25 p.13] In other words, XIDs in
+	.pst files cannot be considered GIDs.
+
+	EX: *Database GUID* + GCV/CN (6 bytes, MSB) = 22 bytes
+
+Foreign Idenifier
+	The aggregation of the 128-bit database GUID plus a storage-specific
+	GCV/CN that is encoded different from a GID. Size: minimum 17 bytes,
+	maximum 24 bytes, but never 22 bytes. [MS-OXFXICS v25 §3.3.5.2.3]
+
+	OST: *Database GUID* + GCV/CN (4 bytes, MSB) = 20 bytes
 
 LongTermID
 	The aggregation of a *GID* (22 bytes) plus 2 NUL pad bytes. Total size:
