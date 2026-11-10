@@ -281,6 +281,9 @@ $BadItemLimit = 0
 # Note: there is no detection in this code for EX_2016_CU6.
 $Exchange_Newer_2016_CU6 = $true
 
+# Name of our MailboxExportRequests. Requests with other names are not touched.
+$ExportRequestName = "exchange2grommunio"
+
 #
 # From here on, no code or variables need changing by the user of this script.
 #
@@ -790,11 +793,31 @@ foreach ($Mailbox in (Get-Mailbox -ResultSize Unlimited | Sort-Object -Property 
 	}
 
 	Write-MLog "" white
-	# Clean up before exporting a mailbox
-	# Remove all MailboxExportRequest, to make check for "Completed" more robust
 
-	Write-MLog "Removing all MailboxExportRequests." green
-	Get-MailboxExportRequest | Remove-MailboxExportRequest -Confirm:$false
+	# -Mailbox
+	#
+	# The Mailbox parameter specifies the source mailbox where the
+	# contents are being exported from.
+	#
+	# In Exchange 2016 CU7 or later, this parameter is the type
+	# MailboxLocationIdParameter, so the easiest value that you can
+	# use to identify the mailbox is the Alias value.
+	#
+	# In Exchange 2016 CU6 or earlier, this parameter is the type
+	# MailboxOrMailUserIdParameter, so you can use any value that
+	# uniquely identifies the mailbox.
+	#
+	# https://docs.microsoft.com/en-us/powershell/module/exchange/new-mailboxexportrequest?view=exchange-ps
+	#
+	$ExportMbox = $Mailbox
+	if ($Exchange_Newer_2016_CU6) {
+		$ExportMbox = $Mailbox.Alias
+	}
+
+	# Clean up before exporting a mailbox
+	# Remove our old MailboxExportRequest of this mailbox
+	Write-MLog "Removing old MailboxExportRequest of $MigMBox." green
+	Get-MailboxExportRequest -Mailbox $ExportMbox -Name $ExportRequestName -ErrorAction SilentlyContinue | Remove-MailboxExportRequest -Confirm:$false
 
 	# Remove old / orphaned .pst file
 	if (Test-Path -Path $WinSharedFolder\$MigMBox.pst) {
@@ -803,76 +826,68 @@ foreach ($Mailbox in (Get-Mailbox -ResultSize Unlimited | Sort-Object -Property 
 	}
 	Write-MLog "" white
 
+	$ExportOK = $false
 	if (!$OnlyCreateGrommunioMailbox ) {
 		# Create a .pst file for every mailbox found on system.
 		#
 		Write-MLog "Exporting mailbox $MigMBox to file $MigMBox.pst..." green
 
-		# -Mailbox
-		#
-		# The Mailbox parameter specifies the source mailbox where the
-		# contents are being exported from.
-		#
-		# In Exchange 2016 CU7 or later, this parameter is the type
-		# MailboxLocationIdParameter, so the easiest value that you can
-		# use to identify the mailbox is the Alias value.
-		#
-		# In Exchange 2016 CU6 or earlier, this parameter is the type
-		# MailboxOrMailUserIdParameter, so you can use any value that
-		# uniquely identifies the mailbox.
-		#
-		# https://docs.microsoft.com/en-us/powershell/module/exchange/new-mailboxexportrequest?view=exchange-ps
-		#
 		# Exchange 2010 only supports "Normal, High" for the -Priority parameter
 		#
-		if ($Exchange_Newer_2016_CU6) {
-			$Mailbox = $Mailbox.Alias
-		}
-
 		$ExportStartDate = (GET-DATE)
-		New-MailboxExportRequest -Mailbox $Mailbox -FilePath $WinSharedFolder\$MigMBox.pst -Priority $MigrationPriority -ExcludeDumpster -BadItemLimit $BadItemLimit | Format-Table -HideTableHeaders
+		New-MailboxExportRequest -Mailbox $ExportMbox -Name $ExportRequestName -FilePath $WinSharedFolder\$MigMBox.pst -Priority $MigrationPriority -ExcludeDumpster -BadItemLimit $BadItemLimit | Format-Table -HideTableHeaders
 		Write-Host -NoNewline "[Wait] " -fore yellow
 		$MailboxesTotal++
 
-		# Wait until the .pst file is created.
+		# Wait until the export request reaches a final state.
 		# We probably should include a timeout to detect hanging exports.
-		$expPercent= 0; $OneHundredPercent = 0;
+		$expMissing = 0
 		while ($true) {
-			$expRequest = (Get-MailboxExportRequest $Mailbox)
-			$expPercent = ($expRequest |Get-MailboxExportRequestStatistics |Select-Object PercentComplete).PercentComplete
-			$expStatus = ($expRequest).Status
-			Write-Progress -Id 1 -Activity "Export: $Mailbox" -Status "$expPercent% Complete:" -PercentComplete $expPercent;
 			Start-Sleep -Seconds 1
-			Write-Debug "DEBUG: $expStatus / $expPercent"
-			# Check if we didn't run into any issues while waiting
+			$expRequest = Get-MailboxExportRequest -Mailbox $ExportMbox -Name $ExportRequestName -ErrorAction SilentlyContinue
+			if (!$expRequest) {
+				# Not created, or removed by somebody else
+				$expMissing++
+				if ($expMissing -lt 5) {
+					continue
+				}
+				$expStatus = "Missing"
+			} else {
+				$expMissing = 0
+				$expStatus = "$($expRequest.Status)"
+				$expPercent = [int]($expRequest | Get-MailboxExportRequestStatistics).PercentComplete
+				Write-Progress -Id 1 -Activity "Export: $MigMBox" -Status "$expPercent% Complete:" -PercentComplete $expPercent;
+				Write-Debug "DEBUG: $expStatus / $expPercent"
+			}
 			# https://learn.microsoft.com/en-us/powershell/module/exchange/get-mailboxexportrequest?view=exchange-ps#-status
-			if (($expStatus -eq ("Completed")) -and ($expPercent -eq 100)) {
-				$MailboxesExport++
+			if ($expStatus -eq "Completed") {
+				$ExportOK = $true
 				break
 			}
-			if ($expPercent -eq 100) {
-				$OneHundredPercent++
-				Write-Debug "100% but not finished loop: $$OneHundredPercent"
-			}
-			if ($OneHundredPercent -gt 50) {
+			if ($expStatus -eq "CompletedWithWarning") {
+				Write-MLog "Warning: Export Result: $expStatus" yellow
+				$ExportOK = $true
 				break
 			}
-			if ($expStatus -iin ("AutoSuspended","CompletedWithWarning","Failed","Suspended")) {
+			if (@("AutoSuspended","Failed","Suspended","Missing") -contains $expStatus) {
 				Write-MLog "Error: Export Result: $expStatus" red
-				$expRequest | Get-MailboxExportRequestStatistics -IncludeReport -Diagnostic| ConvertTo-Json |Add-Content -Path $ExpLogFile + ".diagnostic"
+				if ($expRequest) {
+					$expRequest | Get-MailboxExportRequestStatistics -IncludeReport -Diagnostic | ConvertTo-Json | Add-Content -Path ($ExpLogFile + ".diagnostic")
+				}
 				$MailboxesExportFailed++
 				$ExportErrorsMBX += $MigMBox + ", "
 				$SkipImportCreateError = $true
 				break
 			}
-
 		}
 		# End display of progress bar
-		Write-Progress -Id 1 -Completed -Activity "Export: $Mailbox"
+		Write-Progress -Id 1 -Completed -Activity "Export: $MigMBox"
 
 		# Export
-		Get-MailboxExportRequest $Mailbox | Get-MailboxExportRequestStatistics -IncludeReport | ConvertTo-Json |Add-Content -Path $ExpLogFile
-		Get-MailboxExportRequest $Mailbox | Remove-MailboxExportRequest -Confirm:$false
+		if ($expRequest) {
+			$expRequest | Get-MailboxExportRequestStatistics -IncludeReport | ConvertTo-Json | Add-Content -Path $ExpLogFile
+			$expRequest | Remove-MailboxExportRequest -Confirm:$false
+		}
 		Write-MLog "" white
 		$Duration = [math]::ceiling($(NEW-TIMESPAN -Start $ExportStartDate -End (GET-DATE)).TotalSeconds)
 		Write-MLog "Export of mailbox $MigMBox took $Duration seconds." green
@@ -1041,9 +1056,9 @@ foreach ($Mailbox in (Get-Mailbox -ResultSize Unlimited | Sort-Object -Property 
 
 Linux-Umount
 
-# Remove all "Completed" MailboxExportRequests.
+# Remove our "Completed" MailboxExportRequests.
 #
-Get-MailboxExportRequest | Where-Object {$_.status -eq "Completed"} | Remove-MailboxExportRequest -Confirm:$false
+Get-MailboxExportRequest -Name $ExportRequestName | Where-Object {$_.status -eq "Completed"} | Remove-MailboxExportRequest -Confirm:$false
 
 # Calculate script run time
 #
