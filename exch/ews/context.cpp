@@ -5883,10 +5883,10 @@ void EWSContext::markInvited(const std::string &dir,
 	const TPROPVAL_ARRAY list = {1, deconst(&val)};
 	if (propid == 0 || !setItemProps(dir, effectiveUser(parent), mid, list))
 		mlog(LV_ERR, "[ews] %s:m%llu: cannot set PidLidFInvited",
-			dir.c_str(), LLU{rop_util_get_gc_value(mid)});
+			dir.c_str(), LLU{eid_t(mid).gcv()});
 } catch (const DispatchError &e) {
 	mlog(LV_ERR, "[ews] %s:m%llu: cannot set PidLidFInvited: %s",
-		dir.c_str(), LLU{rop_util_get_gc_value(mid)}, e.what());
+		dir.c_str(), LLU{eid_t(mid).gcv()}, e.what());
 }
 
 /**
@@ -7697,7 +7697,7 @@ tSubscriptionId EWSContext::subscribe(const std::vector<sFolderId> &folderIds,
 		}
 		if (!(permissions(maildir, folderspec.folderId) & frightsReadAny))
 			continue; // TODO: proper error handling
-		mgr->folders.emplace(rop_util_get_gc_value(folderspec.folderId));
+		mgr->folders.emplace(eid_t(folderspec.folderId).gcv());
 	}
 	/* Filtered in EWSPlugin::event */
 	if (!mgr->folders.empty())

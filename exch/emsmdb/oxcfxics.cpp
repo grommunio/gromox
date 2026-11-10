@@ -1125,7 +1125,7 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 			 * it to (Gromox) special folders.
 			 */
 			if (plogon->is_private() &&
-			    rop_util_get_gc_value(tmp_fid) < CUSTOM_EID_BEGIN) {
+			    eid_t(tmp_fid).gcv() < CUSTOM_EID_BEGIN) {
 				if (!exmdb_client->get_folder_property(dir,
 				    CP_ACP, tmp_fid, PR_FOLDER_TYPE, &pvalue) ||
 				    pvalue == nullptr)
@@ -1197,7 +1197,7 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		within public mailbox is not supported */
 		if (!plogon->is_private())
 			return ecNotSupported;
-		if (rop_util_get_gc_value(folder_id) < CUSTOM_EID_BEGIN)
+		if (eid_t(folder_id).gcv() < CUSTOM_EID_BEGIN)
 			return ecAccessDenied;
 		if (plogon->logon_mode != logon_mode::owner) {
 			if (!exmdb_client->get_folder_perm(dir,

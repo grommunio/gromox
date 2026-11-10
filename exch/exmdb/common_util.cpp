@@ -3234,7 +3234,7 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 				continue;
 			case PidTagChangeNumber:
 				if (cu_set_folder_changenum(psqlite, id,
-				    rop_util_get_gc_value(*static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue))) != SQLITE_OK)
+				    static_cast<eid_t *>(ppropvals->ppropval[i].pvalue)->gcv()) != SQLITE_OK)
 					pproblems->emplace_back(i, ppropvals->ppropval[i].proptag, ecError);
 				continue;
 			case PR_DISPLAY_NAME:
@@ -3282,7 +3282,7 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 				continue;
 			case PidTagChangeNumber:
 				if (cu_set_message_changenum(psqlite, id,
-				    rop_util_get_gc_value(*static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue))) != SQLITE_OK)
+				    static_cast<eid_t *>(ppropvals->ppropval[i].pvalue)->gcv()) != SQLITE_OK)
 					pproblems->emplace_back(i, ppropvals->ppropval[i].proptag, ecError);
 				continue;
 			case PR_READ:

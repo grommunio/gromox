@@ -2780,7 +2780,7 @@ bool RulesEnv::folder_ref(const MOVECOPY_ACTION &mc, Rules::FolderRef &ref, bool
 	 */
 	if (tdir != dir || !sFolderEntryId(eid.data(), eid.size()).isPrivate())
 		return false;
-	trash = rop_util_get_gc_value(fid) == PRIVATE_FID_DELETED_ITEMS;
+	trash = eid_t(fid).gcv() == PRIVATE_FID_DELETED_ITEMS;
 	/* Outlook for Mac crashes on a rule folder without ChangeKey */
 	auto ck = ctx.getFolderProp<BINARY>(tdir, fid, PR_CHANGE_KEY);
 	if (ck == nullptr)
@@ -2887,7 +2887,7 @@ std::vector<rule_row> load_rules(const EWSContext &ctx, const std::string &dir, 
 		rows.push_back({*id, seq != nullptr ? *seq : 0, st != nullptr ? *st : 0, &row});
 	}
 	std::stable_sort(rows.begin(), rows.end(), [](const rule_row &a, const rule_row &b) {
-		return a.seq != b.seq ? a.seq < b.seq : rop_util_get_gc_value(a.id) < rop_util_get_gc_value(b.id);
+		return a.seq != b.seq ? a.seq < b.seq : eid_t(a.id).gcv() < eid_t(b.id).gcv();
 	});
 	return rows;
 }
@@ -4365,12 +4365,12 @@ void process(mSyncFolderItemsRequest &&request, XMLElement *response, const EWSC
 			syncState.seen_fai.clear();
 			syncState.read.clear();
 			if (last_cn) {
-				auto gc = rop_util_get_gc_value(last_cn);
+				auto gc = eid_t(last_cn).gcv();
 				if (!syncState.seen.append_range(1, 1, gc) ||
 				    (getFai && !syncState.seen_fai.append_range(1, 1, gc)))
 					throw DispatchError(E3066);
 			}
-			if (last_readcn && !syncState.read.append_range(1, 1, rop_util_get_gc_value(last_readcn)))
+			if (last_readcn && !syncState.read.append_range(1, 1, eid_t(last_readcn).gcv()))
 				throw DispatchError(E3448);
 			syncState.readOffset = 0;
 		} else {
@@ -4716,7 +4716,7 @@ void process(mSendItemRequest &&request, XMLElement *response, const EWSContext 
 		} else if (folder.location == sFolderSpec::PRIVATE) {
 			saveFid = eid_t(1, PRIVATE_FID_SENT_ITEMS);
 		}
-		ctx.send(dir, rop_util_get_gc_value(meid.messageId()), *content);
+		ctx.send(dir, meid.messageId().gcv(), *content);
 
 		/* Exchange moves the sent item to the save folder or drops it */
 		auto username = ctx.effectiveUser(folder);
@@ -4968,7 +4968,7 @@ static void process_upditem_2(mUpdateItemRequest &request, const EWSContext &ctx
 	    sendcontent == nullptr)
 		throw EWSError::ItemNotFound(E3466);
 	ctx.validate_sendas_perms(*sendcontent);
-	ctx.send(dir, rop_util_get_gc_value(mid.messageId()), *sendcontent);
+	ctx.send(dir, mid.messageId().gcv(), *sendcontent);
 
 	if (*request.MessageDisposition == Enum::SendAndSaveCopy) {
 		sFolderSpec sentitems = ctx.resolveFolder(tDistinguishedFolderId(Enum::sentitems));

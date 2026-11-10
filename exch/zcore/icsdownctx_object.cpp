@@ -158,13 +158,13 @@ BINARY *icsdownctx_object::get_state()
 		pctx->pstate->pseen->clear();
 		if (pctx->last_changenum != 0 &&
 		    !pctx->pstate->pseen->append_range(1, 1,
-		    rop_util_get_gc_value(pctx->last_changenum)))
+		    eid_t(pctx->last_changenum).gcv()))
 			return nullptr;
 		if (SYNC_TYPE_CONTENTS == pctx->sync_type) {
 			pctx->pstate->pseen_fai->clear();
 			if (pctx->last_changenum != 0 &&
 			    !pctx->pstate->pseen_fai->append_range(1, 1,
-			    rop_util_get_gc_value(pctx->last_changenum)))
+			    eid_t(pctx->last_changenum).gcv()))
 				return nullptr;
 		}
 		pctx->last_changenum = 0;
@@ -387,7 +387,7 @@ ec_error_t icsdownctx_object::sync_readstates(STATE_ARRAY *pstates)
 	pctx->pstate->pread->clear();
 	if (0 != pctx->last_readcn) {
 		if (!pctx->pstate->pread->append_range(1, 1,
-		    rop_util_get_gc_value(pctx->last_readcn)))
+		    eid_t(pctx->last_readcn).gcv()))
 			return ecServerOOM;
 		pctx->last_readcn = 0;
 	}

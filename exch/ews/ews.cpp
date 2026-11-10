@@ -1055,12 +1055,11 @@ static bool instance_current(const EWSPlugin &plugin, const std::string &dir,
 	    !plugin.exmdb.get_message_properties(dir.c_str(), "", CP_ACP, mid,
 	    proptag_cspan{tags}, &sp))
 		return false;
-	auto icn = ip.get<const uint64_t>(PidTagChangeNumber);
-	auto scn = sp.get<const uint64_t>(PidTagChangeNumber);
+	auto icn = ip.get<const eid_t>(PidTagChangeNumber);
+	auto scn = sp.get<const eid_t>(PidTagChangeNumber);
 	auto ird = ip.get<const uint8_t>(PR_READ);
 	auto srd = sp.get<const uint8_t>(PR_READ);
-	return icn != nullptr && scn != nullptr &&
-	       rop_util_get_gc_value(*icn) == rop_util_get_gc_value(*scn) &&
+	return icn != nullptr && scn != nullptr && icn->gcv() == scn->gcv() &&
 	       (ird != nullptr && *ird != 0) == (srd != nullptr && *srd != 0);
 }
 

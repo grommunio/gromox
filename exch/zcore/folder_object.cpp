@@ -566,7 +566,7 @@ ec_error_t folder_object::get_perms(PERMISSION_SET *pperm_set)
 	auto pfolder = this;
 	auto dir = pfolder->pstore->get_dir();
 	uint32_t flags = pfolder->pstore->b_private &&
-	                 rop_util_get_gc_value(pfolder->folder_id) == PRIVATE_FID_CALENDAR ?
+	                 eid_t(pfolder->folder_id).gcv() == PRIVATE_FID_CALENDAR ?
 		         PERMISSIONS_TABLE_FLAG_INCLUDEFREEBUSY : 0;
 	if (!exmdb_client->load_permission_table(dir,
 	    pfolder->folder_id, flags, &table_id, &row_num))

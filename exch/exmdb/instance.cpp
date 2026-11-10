@@ -455,7 +455,7 @@ BOOL exmdb_server::load_message_instance(const char *dir, const char *username,
 
 	instance_node inode, *pinstance = &inode;
 	inode.instance_id = instance_id;
-	pinstance->folder_id = rop_util_get_gc_value(folder_id);
+	pinstance->folder_id = eid_t(folder_id).gcv();
 	pinstance->cpid = cpid;
 	pinstance->orig_msg_gcv = eid_t(message_id).gcv();
 	pinstance->type = instance_type::message;

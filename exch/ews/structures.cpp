@@ -1400,12 +1400,12 @@ sFolderSpec::sFolderSpec(const std::string &t, uint64_t fid) :
  */
 bool sFolderSpec::isDistinguished() const
 {
-	return rop_util_get_gc_value(folderId) < CUSTOM_EID_BEGIN;
+	return eid_t(folderId).gcv() < CUSTOM_EID_BEGIN;
 }
 
 const char *sFolderSpec::distinguishedName(uint64_t folder_id)
 {
-	auto gc = rop_util_get_gc_value(folder_id);
+	auto gc = eid_t(folder_id).gcv();
 	for (auto &e : distNameInfo)
 		if (e.id == gc)
 			return e.name;
@@ -2165,7 +2165,7 @@ void sSyncState::update(const EID_ARRAY& given_fids, const EID_ARRAY& deleted_fi
 		if (!given.append(pid))
 			throw DispatchError(E3057);
 	seen.clear();
-	if (lastCn && !seen.append_range(1, 1, rop_util_get_gc_value(lastCn)))
+	if (lastCn && !seen.append_range(1, 1, eid_t(lastCn).gcv()))
 		throw DispatchError(E3058);
 }
 

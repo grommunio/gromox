@@ -1225,7 +1225,7 @@ ec_error_t cu_send_message(store_object &store, message_object &msg,
 	}
 	auto num = pmsgctnt->proplist.get<const uint32_t>(PR_MESSAGE_FLAGS);
 	bool b_resend = num != nullptr && *num & MSGFLAG_RESEND;
-	auto log_id = store.get_dir() + ":m"s + std::to_string(rop_util_get_gc_value(message_id));
+	auto log_id = store.get_dir() + ":m"s + std::to_string(message_id.gcv());
 	const tarray_set *prcpts = pmsgctnt->children.prcpts;
 	if (prcpts == nullptr || prcpts->count == 0) {
 		mlog(LV_ERR, "E-1504: Tried to send %s but message has 0 recipients", log_id.c_str());
@@ -1926,7 +1926,7 @@ ec_error_t cu_message_to_ical(store_object &store, uint64_t message_id,
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
 		return ecRpcFailed;
 	common_util_set_dir(dir);
-	auto log_id = dir + ":m"s + std::to_string(rop_util_get_gc_value(message_id));
+	auto log_id = dir + ":m"s + std::to_string(eid_t(message_id).gcv());
 	oxcical_converter cvt;
 	cvt.log_id = log_id.c_str();
 	cvt.org_name = g_org_name;
@@ -2011,7 +2011,7 @@ ec_error_t cu_message_to_vcf(message_object &msg, BINARY *pvcf_bin)
 		return ecRpcFailed;
 	common_util_set_dir(store.get_dir());
 
-	std::string cvt_log_id = store.get_dir() + ":m"s + std::to_string(rop_util_get_gc_value(message_id));
+	std::string cvt_log_id = store.get_dir() + ":m"s + std::to_string(message_id.gcv());
 	oxvcard_converter cvt;
 	cvt.log_id = cvt_log_id.c_str();
 	cvt.get_propids = common_util_get_propids;

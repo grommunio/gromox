@@ -2237,11 +2237,11 @@ ec_error_t zs_deletefolder(GUID hsession,
 	if (b_private != pstore->b_private || account_id != pstore->account_id)
 		return ecInvalidParam;
 	if (pstore->b_private) {
-		if (rop_util_get_gc_value(folder_id) < CUSTOM_EID_BEGIN)
+		if (folder_id.gcv() < CUSTOM_EID_BEGIN)
 			return ecAccessDenied;
 	} else {
-		if (eid_t(folder_id).replid() == 1 &&
-		    rop_util_get_gc_value(folder_id) < CUSTOM_EID_BEGIN)
+		if (folder_id.replid() == 1 &&
+		    folder_id.gcv() < CUSTOM_EID_BEGIN)
 			return ecAccessDenied;
 	}
 	const char *username = nullptr;
@@ -2303,7 +2303,7 @@ ec_error_t zs_emptyfolder(GUID hsession, uint32_t hfolder, uint32_t flags)
 	if (mapi_type != zs_objtype::folder)
 		return ecNotSupported;
 	auto pstore = pfolder->pstore;
-	auto fid_val = rop_util_get_gc_value(pfolder->folder_id);
+	auto fid_val = eid_t(pfolder->folder_id).gcv();
 	if (pstore->b_private) {
 		if (fid_val == PRIVATE_FID_ROOT || fid_val == PRIVATE_FID_IPMSUBTREE)
 			return ecAccessDenied;
@@ -2362,7 +2362,7 @@ ec_error_t zs_copyfolder(GUID hsession, uint32_t hsrc_folder, BINARY entryid,
 		return ecNotSupported;
 	auto dst_store = pdst_folder->pstore;
 	auto fidtest = src_store->b_private ? PRIVATE_FID_ROOT : PUBLIC_FID_ROOT;
-	if (rop_util_get_gc_value(folder_id) == fidtest)
+	if (folder_id.gcv() == fidtest)
 		return ecAccessDenied;
 	BOOL b_guest = false;
 	const char *username = nullptr;
@@ -4629,7 +4629,7 @@ ec_error_t zs_importfolder(GUID hsession,
 		within public mailbox is not supported */
 		if (!pstore->b_private)
 			return ecNotSupported;
-		if (rop_util_get_gc_value(folder_id) < CUSTOM_EID_BEGIN)
+		if (eid_t(folder_id).gcv() < CUSTOM_EID_BEGIN)
 			return ecAccessDenied;
 		if (!pstore->owner_mode()) {
 			if (!exmdb_client->get_folder_perm(pstore->get_dir(),

@@ -1532,7 +1532,7 @@ ec_error_t cu_send_message(logon_object &logon, message_object &msg,
 	
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	auto dir = logon.get_dir();
-	auto log_id = dir + ":m"s + std::to_string(rop_util_get_gc_value(message_id));
+	auto log_id = dir + ":m"s + std::to_string(message_id.gcv());
 	cpid_t cpid = pinfo == nullptr ? static_cast<cpid_t>(1252) : pinfo->cpid;
 	if (!exmdb_client->get_message_property(dir, nullptr, CP_ACP,
 	    message_id, PidTagParentFolderId, &pvalue) || pvalue == nullptr) {

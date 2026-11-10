@@ -80,7 +80,7 @@ ec_error_t rop_openfolder(uint64_t folder_id, uint8_t open_flags,
 		    folder_id, username, &permission))
 			return ecError;
 		if (permission == rightsNone) {
-			fid_val = rop_util_get_gc_value(folder_id);
+			fid_val = eid_t(folder_id).gcv();
 			if (plogon->is_private()) {
 				if (fid_val == PRIVATE_FID_ROOT ||
 				    fid_val == PRIVATE_FID_IPMSUBTREE)
@@ -278,11 +278,11 @@ ec_error_t rop_deletefolder(uint8_t flags, uint64_t folder_id,
 	if (plogon == nullptr)
 		return ecError;
 	 if (plogon->is_private()) {
-		if (rop_util_get_gc_value(folder_id) < CUSTOM_EID_BEGIN)
+		if (eid_t(folder_id).gcv() < CUSTOM_EID_BEGIN)
 			return ecAccessDenied;
 	} else {
 		if (eid_t(folder_id).replid() == 1 &&
-		    rop_util_get_gc_value(folder_id) < CUSTOM_EID_BEGIN)
+		    eid_t(folder_id).gcv() < CUSTOM_EID_BEGIN)
 			return ecAccessDenied;
 	}
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
@@ -513,7 +513,7 @@ ec_error_t rop_movefolder(uint8_t want_asynchronous, uint8_t use_unicode,
 	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	if (rop_util_get_gc_value(folder_id) < CUSTOM_EID_BEGIN)
+	if (eid_t(folder_id).gcv() < CUSTOM_EID_BEGIN)
 		return ecAccessDenied;
 	auto dir = plogon->get_dir();
 	auto rpc_user = znul(get_rpc_info().username);
@@ -585,7 +585,7 @@ ec_error_t rop_copyfolder(uint8_t want_asynchronous, uint8_t want_recursive,
 	auto plogon = plogmap->get_logon_object(logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	if (rop_util_get_gc_value(folder_id) ==
+	if (eid_t(folder_id).gcv() ==
 	    (plogon->is_private() ? PRIVATE_FID_ROOT : PUBLIC_FID_ROOT))
 		return ecAccessDenied;
 	auto dir = plogon->get_dir();

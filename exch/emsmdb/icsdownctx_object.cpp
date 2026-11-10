@@ -443,7 +443,7 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 	if (0 != last_changenum) {
 		pctx->pstate->pseen->clear();
 		if (!pctx->pstate->pseen->append_range(1, 1,
-			rop_util_get_gc_value(last_changenum))) {
+		    eid_t(last_changenum).gcv())) {
 			if (pproplist_deletions != nullptr)
 				rop_util_free_binary(pbin);
 			return FALSE;
@@ -900,12 +900,12 @@ static BOOL icsdownctx_object_write_state(icsdownctx_object *pctx)
 	pctx->pstate->pseen->clear();
 	if (pctx->sync_flags & SYNC_NORMAL && pctx->last_changenum != 0 &&
 	    !pctx->pstate->pseen->append_range(1, 1,
-	    rop_util_get_gc_value(pctx->last_changenum)))
+	    eid_t(pctx->last_changenum).gcv()))
 		return FALSE;
 	pctx->pstate->pseen_fai->clear();
 	if (pctx->sync_flags & SYNC_ASSOCIATED && pctx->last_changenum != 0 &&
 	    !pctx->pstate->pseen_fai->append_range(1, 1,
-	    rop_util_get_gc_value(pctx->last_changenum)))
+	    eid_t(pctx->last_changenum).gcv()))
 		return FALSE;
 	pctx->pstate->pread->clear();
 	if (pctx->sync_flags & SYNC_READ_STATE) {
@@ -914,7 +914,7 @@ static BOOL icsdownctx_object_write_state(icsdownctx_object *pctx)
 			    !pctx->pstate->pread->append_range(1, 1, CHANGE_NUMBER_BEGIN - 1))
 				return FALSE;
 		} else if (!pctx->pstate->pread->append_range(1, 1,
-		    rop_util_get_gc_value(pctx->last_readcn))) {
+		    eid_t(pctx->last_readcn).gcv())) {
 			return FALSE;
 		}
 	}

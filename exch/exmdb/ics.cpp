@@ -56,11 +56,9 @@ static ec_error_t copy_eids(std::span<const eid_t> in, EID_ARRAY &out)
 static void ics_enum_content_idset(void *vparam, uint64_t message_id) try
 {
 	auto pparam = static_cast<ENUM_PARAM *>(vparam);
-	uint64_t mid_val;
-	
 	if (!pparam->b_result)
 		return;
-	mid_val = rop_util_get_gc_value(message_id);
+	uint64_t mid_val = eid_t(message_id).gcv();
 	sqlite3_reset(pparam->stm_exist);
 	sqlite3_bind_int64(pparam->stm_exist, 1, mid_val);
 	auto ret = pparam->stm_exist.step();
@@ -182,7 +180,7 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	if (!pdb)
 		return FALSE;
 	folder_id = cu_resolve_folder(pdb->psqlite, folder_id);
-	auto fid_val = rop_util_get_gc_value(folder_id);
+	auto fid_val = eid_t(folder_id).gcv();
 	/* No teardown guard needed for this begin_optim, as ~db_conn drops it too */
 	if (!pdb->begin_optim())
 		return FALSE;
@@ -717,7 +715,7 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 	if (!pdb)
 		return FALSE;
 	folder_id = cu_resolve_folder(pdb->psqlite, folder_id);
-	auto fid_val = rop_util_get_gc_value(folder_id);
+	auto fid_val = eid_t(folder_id).gcv();
 	auto sql_transact2 = gx_sql_begin(pdb->psqlite, txn_mode::read);
 	if (!sql_transact2)
 		return false;
