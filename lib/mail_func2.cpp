@@ -295,9 +295,9 @@ static int vmail_to_mimes_digest(std::string_view omsg, vmime::bodyPart &part,
 	auto body_start = body.getParsedOffset(), body_len = body.getParsedLength();
 	entry["begin"]  = Json::Value::Int64(body_start);
 	entry["length"] = Json::Value::Int64(body_len);
-	entry["lines"]  = body_start + body_len <= omsg.size() ?
+	entry["lines"]  = Json::Value::Int64(body_start + body_len <= omsg.size() ?
 	                  std::count(omsg.data() + body_start, omsg.data() + body_start + body_len, '\n') :
-	                  0;
+	                  0);
 	auto fld = hdr.findField(vmime::fields::CONTENT_TRANSFER_ENCODING);
 	/* RFC 2045 §6.1: absent Content-Transfer-Encoding means 7bit. */
 	entry["encoding"] = fld != nullptr ? fld->getValue()->generate() : "7bit";
@@ -419,7 +419,7 @@ int vmail_to_digest(std::string_view omsg, vmime::bodyPart &vmsg, Json::Value &d
 	if (vmail_to_mimes_digest(omsg, vmsg, {}, dsarray) < 0)
 		return -1;
 	digest["mimes"] = std::move(dsarray);
-	digest["size"] = vmsg.getParsedLength();
+	digest["size"]  = Json::Value::UInt64(vmsg.getParsedLength());
 	return 1;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
