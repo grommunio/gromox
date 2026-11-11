@@ -278,6 +278,11 @@ $MigrationPriority = "Normal"
 $BadItemLimit = 0
 #$BadItemLimit = "unlimited"
 
+# Seconds to wait for Exchange to release the .pst file after an export.
+# The mailbox is not imported when the file is still locked after that time.
+# Use 0 to wait without limit.
+$LockTimeout = 3600
+
 # Note: there is no detection in this code for EX_2016_CU6.
 $Exchange_Newer_2016_CU6 = $true
 
@@ -324,6 +329,7 @@ $ExportRequestName = "exchange2grommunio"
 #$MigrationPriority = "Normal"
 #$BadItemLimit = 0
 #$BadItemLimit = "unlimited"
+#$LockTimeout = 3600
 #>
 # Use configuration file named "exchange2grommunio.config.ps1" to override the
 # configuration values above instead of changing the values in this script.
@@ -893,6 +899,7 @@ foreach ($Mailbox in (Get-Mailbox -ResultSize Unlimited | Sort-Object -Property 
 		Write-MLog "Export of mailbox $MigMBox took $Duration seconds." green
 
 		# Show size of exported mailbox in MB.
+		$size = 0
 		if (Test-Path $WinSharedFolder\$MigMBox.pst) {
 			if ((Get-Item $WinSharedFolder\$MigMBox.pst).length -gt 0mb) {
 				$size = [math]::ceiling($(Get-Item $WinSharedFolder\$MigMBox.pst).length/(1024*1024))
@@ -902,25 +909,37 @@ foreach ($Mailbox in (Get-Mailbox -ResultSize Unlimited | Sort-Object -Property 
 			Write-MLog "Error mailbox $MigMBox.pst do not exist!" red
 			# Do not import this mailbox
 			$SkipImportCreateError = $true
+			$ExportOK = $false
 		}
 
-		Write-MLog "" white
-		Write-Mlog "Wait until the file lock of .pst file is released." yellow
+		if ($ExportOK) {
+			Write-MLog "" white
+			Write-Mlog "Wait until the file lock of .pst file is released." yellow
 
-		# Wait until the file lock of .pst file is released, Timeout is 300 seconds.
-		$nTimeout = 0
-		Write-Host -NoNewline "[Unlock] " -fore yellow
-		While ($nTimeout -lt 300) {
-			if (isLocked $WinSharedFolder\$MigMBox.pst) {
-				Write-Host -NoNewline "." -fore yellow
-			} else {
-				Write-Host -NoNewline " "
-				Write-MLog "PST lock cleared, after $nTimeout seconds." green
-				$MailboxesExported++
-				break
+			# Wait until the file lock of .pst file is released.
+			$ExportOK = $false
+			$nTimeout = 0
+			Write-Host -NoNewline "[Unlock] " -fore yellow
+			While (($LockTimeout -le 0) -or ($nTimeout -lt $LockTimeout)) {
+				if (isLocked $WinSharedFolder\$MigMBox.pst) {
+					Write-Host -NoNewline "." -fore yellow
+				} else {
+					Write-Host -NoNewline " "
+					Write-MLog "PST lock cleared, after $nTimeout seconds." green
+					$MailboxesExported++
+					$ExportOK = $true
+					break
+				}
+				start-sleep -seconds 2
+				$nTimeout += 2
 			}
-			start-sleep -seconds 2
-			$nTimeout += 2
+			if (!$ExportOK) {
+				Write-Host ""
+				Write-MLog "Error: $MigMBox.pst is still locked after $nTimeout seconds, mailbox is not imported." red
+				$MailboxesExportFailed++
+				$ExportErrorsMBX += $MigMBox + ", "
+				$SkipImportCreateError = $true
+			}
 		}
 	}
 
@@ -954,6 +973,7 @@ foreach ($Mailbox in (Get-Mailbox -ResultSize Unlimited | Sort-Object -Property 
 		}
 	}
 
+	$ImportOK = $false
 	if ( (!$SkipImportCreateError) -and (!$OnlyCreateGrommunioMailbox) ) {
 		Write-MLog "" white
 		$ImportStartDate=(GET-DATE)
@@ -963,11 +983,14 @@ foreach ($Mailbox in (Get-Mailbox -ResultSize Unlimited | Sort-Object -Property 
 		Write-MLog "Starting import of mailbox: $MigMBox in grommunio." green
 		Write-UserLog "Starting import of mailbox: $MigMBox in grommunio."
 		Write-UserLog ""
+		# The CIFS client may see the lock a little longer than Windows.
+		# Give it up to 60 seconds before the import is started.
+		$ImportCmd = "n=0; until head -c 1 '$LinuxSharedFolder/$MigMBox.pst' >/dev/null 2>&1; do n=`$((n+1)); [ `$n -ge 30 ] && break; sleep 2; done; gromox-e2ghelper -u '$MigMBox' -- -s '$LinuxSharedFolder/$MigMBox.pst'"
 		if ($PowerShellOld) {
-			.\plink.exe @PLINKARGS "gromox-e2ghelper -u $MigMBox -- -s $LinuxSharedFolder/$MigMBox.pst"
+			.\plink.exe @PLINKARGS $ImportCmd
 			$CMDExitCode = $lastexitcode
 		} else {
-			.\plink.exe @PLINKARGS "gromox-e2ghelper -u $MigMBox -- -s $LinuxSharedFolder/$MigMBox.pst" 2>&1 | Foreach-Object ToString | Tee-Object -Variable TeeVar
+			.\plink.exe @PLINKARGS $ImportCmd 2>&1 | Foreach-Object ToString | Tee-Object -Variable TeeVar
 			$CMDExitCode = $lastexitcode
 			# Save plink output to $LogFile
 			Write-MLog "---" none
@@ -978,6 +1001,7 @@ foreach ($Mailbox in (Get-Mailbox -ResultSize Unlimited | Sort-Object -Property 
 			Write-MLog "---" none
 		}
 		if ($CMDExitCode -eq 0) {
+			$ImportOK = $true
 			Write-MLog "Import of mailbox: $MigMBox done." green
 			Write-UserLog "Import of mailbox: $MigMBox done."
 			Add-Content -Path (Join-Path -Path $WinSharedFolder -ChildPath exchange2grommunio.done) -Value $MigMbox
@@ -1004,13 +1028,15 @@ foreach ($Mailbox in (Get-Mailbox -ResultSize Unlimited | Sort-Object -Property 
 	# Try to import the next mailbox.
 		$SkipImportCreateError = $false
 
-	if ($DeletePST) {
+	if ($DeletePST -and $ImportOK) {
 		Write-MLog "Remove the imported .pst file: $WinSharedFolder\$MigMBox.pst to save disk space." green
 		if (Test-Path -Path $WinSharedFolder\$MigMBox.pst) {
 			Remove-Item -ErrorAction SilentlyContinue -Path $WinSharedFolder\$MigMBox.pst
 		} else {
 			Write-MLog "Error .pst file: $WinSharedFolder\$MigMBox.pst not found." red
 		}
+	} elseif ($ExportOK -and !$ImportOK) {
+		Write-MLog "Keeping $WinSharedFolder\$MigMBox.pst, the mailbox was not imported." yellow
 	}
 	Write-MLog "" white
 	Write-MLog "Total of $MailboxesTotal mailboxes processed, $MailboxesSkipped mailboxes skipped, $MailboxesCreated mailboxes created, $MailboxesImported mailboxes imported, " yellow
