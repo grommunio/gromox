@@ -101,15 +101,13 @@ int main(int argc, char **argv, const char *addrtype)
 	for (int i = 0; i < result.nopts; ++i)
 		if (result.desc[i]->sh == 'm')
 			umap_file = result.oarg[i];
-	if (umap_file == nullptr) {
-		fprintf(stderr, "Address translation must be used with a user map (-m)\n");
-		return EXIT_FAILURE;
-	}
 	kdb_user_map umap;
-	auto err = umap.read(umap_file);
-	if (err != 0) {
-		fprintf(stderr, "%s: %s\n", umap_file, strerror(err));
-		return EXIT_FAILURE;
+	if (umap_file !=nullptr) {
+		auto err = umap.read(umap_file);
+		if (err != 0) {
+			fprintf(stderr, "%s: %s\n", umap_file, strerror(err));
+			return EXIT_FAILURE;
+		}
 	}
 
 	for (int i = 0; i < result.nargs; ++i) {

@@ -237,7 +237,7 @@ Deletion of objects in trash only if untouched for a while:
 gromox\-mbop \-u abc@example.com emptyfld \-Rt 1week \-\-soft DELETED
 .SH exaddrxlat
 .SS Synopsis
-\fBexaddrxlat \-m\fP \fIfile\fP [\fB\-r\fP] \fIfolder_spec\fP[...]
+\fBexaddrxlat [\-m\fP \fIfile\fP] [\fB\-r\fP] \fIfolder_spec\fP[...]
 .SS Description
 Scans messages in the given folders and replaces PR_ADDRTYPE="EX" and
 related properties by SMTP addresses.
@@ -589,7 +589,7 @@ attempt to reclaim unused disk space and shrink it. This operation can
 potentially run for quite some time, during which the mailbox is inaccessible.
 .SH zaddrxlat
 .SS Synopsis
-\fBzaddrxlat \-m\fP \fIfile\fP [\fB\-r\fP] \fIfolder_spec\fP[...]
+\fBzaddrxlat [\-m\fP \fIfile\fP] [\fB\-r\fP] \fIfolder_spec\fP[...]
 .SS Description
 Scans messages in the given folders and replaces PR_ADDRTYPE="ZARAFA" and
 related properties by normal SMTP addresses. See gromox\-kdb2mt(8) section
