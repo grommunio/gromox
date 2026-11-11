@@ -240,18 +240,28 @@ gromox\-mbop \-u abc@example.com emptyfld \-Rt 1week \-\-soft DELETED
 \fBexaddrxlat [\-m\fP \fIfile\fP] [\fB\-r\fP] \fIfolder_spec\fP[...]
 .SS Description
 Scans messages in the given folders and replaces PR_ADDRTYPE="EX" and
-related properties by SMTP addresses.
+related properties by pure SMTP addressing.
 .PP
 MAPI as a system supports referencing message participants with arbitrary
 address types, including, but not limited to, SMTP, EX
-(Exchange/ActiveDirectory DN), FAX numbers, etc.
+(Exchange/ActiveDirectory DN), FAX numbers, etc. When messages are migrated
+from one Exchange system to another system (Exchange or not), the EX-style
+addresses usually lose their meaning.
 .PP
-Contemporary Exchange systems (>= 2010) and/or Outlook versions should be
-adding secondary metadata when receiving/sending messages such that EX-typed
-participants become a EX+SMTP hybrid. Really old messages may lack the
-properties, and GUIs may fail to fill the To: line when replying to old
-messages. exaddrxlat will replace EX and EX+SMTP hybrids by pure SMTP ones,
-removing most historic Exchange Directory and ActiveDirectory information.
+Contemporary Exchange systems (>= 2010) and/or Outlook versions generally
+construct sender/recipient metadata in MAPI objects as EX+SMTP hybrids. Older
+messages might be EX-only. When a MUA is too simplistic, it might ignore
+PR_SMTP_ADDRESS e.g. when replying to an old message, and then, due to the
+unresolvability of the imported EX address, might leave the To: line empty.
+exaddrxlat fixes that by switching to PR_ADDRTYPE=SMTP.
+.PP
+When a message object has PR_SMTP_ADDRESS, exaddrxlat will use that to set
+PR_EMAIL_ADDRESS. If absent, the user map is consulted for how to translate
+existing PR_EMAIL_ADDRESS values to SMTP.
+.PP
+Only properties for recipients and senders group are edited. There is no
+recursion into embedded messages or TNEF attachments like winmail.dat. The data
+in private contacts is not edited. Folder ACLs are not edited.
 .SS Options
 .TP
 \fB\-m\fP \fIfile\fP
@@ -595,8 +605,9 @@ Scans messages in the given folders and replaces PR_ADDRTYPE="ZARAFA" and
 related properties by normal SMTP addresses. See gromox\-kdb2mt(8) section
 "ZARAFA Address Type" for some details. The use case for zaddrxlat is for
 fixing up addresses after the fact, i.e. when the administrator forgot to
-employ a user map at the time of running kdb2mt. zaddrxlat does not change
-ACLs.
+employ a user map at the time of running kdb2mt. zaddrxlat shares the same
+operational behaviors as exaddrxlat, e.g. giving preference to PR_SMTP_ADDRESS
+before consulting the user map.
 .SS Options
 .TP
 \fB\-m\fP \fIfile\fP
