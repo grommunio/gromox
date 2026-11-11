@@ -1041,6 +1041,103 @@ static int ical_rid_other_zone()
 	return EXIT_SUCCESS;
 }
 
+/* PidLidAppointmentEndWhole as Unix time and PidLidAppointmentDuration */
+static bool appt_end(const message_content &msg, time_t &end, int32_t &dur)
+{
+	static const PROPERTY_NAME namelist[] = {
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentEndWhole},
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentDuration},
+	};
+	PROPNAME_ARRAY na = {2, deconst(namelist)};
+	PROPID_ARRAY pids;
+	if (!ee_get_propids(&na, &pids))
+		return false;
+	auto e = msg.proplist.get<const uint64_t>(PROP_TAG(PT_SYSTIME, pids[0]));
+	auto d = msg.proplist.get<const int32_t>(PROP_TAG(PT_LONG, pids[1]));
+	if (e == nullptr || d == nullptr)
+		return false;
+	end = rop_util_nttime_to_unix(*e);
+	dur = *d;
+	return true;
+}
+
+/*
+ * DTEND may name a zone other than DTSTART. Exchange takes the end
+ * instant from it and keeps the end in the zone of the start.
+ */
+static int ical_dtend_other_zone()
+{
+	fprintf(stderr, "=== ical_dtend_other_zone\n");
+	auto mk = [](const char *uid, const char *body) {
+		return std::string("BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//EN\r\n") +
+		       tz_berlin_ny + "BEGIN:VEVENT\r\nUID:" + uid +
+		       "\r\nDTSTAMP:20261114T120000Z\r\nSUMMARY:x\r\n" + body +
+		       "END:VEVENT\r\nEND:VCALENDAR\r\n";
+	};
+	static constexpr char start[] = "DTSTART;TZID=Europe/Berlin:20261201T100000\r\n";
+	static const struct {
+		const char *uid, *end;
+		time_t want_end;
+		int32_t want_dur;
+	} cases[] = {
+		/* 12:00 New York is 17:00Z, 18:00 Berlin */
+		{"single", "DTEND;TZID=America/New_York:20261201T120000\r\n", 1796144400, 480},
+		{"weekly", "DTEND;TZID=America/New_York:20261201T120000\r\nRRULE:FREQ=WEEKLY;COUNT=4\r\n", 1796144400, 480},
+		{"msrule", "DTEND;TZID=America/New_York:20261201T120000\r\nX-MICROSOFT-RRULE:FREQ=WEEKLY;COUNT=4\r\n", 1796144400, 480},
+		{"utc", "DTEND:20261201T170000Z\r\n", 1796144400, 480},
+		/* A DTEND without zone is read in the zone of DTSTART */
+		{"floating", "DTEND:20261201T170000\r\n", 1796140800, 420},
+	};
+	for (const auto &c : cases) {
+		auto msg = ical_load(mk(c.uid, (std::string(start) + c.end).c_str()));
+		time_t end = 0;
+		int32_t dur = 0;
+		if (msg == nullptr || !appt_end(*msg, end, dur) ||
+		    end != c.want_end || dur != c.want_dur) {
+			fprintf(stderr, "%s: end %lld duration %d\n", c.uid,
+			        static_cast<long long>(end), dur);
+			return EXIT_FAILURE;
+		}
+	}
+
+	/* An exception ending in New York keeps its end in the series zone */
+	auto exc = std::string("BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//EN\r\n") +
+		tz_berlin_ny +
+		"BEGIN:VEVENT\r\nUID:exc\r\nDTSTAMP:20261114T120000Z\r\nSUMMARY:x\r\n"
+		"DTSTART;TZID=Europe/Berlin:20261201T100000\r\nDTEND;TZID=Europe/Berlin:20261201T180000\r\n"
+		"RRULE:FREQ=WEEKLY;COUNT=4\r\nEND:VEVENT\r\n"
+		"BEGIN:VEVENT\r\nUID:exc\r\nDTSTAMP:20261114T120000Z\r\nSUMMARY:x\r\n"
+		"RECURRENCE-ID;TZID=Europe/Berlin:20261208T100000\r\n"
+		"DTSTART;TZID=Europe/Berlin:20261208T100000\r\nDTEND;TZID=America/New_York:20261208T130000\r\n"
+		"END:VEVENT\r\nEND:VCALENDAR\r\n";
+	auto msg = ical_load(std::move(exc));
+	assert(msg != nullptr);
+	APPOINTMENT_RECUR_PAT apr{};
+	assert(ical_recur(*msg, apr));
+	assert(apr.pexceptioninfo.size() == 1);
+	if (apr.pexceptioninfo[0].enddatetime != 224020500) {
+		fprintf(stderr, "exception end %u\n", apr.pexceptioninfo[0].enddatetime);
+		return EXIT_FAILURE;
+	}
+
+	/* A zone that is not declared is refused */
+	assert(ical_load(mk("undecl", "DTSTART;TZID=Europe/Berlin:20261201T100000\r\n"
+	       "DTEND;TZID=Asia/Tokyo:20261202T030000\r\n")) == nullptr);
+	/* So is a declared end next to a start whose zone is not */
+	assert(ical_load(mk("synth", "DTSTART;TZID=Europe/Paris:20261201T100000\r\n"
+	       "DTEND;TZID=America/New_York:20261201T120000\r\n")) == nullptr);
+	/* A DATE carries no zone, RFC 5545 3.2.19 */
+	msg = ical_load(mk("date", "DTSTART;VALUE=DATE:20261201\r\n"
+	      "DTEND;VALUE=DATE;TZID=America/New_York:20261202\r\n"));
+	time_t end = 0;
+	int32_t dur = 0;
+	if (msg == nullptr || !appt_end(*msg, end, dur) || dur != 1440) {
+		fprintf(stderr, "date: duration %d\n", dur);
+		return EXIT_FAILURE;
+	}
+	return EXIT_SUCCESS;
+}
+
 /*
  * A meeting response identifies the responder through
  * PR_SENT_REPRESENTING_SMTP_ADDRESS (the iCalendar ATTENDEE) and through
@@ -2925,6 +3022,7 @@ int main()
 		E(openpgp_legacy_layout),
 		E(ical_exception_roundtrip), E(ical_exception_origdate),
 		E(ical_moved_exception_dates), E(ical_rid_other_zone),
+		E(ical_dtend_other_zone),
 		E(meeting_prefixes),
 		E(hdrfold_verbatim), E(fwd_prepend),
 		E(hdrfold_export), E(hdr_long_values),

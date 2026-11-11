@@ -2395,30 +2395,42 @@ static ec_error_t oxcical_import_internal(const char *method,
 		                start_itime, start_time);
 
 	piline = pmain_event->get_line("DTEND");
-	auto ptz_end_component = ptz_component;
 	if (piline != nullptr) {
+		/*
+		 * RFC 5545 3.8.2.2 lets DTEND name its own zone. Like Exchange,
+		 * keep the end in the zone of the start, which is the one zone
+		 * a series has. A DTEND without zone is read like DTSTART, a
+		 * DATE value carries no zone, RFC 5545 3.2.19.
+		 */
 		auto pvalue = piline->get_first_paramval("TZID");
-		if ((pvalue == nullptr) != (ptzid == nullptr)) {
-			errstr = "E-2199: oxcical_import: TZID present but VTIMEZONE not (or vice-versa)";
-			return ecInvalidParam;
-		}
-		if (pvalue != nullptr && strcasecmp(pvalue, ptzid) != 0) {
-			if (pmain_event->get_line("RRULE") != nullptr) {
-				errstr = "E-2200: oxcical_import: a recurring event cannot end in another timezone";
+		auto vtype = piline->get_first_paramval("VALUE");
+		auto end_tz = ptz_component;
+		if (pvalue != nullptr && (vtype == nullptr ||
+		    strcasecmp(vtype, "DATE") != 0) && (ptzid == nullptr ||
+		    strcasecmp(pvalue, ptzid) != 0)) {
+			if (ptzid != nullptr && ptz_component == nullptr) {
+				errstr = fmt::format("E-2199: DTSTART zone "
+				         "\"{}\" was not declared, DTEND "
+				         "names another one", ptzid);
 				return ecInvalidParam;
 			}
-			ptz_end_component = oxcical_find_vtimezone(pical, pvalue);
-			if (ptz_end_component == nullptr) {
-				errstr = fmt::format("E-2199: Timezone \"{}\" of DTEND was not declared", pvalue);
+			end_tz = oxcical_find_vtimezone(pical, pvalue);
+			if (end_tz == nullptr) {
+				errstr = fmt::format("E-2200: Timezone \"{}\" "
+				         "of DTEND was not declared", pvalue);
 				return ecInvalidParam;
 			}
 		}
-		err = oxcical_parse_dtvalue(ptz_end_component, *piline, &end_itime,
+		err = oxcical_parse_dtvalue(end_tz, *piline, &end_itime,
 		      &end_time, errstr);
 		if (err != ecSuccess) {
 			errstr.insert(0, "E-2198: ");
 			return err;
 		}
+		if (end_tz != ptz_component || (ptz_component != nullptr &&
+		    end_itime.type == itime_type::utc))
+			ical_utc_to_datetime(ptz_component, end_time,
+				&end_itime);
 		if (end_time < start_time) {
 			errstr = "E-2795: ical not imported due to end_time < start_time";
 			return ecInvalidParam;
@@ -2452,8 +2464,8 @@ static ec_error_t oxcical_import_internal(const char *method,
 	if (pend_itime != nullptr)
 		*pend_itime = oxcical_series_time(series_tz, ptz_component,
 		              end_itime, end_time);
-	if (ptz_end_component != nullptr) {
-		err = oxcical_parse_tzdisplay(false, *ptz_end_component, phash,
+	if (ptz_component != nullptr) {
+		err = oxcical_parse_tzdisplay(false, *ptz_component, phash,
 		      &last_propid, pmsg, errstr);
 		if (err != ecSuccess)
 			return err;
@@ -3123,6 +3135,11 @@ static const ical_line *oxcical_first_floating_dt(const ical_component &comp)
 		if (vtype != nullptr && strcasecmp(vtype, "DATE-TIME") != 0)
 			continue;
 		if (line->get_first_paramval("TZID") != nullptr)
+			continue;
+		/* Read in the zone of DTSTART, see oxcical_import_internal */
+		auto dts = comp.get_line("DTSTART");
+		if (strcmp(name, "DTEND") == 0 && dts != nullptr &&
+		    dts->get_first_paramval("TZID") != nullptr)
 			continue;
 		auto value = line->get_first_subvalue();
 		if (value == nullptr || *value == '\0')
