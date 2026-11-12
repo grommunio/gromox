@@ -347,7 +347,7 @@ ec_error_t rop_fasttransfersourcecopyfolder(uint8_t flags, uint8_t send_options,
 	return ecSuccess;
 }
 
-ec_error_t rop_fasttransfersourcecopymessages(const EID_ARRAY *pmessage_ids,
+ec_error_t rop_fasttransfersourcecopymessages(std::span<const eid_t> pmessage_ids,
     uint8_t flags, uint8_t send_options, LOGMAP *plogmap, uint8_t logon_id,
     uint32_t hin, uint32_t *phout) try
 {
@@ -373,7 +373,7 @@ ec_error_t rop_fasttransfersourcecopymessages(const EID_ARRAY *pmessage_ids,
 		    pfolder->folder_id, username, &permission))
 			return ecError;
 		if (!(permission & (frightsReadAny | frightsOwner))) {
-			for (const auto msgid : *pmessage_ids) {
+			for (const auto msgid : pmessage_ids) {
 				if (!exmdb_client->is_message_owner(plogon->get_dir(),
 				    msgid, username, &b_owner))
 					return ecError;
@@ -383,7 +383,7 @@ ec_error_t rop_fasttransfersourcecopymessages(const EID_ARRAY *pmessage_ids,
 		}
 	}
 
-	std::vector<eid_t> pmids(pmessage_ids->cbegin(), pmessage_ids->cend());
+	std::vector<eid_t> pmids(pmessage_ids.cbegin(), pmessage_ids.cend());
 	BOOL b_chginfo = (flags & FAST_COPY_MESSAGE_FLAG_SENDENTRYID) ? TRUE : false;
 	auto pctx = fastdownctx_object::create(plogon, send_options & 0x0F);
 	if (pctx == nullptr ||

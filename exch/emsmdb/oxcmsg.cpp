@@ -629,8 +629,8 @@ static BOOL oxcmsg_setreadflag(logon_object *plogon,
 }
 
 ec_error_t rop_setreadflags(uint8_t want_asynchronous, uint8_t read_flags,
-    const EID_ARRAY *pmessage_ids, uint8_t *ppartial_completion,
-    LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
+    std::span<const eid_t> pmessage_ids, uint8_t *ppartial_completion,
+    LOGMAP *plogmap, uint8_t logon_id, uint32_t hin) try
 {
 	BOOL b_partial;
 	ems_objtype object_type;
@@ -645,8 +645,9 @@ ec_error_t rop_setreadflags(uint8_t want_asynchronous, uint8_t read_flags,
 		return ecNotSupported;
 	b_partial = FALSE;
 
-	EID_ARRAY alt_msgs{};
-	if (pmessage_ids->count == 0) {
+	std::vector<eid_t> alt_msgs;
+	std::span<const eid_t> final_ids = pmessage_ids;
+	if (pmessage_ids.empty()) {
 		/* OXCMSG is missing documentation */
 		const RESTRICTION_PROPERTY res_prop = {
 			read_flags & rfClearReadFlag ? RELOP_NE : RELOP_EQ,
@@ -669,20 +670,20 @@ ec_error_t rop_setreadflags(uint8_t want_asynchronous, uint8_t read_flags,
 		}
 		exmdb_client->unload_table(plogon->dir, table_id);
 		if (result_set.count > 0) {
-			alt_msgs.pids = cu_alloc<eid_t>(result_set.count);
-			if (alt_msgs.pids == nullptr)
-				return ecServerOOM;
 			for (const auto &row : result_set)
 				if (row.count == 1)
 					alt_msgs.emplace_back(*static_cast<uint64_t *>(row.ppropval[0].pvalue));
-			pmessage_ids = &alt_msgs;
+			final_ids = alt_msgs;
 		}
 	}
-	for (const auto msgid : *pmessage_ids)
+	for (const auto msgid : final_ids)
 		if (!oxcmsg_setreadflag(plogon, msgid, read_flags))
 			b_partial = TRUE;	
 	*ppartial_completion = !!b_partial;
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return ecServerOOM;
 }
 
 ec_error_t rop_setmessagereadflag(uint8_t read_flags,

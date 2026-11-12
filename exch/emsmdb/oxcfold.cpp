@@ -340,7 +340,7 @@ ec_error_t rop_deletefolder(uint8_t flags, uint64_t folder_id,
 }
 
 ec_error_t rop_setsearchcriteria(RESTRICTION *pres,
-    const EID_ARRAY *pfolder_ids, uint32_t search_flags, LOGMAP *plogmap,
+    std::span<const eid_t> pfolder_ids, uint32_t search_flags, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
 	BOOL b_result;
@@ -374,21 +374,21 @@ ec_error_t rop_setsearchcriteria(RESTRICTION *pres,
 		if (!(permission & frightsOwner))
 			return ecAccessDenied;
 	}
-	if (NULL == pres || 0 == pfolder_ids->count) {
+	if (pres == nullptr || pfolder_ids.empty()) {
 		if (!exmdb_client->get_search_criteria(plogon->get_dir(),
 		    pfolder->folder_id, &search_status, nullptr, nullptr))
 			return ecError;
 		if (search_status == SEARCH_STATUS_NOT_INITIALIZED)
 			return ecNotInitialized;
 		if (!(search_flags & RESTART_SEARCH) && pres == nullptr &&
-		    pfolder_ids->count == 0)
+		    pfolder_ids.empty())
 			/* stop static search folder has no meaning,
 				status of dynamic running search folder
 				cannot be changed */
 			return ecSuccess;
 	}
-	for (const auto folder_id : *pfolder_ids) {
-		if (eid_t(folder_id).replid() != 1)
+	for (const auto folder_id : pfolder_ids) {
+		if (folder_id.replid() != 1)
 			return ecSearchFolderScopeViolation;
 		if (username != STORE_OWNER_GRANTED) {
 			if (!exmdb_client->get_folder_perm(plogon->get_dir(),
@@ -402,7 +402,7 @@ ec_error_t rop_setsearchcriteria(RESTRICTION *pres,
 		return ecError;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (!exmdb_client->set_search_criteria(plogon->get_dir(), pinfo->cpid,
-	    pfolder->folder_id, search_flags, pres, *pfolder_ids, &b_result))
+	    pfolder->folder_id, search_flags, pres, pfolder_ids, &b_result))
 		return ecError;
 	if (!b_result)
 		return ecSearchFolderScopeViolation;
@@ -444,7 +444,7 @@ ec_error_t rop_getsearchcriteria(uint8_t use_unicode, uint8_t include_restrictio
 	return ecSuccess;
 }
 
-ec_error_t rop_movecopymessages(const EID_ARRAY *pmessage_ids,
+ec_error_t rop_movecopymessages(std::span<const eid_t> pmessage_ids,
     uint8_t want_asynchronous, uint8_t want_copy, uint8_t *ppartial_completion,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hsrc, uint32_t hdst)
 {
@@ -452,7 +452,7 @@ ec_error_t rop_movecopymessages(const EID_ARRAY *pmessage_ids,
 	ems_objtype object_type;
 	uint32_t permission;
 	
-	if (0 == pmessage_ids->count) {
+	if (pmessage_ids.empty()) {
 		*ppartial_completion = 0;
 		return ecSuccess;
 	}
@@ -486,7 +486,7 @@ ec_error_t rop_movecopymessages(const EID_ARRAY *pmessage_ids,
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (!exmdb_client->movecopy_messages(plogon->get_dir(), pinfo->cpid,
 	    b_guest, rpc_user, psrc_folder->folder_id, pdst_folder->folder_id,
-	    b_copy, *pmessage_ids, &b_partial))
+	    b_copy, pmessage_ids, &b_partial))
 		return ecError;
 	*ppartial_completion = !!b_partial;
 	return ecSuccess;
@@ -679,8 +679,9 @@ ec_error_t rop_harddeletemessagesandsubfolders(uint8_t want_asynchronous,
 }
 
 static ec_error_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
-    uint8_t notify_non_read, const EID_ARRAY *pmessage_ids,
-    uint8_t *ppartial_completion, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
+    uint8_t notify_non_read, std::span<const eid_t> pmessage_ids,
+    uint8_t *ppartial_completion, LOGMAP *plogmap, uint8_t logon_id,
+    uint32_t hin) try
 {
 	BOOL b_owner;
 	BOOL b_partial;
@@ -714,16 +715,14 @@ static ec_error_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
 		return ecAccessDenied;
 	if (0 == notify_non_read) {
 		if (!exmdb_client->delete_messages(dir, pinfo->cpid,
-		    username, pfolder->folder_id, *pmessage_ids, b_hard, &b_partial))
+		    username, pfolder->folder_id, pmessage_ids, b_hard, &b_partial))
 			return ecError;
 		*ppartial_completion = !!b_partial;
 		return ecSuccess;
 	}
 	b_partial = FALSE;
-	EID_ARRAY ids = {0, cu_alloc<eid_t>(pmessage_ids->count)};
-	if (ids.pids == nullptr)
-		return ecError;
-	for (const auto msgid : *pmessage_ids) {
+	std::vector<eid_t> ids;
+	for (const auto msgid : pmessage_ids) {
 		if (username != STORE_OWNER_GRANTED) {
 			if (!exmdb_client->is_message_owner(dir, msgid, username, &b_owner))
 				return ecError;
@@ -746,7 +745,7 @@ static ec_error_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
 			     pinfo->cpid, msgid, &pbrief))
 				return ecError;
 		}
-		ids.pids[ids.count++] = msgid;
+		ids.emplace_back(msgid);
 		if (pbrief != nullptr)
 			common_util_notify_receipt(dir,
 				NOTIFY_RECEIPT_NON_READ, pbrief);
@@ -756,10 +755,13 @@ static ec_error_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
 		return ecError;
 	*ppartial_completion = b_partial || b_partial1;
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return ecServerOOM;
 }
 
 ec_error_t rop_deletemessages(uint8_t want_asynchronous, uint8_t notify_non_read,
-    const EID_ARRAY *pmessage_ids, uint8_t *ppartial_completion,
+    std::span<const eid_t> pmessage_ids, uint8_t *ppartial_completion,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	return oxcfold_deletemessages(!emsmdb_pvt_folder_softdel, want_asynchronous,
@@ -768,7 +770,7 @@ ec_error_t rop_deletemessages(uint8_t want_asynchronous, uint8_t notify_non_read
 }
 
 ec_error_t rop_harddeletemessages(uint8_t want_asynchronous,
-    uint8_t notify_non_read, const EID_ARRAY *pmessage_ids,
+    uint8_t notify_non_read, std::span<const eid_t> pmessage_ids,
     uint8_t *ppartial_completion, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	return oxcfold_deletemessages(TRUE, want_asynchronous,

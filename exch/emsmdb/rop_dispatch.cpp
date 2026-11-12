@@ -238,7 +238,7 @@ ec_error_t rop_dispatch(const rop_request &request, std::unique_ptr<rop_response
 		auto rq = CAST_TO(SETSEARCHCRITERIA);
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_setsearchcriteria(rq->pres,
-			&rq->folder_ids, rq->search_flags,
+			rq->folder_ids, rq->search_flags,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
@@ -260,7 +260,7 @@ ec_error_t rop_dispatch(const rop_request &request, std::unique_ptr<rop_response
 			return ecInvalidObject;
 		auto rsp = std::make_unique<MOVECOPYMESSAGES_RESPONSE>();
 		rsp->hindex = prequest->hindex;
-		rsp->result = rop_movecopymessages(&rq->message_ids,
+		rsp->result = rop_movecopymessages(rq->message_ids,
 			rq->want_asynchronous, rq->want_copy,
 			&rsp->partial_completion,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
@@ -343,7 +343,7 @@ ec_error_t rop_dispatch(const rop_request &request, std::unique_ptr<rop_response
 		auto rq = CAST_TO(DELETEMESSAGES);
 		rsp->hindex = prequest->hindex;
 		rsp->result = rop_deletemessages(rq->want_asynchronous,
-			rq->notify_non_read, &rq->message_ids,
+			rq->notify_non_read, rq->message_ids,
 			&rsp->partial_completion,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		rshead = std::move(rsp);
@@ -355,7 +355,7 @@ ec_error_t rop_dispatch(const rop_request &request, std::unique_ptr<rop_response
 		rsp->hindex = prequest->hindex;
 		rsp->result = rop_harddeletemessages(
 			rq->want_asynchronous, rq->notify_non_read,
-			&rq->message_ids, &rsp->partial_completion,
+			rq->message_ids, &rsp->partial_completion,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		rshead = std::move(rsp);
 		break;
@@ -705,7 +705,7 @@ ec_error_t rop_dispatch(const rop_request &request, std::unique_ptr<rop_response
 		auto rq = CAST_TO(SETREADFLAGS);
 		rsp->hindex = prequest->hindex;
 		rsp->result = rop_setreadflags(rq->want_asynchronous,
-			rq->read_flags, &rq->message_ids,
+			rq->read_flags, rq->message_ids,
 			&rsp->partial_completion,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		rshead = std::move(rsp);
@@ -1244,7 +1244,7 @@ ec_error_t rop_dispatch(const rop_request &request, std::unique_ptr<rop_response
 			return ecInvalidObject;
 		rshead->hindex = rq->ohindex;
 		rshead->result = rop_fasttransfersourcecopymessages(
-			&rq->message_ids, rq->flags, rq->send_options,
+			rq->message_ids, rq->flags, rq->send_options,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + rshead->hindex);
 		break;

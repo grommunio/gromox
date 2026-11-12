@@ -190,7 +190,7 @@ struct DELETEFOLDER_REQUEST final : public rop_request {
 
 struct SETSEARCHCRITERIA_REQUEST final : public rop_request {
 	RESTRICTION *pres = nullptr;
-	EID_ARRAY folder_ids{};
+	std::vector<eid_t> folder_ids;
 	uint32_t search_flags = 0;
 };
 
@@ -208,7 +208,7 @@ struct GETSEARCHCRITERIA_RESPONSE final : public rop_response {
 
 struct MOVECOPYMESSAGES_REQUEST final : public rop_request {
 	uint8_t dhindex = 0, want_asynchronous = 0, want_copy = 0;
-	EID_ARRAY message_ids{};
+	std::vector<eid_t> message_ids;
 };
 
 /**
@@ -249,12 +249,12 @@ struct HARDDELETEMESSAGESANDSUBFOLDERS_REQUEST final : public rop_request {
 
 struct DELETEMESSAGES_REQUEST final : public rop_request {
 	uint8_t want_asynchronous = false, notify_non_read = false;
-	EID_ARRAY message_ids{};
+	std::vector<eid_t> message_ids;
 };
 
 struct HARDDELETEMESSAGES_REQUEST final : public rop_request {
 	uint8_t want_asynchronous = false, notify_non_read = false;
-	EID_ARRAY message_ids{};
+	std::vector<eid_t> message_ids;
 };
 
 struct GETHIERARCHYTABLE_REQUEST final : public rop_request {
