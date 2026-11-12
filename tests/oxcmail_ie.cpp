@@ -1048,6 +1048,70 @@ static int ical_reply_mail_identity()
 	return EXIT_SUCCESS;
 }
 
+/*
+ * Validated on Exchange with a bare iCal REPLY: the ATTENDEE is the
+ * representing identity, SENT-BY the sender, else the attendee.
+ */
+static int ical_reply_ical_identity()
+{
+	static constexpr struct {
+		const char *attendee, *sender;
+	} cases[] = {
+		{"ATTENDEE;CN=Att One;PARTSTAT=ACCEPTED:mailto:att1@example.com", "att1@example.com"},
+		{"ATTENDEE;CN=Att One;PARTSTAT=ACCEPTED;SENT-BY=\"mailto:dlg@example.com\":mailto:att1@example.com", "dlg@example.com"},
+	};
+	fprintf(stderr, "=== ical_reply_ical_identity\n");
+	oxcical_converter cvt;
+	cvt.log_id = "-";
+	cvt.org_name = "x500org";
+	cvt.alloc = g_alloc;
+	cvt.get_propids = ee_get_propids;
+	cvt.username_to_entryid = [](const char *, const char *, BINARY *bin, enum display_type *dt) -> BOOL {
+		bin->cb = 0;
+		if (dt != nullptr)
+			*dt = DT_MAILUSER;
+		return TRUE;
+	};
+	for (const auto &c : cases) {
+		auto data = std::string("BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//EN\r\nMETHOD:REPLY\r\n"
+			"BEGIN:VEVENT\r\nUID:rpl\r\nDTSTAMP:20261005T100000Z\r\nSEQUENCE:0\r\n"
+			"DTSTART:20261030T090000Z\r\nDTEND:20261030T100000Z\r\n"
+			"ORGANIZER;CN=Org:mailto:org@example.com\r\n") +
+			c.attendee + "\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n";
+		ical ic;
+		assert(ic.load_from_str_move(data.data()));
+		auto msg = cvt.ical_to_mapi_single(ic);
+		assert(msg != nullptr);
+		auto cls  = msg->proplist.get<const char>(PR_MESSAGE_CLASS);
+		auto repr = msg->proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
+		auto name = msg->proplist.get<const char>(PR_SENT_REPRESENTING_NAME);
+		auto sndr = msg->proplist.get<const char>(PR_SENDER_SMTP_ADDRESS);
+		if (cls == nullptr || strcmp(cls, "IPM.Schedule.Meeting.Resp.Pos") != 0 ||
+		    repr == nullptr || strcmp(repr, "att1@example.com") != 0 ||
+		    name == nullptr || strcmp(name, "Att One") != 0 ||
+		    sndr == nullptr || strcmp(sndr, c.sender) != 0) {
+			fprintf(stderr, "%s: class %s repr %s name %s sender %s\n",
+			        c.attendee, znul(cls), znul(repr), znul(name), znul(sndr));
+			return EXIT_FAILURE;
+		}
+		ical icalout;
+		assert(cvt.mapi_to_ical(*msg, icalout));
+		std::string icstr;
+		assert(icalout.serialize(icstr) == ecSuccess);
+		for (size_t pos; (pos = icstr.find("\r\n ")) != icstr.npos; )
+			icstr.erase(pos, 3);
+		auto sb = strcmp(c.sender, "att1@example.com") == 0 ? "" :
+		          ";SENT-BY=\"MAILTO:dlg@example.com\"";
+		auto want = std::string("ATTENDEE;PARTSTAT=ACCEPTED") + sb + ":MAILTO:att1@example.com\r\n";
+		if (icstr.find(want) == icstr.npos ||
+		    icstr.find("ORGANIZER;CN=Org:MAILTO:org@example.com\r\n") == icstr.npos) {
+			fprintf(stderr, "%s", icstr.c_str());
+			return EXIT_FAILURE;
+		}
+	}
+	return EXIT_SUCCESS;
+}
+
 static int ical_export_exception()
 {
 	/* GXL-796 */
@@ -2831,7 +2895,7 @@ int main()
 		E(select_parts_2), E(select_parts_3), E(select_parts_4),
 		E(select_parts_5), E(select_parts_6), E(select_parts_7),
 		E(ical_export_1), E(ical_export_2), E(ical_reply_identity),
-		E(ical_reply_mail_identity),
+		E(ical_reply_mail_identity), E(ical_reply_ical_identity),
 		E(ical_export_exception), E(ical_export_allday_exception),
 		E(ical_allday_hint), E(ical_allday_date_zone),
 		E(ical_standalone_occurrence),

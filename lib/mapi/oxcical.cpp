@@ -1447,7 +1447,8 @@ static bool oxcical_parse_organizer(const ical_component &main_event,
 	/*
 	 * A REPLY or COUNTER carries the organizer as its addressee, and the
 	 * responder is the ATTENDEE. The responder is whom the message
-	 * represents. The sender stays what the mail headers say.
+	 * represents. For a response that came by mail, oxcmail replaces
+	 * this identity with the one of the mail headers.
 	 */
 	const bool response = class_match_prefix(pvalue,
 	                      "IPM.Schedule.Meeting.Resp") == 0;
@@ -1460,8 +1461,9 @@ static bool oxcical_parse_organizer(const ical_component &main_event,
 		if (strncasecmp(paddress, "MAILTO:", 7) == 0) {
 			paddress += 7;
 		} else {
-			mlog(LV_WARN, "W-2744: ORGANIZER has non-MAILTO URI \"%s\", "
-				"address properties will be incomplete", paddress);
+			mlog(LV_WARN, "W-2744: %s has non-MAILTO URI \"%s\", "
+				"address properties will be incomplete",
+				piline->m_name.c_str(), paddress);
 			paddress = nullptr;
 		}
 	}
@@ -1477,7 +1479,7 @@ static bool oxcical_parse_organizer(const ical_component &main_event,
 		pdisplay_name = paddress;
 	if (pdisplay_name != nullptr) {
 		if (pmsg->proplist.set(PR_SENT_REPRESENTING_NAME, pdisplay_name) != ecSuccess ||
-		    (!response && pmsg->proplist.set(PR_SENDER_NAME, pdisplay_name) != ecSuccess))
+		    pmsg->proplist.set(PR_SENDER_NAME, pdisplay_name) != ecSuccess)
 			return false;
 	}
 	if (paddress == nullptr)
@@ -1508,8 +1510,24 @@ static bool oxcical_parse_organizer(const ical_component &main_event,
 	    pmsg->proplist.set(PR_SENT_REPRESENTING_ENTRYID, &tmp_bin) != ecSuccess ||
 	    pmsg->proplist.set(PR_SENT_REPRESENTING_SEARCH_KEY, &srchkey) != ecSuccess)
 		return false;
-	if (response)
-		return true;
+	/*
+	 * Validated on Exchange: a response names SENT-BY of its ATTENDEE as
+	 * the sender, and the attendee itself when there is none.
+	 */
+	auto sentby = response ? piline->get_first_paramval("SENT-BY") : nullptr;
+	if (sentby != nullptr && strncasecmp(sentby, "MAILTO:", 7) == 0 &&
+	    strcasecmp(sentby + 7, paddress) != 0) {
+		paddress = sentby + 7;
+		tmp_bin.cb = 0;
+		if (!username_to_entryid(paddress, paddress, &tmp_bin, nullptr))
+			return false;
+		skb = "SMTP:"s + paddress;
+		HX_strupper(skb.data());
+		srchkey.cb = skb.size() + 1;
+		srchkey.pc = deconst(skb.c_str());
+		if (pmsg->proplist.set(PR_SENDER_NAME, paddress) != ecSuccess)
+			return false;
+	}
 	if (pmsg->proplist.set(PR_SENDER_ADDRTYPE, "SMTP") != ecSuccess ||
 	    pmsg->proplist.set(PR_SENDER_EMAIL_ADDRESS, paddress) != ecSuccess ||
 	    pmsg->proplist.set(PR_SENDER_SMTP_ADDRESS, paddress) != ecSuccess ||
