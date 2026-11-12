@@ -713,9 +713,8 @@ static ec_error_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
 	else
 		return ecAccessDenied;
 	if (0 == notify_non_read) {
-		const EID_ARRAY ids = {pmessage_ids->count, pmessage_ids->pids};
 		if (!exmdb_client->delete_messages(dir, pinfo->cpid,
-		    username, pfolder->folder_id, &ids, b_hard, &b_partial))
+		    username, pfolder->folder_id, *pmessage_ids, b_hard, &b_partial))
 			return ecError;
 		*ppartial_completion = !!b_partial;
 		return ecSuccess;
@@ -753,7 +752,7 @@ static ec_error_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
 				NOTIFY_RECEIPT_NON_READ, pbrief);
 	}
 	if (!exmdb_client->delete_messages(dir, pinfo->cpid, username,
-	    pfolder->folder_id, &ids, b_hard, &b_partial1))
+	    pfolder->folder_id, ids, b_hard, &b_partial1))
 		return ecError;
 	*ppartial_completion = b_partial || b_partial1;
 	return ecSuccess;

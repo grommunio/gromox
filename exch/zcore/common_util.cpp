@@ -1313,7 +1313,7 @@ ec_error_t cu_send_message(store_object &store, message_object &msg,
 		 */
 		const EID_ARRAY sole_ids = {1, &message_id};
 		if (!exmdb_client->delete_messages(store.get_dir(), cpid,
-		    nullptr, parent_id, &sole_ids, TRUE, &b_partial) || b_partial)
+		    nullptr, parent_id, sole_ids, TRUE, &b_partial) || b_partial)
 			/* ignore, as in the PR_DELETE_AFTER_SUBMIT branch below */;
 		return ecSuccess;
 	}
@@ -1332,7 +1332,7 @@ ec_error_t cu_send_message(store_object &store, message_object &msg,
 	} else if (b_delete) {
 		const EID_ARRAY ids = {1, &message_id};
 		if (!exmdb_client->delete_messages(store.get_dir(), cpid,
-		    nullptr, parent_id, &ids, TRUE, &b_partial) || b_partial)
+		    nullptr, parent_id, ids, TRUE, &b_partial) || b_partial)
 			/* ignore */;
 		return ecSuccess;
 	}

@@ -58,14 +58,11 @@ int main(int argc, char **argv)
 		}
 		eids.push_back(eid);
 	}
-	EID_ARRAY ea;
-	ea.count = eids.size();
-	ea.pids = eids.data();
 	BOOL partial = false;
 	uint32_t prev_delc, prev_fldc, curr_delc, curr_fldc;
 	delcount(g_folderid, &prev_delc, &prev_fldc);
 	if (!exmdb_client->delete_messages(g_storedir, CP_UTF8, nullptr,
-	    g_folderid, &ea, !g_soft, &partial)) {
+	    g_folderid, eids, !g_soft, &partial)) {
 		printf("RPC was rejected.\n");
 		return EXIT_FAILURE;
 	}

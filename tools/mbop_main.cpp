@@ -456,13 +456,10 @@ static errno_t clear_rwz()
 			ids.push_back(*mid);
 	}
 
-	EID_ARRAY ea_info;
-	ea_info.count = ids.size();
-	ea_info.pids  = ids.data();
 	BOOL partial = false;
-	printf("Deleting %u message(s)...\n", ea_info.count);
+	printf("Deleting %zu message(s)...\n", ids.size());
 	if (!exmdb_client->delete_messages(g_storedir, CP_ACP, nullptr, inbox,
-	    &ea_info, 1, &partial))
+	    ids, 1, &partial))
 		return EIO;
 	return 0;
 }

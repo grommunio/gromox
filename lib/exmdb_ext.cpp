@@ -559,14 +559,11 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_delete_messages &d)
 	else
 		TRY(x.g_str(&d.username));
 	TRY(x.g_uint64(&d.folder_id));
-	d.pmessage_ids = cu_alloc<EID_ARRAY>();
-	if (d.pmessage_ids == nullptr)
-		return pack_result::alloc;
-	TRY(x.g_eid_a(d.pmessage_ids));
+	TRY(x.g_eid_a(&d.pmessage_ids));
 	return x.g_bool(&d.b_hard);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_delete_messages &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_delete_messages_v &d)
 {
 	TRY(x.p_int32(-1));
 	TRY(x.p_uint32(d.cpid));
@@ -577,7 +574,7 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_delete_messages &d)
 		TRY(x.p_str(d.username));
 	}
 	TRY(x.p_uint64(d.folder_id));
-	TRY(x.p_eid_a(*d.pmessage_ids));
+	TRY(x.p_eid_a(d.pmessage_ids));
 	return x.p_bool(d.b_hard);
 }
 

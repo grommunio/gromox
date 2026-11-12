@@ -554,7 +554,7 @@ BOOL exmdb_server::movecopy_messages(const char *dir, cpid_t cpid, BOOL b_guest,
  * @username:   Used for evaluating delete permission.
  */
 BOOL exmdb_server::delete_messages(const char *dir, cpid_t cpid,
-    const char *username, uint64_t folder_id, const EID_ARRAY *pmessage_ids,
+    const char *username, uint64_t folder_id, std::span<const eid_t> pmessage_ids,
     BOOL b_hard, BOOL *pb_partial)
 {
 	/*
@@ -603,7 +603,7 @@ BOOL exmdb_server::delete_messages(const char *dir, cpid_t cpid,
 	auto src_folder = static_cast<const char *>(pv_src_folder);
 	auto mailbox = audit_store_location();
 
-	auto b_batch = gx_collapse_event_storm && pmessage_ids->count >= MIN_BATCH_MESSAGE_NUM;
+	auto b_batch = gx_collapse_event_storm && pmessage_ids.size() >= MIN_BATCH_MESSAGE_NUM;
 	auto dbase = pdb->lock_base_wr();
 	db_conn::NOTIFQ notifq;
 	if (b_batch)
@@ -625,7 +625,7 @@ BOOL exmdb_server::delete_messages(const char *dir, cpid_t cpid,
 	int del_count = 0;
 	std::vector<const char *> audit_subjects;
 	auto nt_time = rop_util_current_nttime();
-	for (auto mid : *pmessage_ids) {
+	for (auto mid : pmessage_ids) {
 		auto tmp_val = mid.gcv();
 		sqlite3_bind_int64(pstmt, 1, tmp_val);
 		if (pstmt.step() != SQLITE_ROW)
@@ -1520,7 +1520,7 @@ ec_error_t exmdb_execute_deferred_send(const char *dir, uint64_t mid_val) try
 	BOOL partial = false;
 	if (del_after != nullptr && *del_after != 0)
 		exmdb_server::delete_messages(dir, CP_ACP, nullptr,
-			eid_t(1, parent_fid), &ids, TRUE, &partial);
+			eid_t(1, parent_fid), ids, TRUE, &partial);
 	else
 		/*
 		 * NB: Filing always targets Sent Items. PR_SENTMAIL_ENTRYID and the

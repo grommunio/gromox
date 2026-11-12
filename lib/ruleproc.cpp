@@ -1099,7 +1099,7 @@ static ec_error_t op_copy_other(rxparam &par, const rule_node &rule,
 	del_mids.pids  = &par.cur.mid;
 	BOOL partial = false;
 	if (!exmdb_client->delete_messages(par.cur.dirc(), CP_UTF8, nullptr,
-	    par.cur.fid, &del_mids, true, &partial))
+	    par.cur.fid, del_mids, true, &partial))
 		mlog(LV_ERR, "ruleproc: OP_MOVE del_msg %s:%llxh failed",
 			par.cur.dirc(), LLU{rop_util_get_gc_value(par.cur.mid)});
 	par.cur.dir = newdir;
@@ -3307,10 +3307,9 @@ static ec_error_t mr_info_update(rxparam &par, const PROPID_ARRAY &propids,
 		if (e.mid != it->mid)
 			stale.emplace_back(e.mid);
 	if (!stale.empty()) {
-		EID_ARRAY ids = {static_cast<uint32_t>(stale.size()), stale.data()};
 		BOOL partial = false;
 		if (!exmdb_client->delete_messages(par.cur.dirc(), CP_ACP,
-		    nullptr, cal_fid, &ids, true /* hard */, &partial))
+		    nullptr, cal_fid, stale, true /* hard */, &partial))
 			return ecRpcFailed;
 	}
 	/* MS-OXOCAL v22.1 §2.2.6.5 */
@@ -3430,10 +3429,9 @@ static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
 	 * new time now conflicts with another booking.
 	 */
 	if (!existing.empty()) {
-		EID_ARRAY ids = {static_cast<uint32_t>(existing.size()), existing.data()};
 		BOOL partial = false;
 		if (!exmdb_client->delete_messages(par.cur.dirc(), CP_ACP,
-		    nullptr, cal_fid, &ids, true /* hard */, &partial))
+		    nullptr, cal_fid, existing, true /* hard */, &partial))
 			return ecRpcFailed;
 	}
 	/*
@@ -4525,10 +4523,9 @@ static ec_error_t mr_do_cancel(rxparam &par, const PROPID_ARRAY &propids,
 			std::vector<eid_t> mids;
 			for (const auto &e : items)
 				mids.emplace_back(e.mid);
-			EID_ARRAY ids = {static_cast<uint32_t>(mids.size()), mids.data()};
 			BOOL partial = false;
 			if (!exmdb_client->delete_messages(par.cur.dirc(),
-			    CP_ACP, nullptr, cal_fid, &ids, true /* hard */, &partial))
+			    CP_ACP, nullptr, cal_fid, mids, true /* hard */, &partial))
 				return ecRpcFailed;
 			par.cal_changed = true;
 			return mr_mark_done(par);
@@ -4567,10 +4564,9 @@ static ec_error_t mr_do_cancel(rxparam &par, const PROPID_ARRAY &propids,
 		std::vector<eid_t> mids;
 		for (const auto &e : items)
 			mids.emplace_back(e.mid);
-		EID_ARRAY ids = {static_cast<uint32_t>(mids.size()), mids.data()};
 		BOOL partial = false;
 		if (!exmdb_client->delete_messages(par.cur.dirc(), CP_ACP,
-		    nullptr, cal_fid, &ids, true /* hard */, &partial))
+		    nullptr, cal_fid, mids, true /* hard */, &partial))
 			return ecRpcFailed;
 		par.cal_changed = true;
 	}
@@ -4734,7 +4730,7 @@ ec_error_t rxparam::run_rules()
 		const EID_ARRAY ids = {1, &cur.mid};
 		BOOL partial;
 		if (!exmdb_client->delete_messages(cur.dirc(), CP_ACP, nullptr,
-		    cur.fid, &ids, true/*hard*/, &partial))
+		    cur.fid, ids, true/*hard*/, &partial))
 			mlog(LV_DEBUG, "ruleproc: deletion unsuccessful");
 	}
 	return ecSuccess;

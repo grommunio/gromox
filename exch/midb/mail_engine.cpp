@@ -2535,7 +2535,7 @@ static int me_mdele(std::span<char *> argv, int sockd)
 	}
 	pstmt.finalize();
 	if (!exmdb_client->delete_messages(argv[1], CP_ACP, nullptr,
-	    eid_t(1, folder_id), &message_ids, TRUE, &b_partial))
+	    eid_t(1, folder_id), message_ids, TRUE, &b_partial))
 		return MIDB_E_MDB_DELETEMESSAGES;
 
 	/*

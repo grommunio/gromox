@@ -36,11 +36,8 @@ static constexpr HXoption g_options_table[] = {
 static int generic_del(eid_t fid, const std::vector<eid_t> &chosen)
 {
 	BOOL partial_complete = false;
-	EID_ARRAY ea;
-	ea.count = chosen.size();
-	ea.pids  = deconst(chosen.data());
 	if (!exmdb_client->delete_messages(g_storedir, CP_ACP, nullptr, fid,
-	    &ea, false, &partial_complete)) {
+	    chosen, false, &partial_complete)) {
 		mbop_fprintf(stderr, "fid 0x%llx delete_messages failed\n", LLU{rop_util_get_gc_value(fid)});
 		return EXIT_FAILURE;
 	}

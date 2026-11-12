@@ -281,13 +281,22 @@ struct exreq_movecopy_folder final : public exreq {
 	uint64_t src_pid = 0, src_fid = 0, dst_fid = 0;
 };
 
-struct exreq_delete_messages final : public exreq {
-	using view_t = exreq_delete_messages;
+struct exreq_delete_messages_v final : public exreq {
 	int32_t account_id = 0;
 	cpid_t cpid{};
 	char *username = nullptr;
 	uint64_t folder_id = 0;
-	EID_ARRAY *pmessage_ids = nullptr;
+	std::span<const eid_t> pmessage_ids;
+	BOOL b_hard = false;
+};
+
+struct exreq_delete_messages final : public exreq {
+	using view_t = exreq_delete_messages_v;
+	int32_t account_id = 0;
+	cpid_t cpid{};
+	char *username = nullptr;
+	uint64_t folder_id = 0;
+	std::vector<eid_t> pmessage_ids;
 	BOOL b_hard = false;
 };
 

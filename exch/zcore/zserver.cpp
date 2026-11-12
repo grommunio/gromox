@@ -1777,7 +1777,7 @@ ec_error_t zs_deletemessages(GUID hsession, uint32_t hfolder,
 	BOOL b_hard = (flags & DELETE_HARD_DELETE) ? TRUE : false;
 	if (!notify_non_read) {
 		if (!exmdb_client->delete_messages(pstore->get_dir(),
-		    pinfo->cpid, username, pfolder->folder_id, &ids, b_hard,
+		    pinfo->cpid, username, pfolder->folder_id, ids, b_hard,
 		    &b_partial))
 			return ecError;
 		return ecSuccess;
@@ -1814,7 +1814,7 @@ ec_error_t zs_deletemessages(GUID hsession, uint32_t hfolder,
 				NOTIFY_RECEIPT_NON_READ, pbrief);
 	}
 	return exmdb_client->delete_messages(pstore->get_dir(), pinfo->cpid,
-	       username, pfolder->folder_id, &ids1, b_hard, &b_partial) ?
+	       username, pfolder->folder_id, ids1, b_hard, &b_partial) ?
 	       ecSuccess : ecError;
 }
 
@@ -1891,7 +1891,7 @@ static ec_error_t zs_copymessages_other(const BINARY_ARRAY &entryids,
 			const EID_ARRAY ids = {1, &message_id};
 			if (!exmdb_client->delete_messages(src_store.get_dir(),
 			    uinfo.cpid, nullptr, src_folder.folder_id,
-			    &ids, false, &b_partial))
+			    ids, false, &b_partial))
 				return ecError;
 		}
 	}
@@ -4819,7 +4819,7 @@ ec_error_t zs_importdeletion(GUID hsession,
 	}
 	if (sync_type == SYNC_TYPE_CONTENTS && message_ids.count > 0 &&
 	    (!exmdb_client->delete_messages(pstore->get_dir(), pinfo->cpid,
-	    nullptr, folder_id, &message_ids, b_hard, &b_partial) || b_partial))
+	    nullptr, folder_id, message_ids, b_hard, &b_partial) || b_partial))
 		return ecError;
 	return ecSuccess;
 }

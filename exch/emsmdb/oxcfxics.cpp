@@ -1397,7 +1397,7 @@ ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 	}
 	if (sync_type == SYNC_TYPE_CONTENTS && message_ids.count > 0 &&
 	    (!exmdb_client->delete_messages(dir, pinfo->cpid, nullptr,
-	    folder_id, &message_ids, b_hard, &b_partial) || b_partial))
+	    folder_id, message_ids, b_hard, &b_partial) || b_partial))
 		return ecError;
 	return ecSuccess;
 }

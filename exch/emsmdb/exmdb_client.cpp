@@ -115,7 +115,7 @@ BOOL exmdb_client_shm::delete_message(const char *dir, int account_id, cpid_t cp
 	eid_t message_id = message_idn;
 	const EID_ARRAY message_ids = {1, &message_id};
 	if (!exmdb_client->delete_messages(dir, cpid, nullptr, folder_id,
-	    &message_ids, b_hard, &b_partial))
+	    message_ids, b_hard, &b_partial))
 		return FALSE;	
 	*pb_done = !b_partial;
 	return TRUE;

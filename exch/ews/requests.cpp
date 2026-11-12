@@ -2003,7 +2003,7 @@ void process(mDeleteItemRequest &&request, XMLElement *response, const EWSContex
 			BOOL hardDelete = request.DeleteType == Enum::HardDelete ? TRUE : false;
 			BOOL partial = false;
 			if (!ctx.plugin().exmdb.delete_messages(dir.c_str(),
-			    CP_ACP, ctx.effectiveUser(parent), fid, &eids,
+			    CP_ACP, ctx.effectiveUser(parent), fid, eids,
 			    hardDelete, &partial) || partial)
 				throw EWSError::CannotDeleteObject(E3134);
 
@@ -2727,9 +2727,9 @@ void RulesEnv::rollback()
 {
 	if (created_templates.empty())
 		return;
-	EID_ARRAY ids{static_cast<uint32_t>(created_templates.size()), created_templates.data()};
 	BOOL partial = false;
-	exmdb.delete_messages(dir.c_str(), CP_ACP, nullptr, rules_inbox, &ids, true, &partial);
+	exmdb.delete_messages(dir.c_str(), CP_ACP, nullptr, rules_inbox,
+		created_templates, true, &partial);
 	created_templates.clear();
 }
 
@@ -2999,9 +2999,9 @@ void purge_templates(const EWSContext &ctx, const std::string &dir)
 			orphans.push_back(eid_t(*mid));
 	if (orphans.empty())
 		return;
-	EID_ARRAY ids{static_cast<uint32_t>(orphans.size()), orphans.data()};
 	BOOL partial = false;
-	exmdb.delete_messages(dir.c_str(), CP_ACP, nullptr, rules_inbox, &ids, true, &partial);
+	exmdb.delete_messages(dir.c_str(), CP_ACP, nullptr, rules_inbox,
+		orphans, true, &partial);
 }
 
 }
@@ -3110,10 +3110,9 @@ void process(mUpdateInboxRulesRequest &&request, XMLElement *response, const EWS
 		}
 
 		if (remove_blob && !blobs.empty()) {
-			EID_ARRAY ids{static_cast<uint32_t>(blobs.size()), blobs.data()};
 			BOOL partial = false;
 			if (!exmdb.delete_messages(dir.c_str(), CP_ACP, nullptr,
-			    rules_inbox, &ids, true, &partial))
+			    rules_inbox, blobs, true, &partial))
 				throw EWSError::InternalServerError(E3610);
 		}
 
@@ -3815,7 +3814,7 @@ void process(mDeleteUserConfigurationRequest &&request,
 		EID_ARRAY eids{1, &eid};
 		BOOL partial;
 		if (!exmdb.delete_messages(dir.c_str(), CP_ACP,
-		    username, folder.folderId, &eids, TRUE,
+		    username, folder.folderId, eids, TRUE,
 		    &partial) || partial)
 			throw EWSError::CannotDeleteObject(E3447);
 
@@ -4725,7 +4724,7 @@ void process(mSendItemRequest &&request, XMLElement *response, const EWSContext 
 			EID_ARRAY eids{1, &eid};
 			BOOL partial = false;
 			if (!ctx.plugin().exmdb.delete_messages(dir.c_str(),
-			    CP_ACP, username, folder.folderId, &eids, false,
+			    CP_ACP, username, folder.folderId, eids, false,
 			    &partial) || partial)
 				throw EWSError::CannotDeleteObject(E3497);
 		} else {
@@ -4987,7 +4986,7 @@ static void process_upditem_2(mUpdateItemRequest &request, const EWSContext &ctx
 		EID_ARRAY eids{1, &eid};
 		BOOL partial = false;
 		if (!ctx.plugin().exmdb.delete_messages(dir.c_str(),
-		    CP_ACP, username, fid, &eids, false, &partial) ||
+		    CP_ACP, username, fid, eids, false, &partial) ||
 		    partial)
 			throw EWSError::CannotDeleteObject(E3469);
 	}
