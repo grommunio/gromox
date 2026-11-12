@@ -312,7 +312,7 @@ BOOL exmdb_server::movecopy_message(const char *dir, cpid_t cpid,
  */
 BOOL exmdb_server::movecopy_messages(const char *dir, cpid_t cpid, BOOL b_guest,
     const char *username, uint64_t src_fid, uint64_t dst_fid, BOOL b_copy,
-    const EID_ARRAY *pmessage_ids, BOOL *pb_partial)
+    std::span<const eid_t> pmessage_ids, BOOL *pb_partial)
 {
 	BOOL b_check, b_owner, b_result;
 	uint32_t permission, folder_type;
@@ -349,7 +349,7 @@ BOOL exmdb_server::movecopy_messages(const char *dir, cpid_t cpid, BOOL b_guest,
 	auto src_folder = static_cast<const char *>(pv_src_folder);
 	auto dst_folder = static_cast<const char *>(pv_dst_folder);
 
-	auto b_batch = gx_collapse_event_storm && pmessage_ids->count >= MIN_BATCH_MESSAGE_NUM
+	auto b_batch = gx_collapse_event_storm && pmessage_ids.size() >= MIN_BATCH_MESSAGE_NUM
 	/* Table reload in MFCMAPI is ~700msg/sec, whereas event processing is ~100msgevt/sec */
 	               /* && table_new_content_count / 7 < pmessage_eids->count */;
 	auto dbase = pdb->lock_base_wr();
@@ -383,7 +383,7 @@ BOOL exmdb_server::movecopy_messages(const char *dir, cpid_t cpid, BOOL b_guest,
 	uint32_t del_count = 0, message_size = 0;
 	std::set<uint64_t> touched_folders;
 	std::vector<const char *> audit_subjects;
-	for (auto mid : *pmessage_ids) {
+	for (auto mid : pmessage_ids) {
 		auto tmp_val = mid.gcv();
 		stm_find.bind_int64(1, tmp_val);
 		if (stm_find.step() != SQLITE_ROW) {
@@ -1528,7 +1528,7 @@ ec_error_t exmdb_execute_deferred_send(const char *dir, uint64_t mid_val) try
 		 */
 		exmdb_server::movecopy_messages(dir, CP_ACP, false, nullptr,
 			eid_t(1, parent_fid), eid_t(1, PRIVATE_FID_SENT_ITEMS),
-			false, &ids, &partial);
+			false, ids, &partial);
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);

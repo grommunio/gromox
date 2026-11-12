@@ -121,12 +121,9 @@ int main(int argc, char **argv)
 	std::vector<eid_t> eids;
 	for (int uidx = 0; uidx < result.nargs; ++uidx)
 		eids.emplace_back(eid_t{1, strtoul(result.uarg[uidx], nullptr, 0)});
-	EID_ARRAY ea;
-	ea.count = eids.size();
-	ea.pids = eids.data();
 	BOOL partial = false;
 	if (!exmdb_client->movecopy_messages(g_storedir, CP_UTF8, false, nullptr,
-	    g_srcfid, g_dstfid, g_copy, &ea, &partial)) {
+	    g_srcfid, g_dstfid, g_copy, eids, &partial)) {
 		printf("RPC was rejected.\n");
 		return EXIT_FAILURE;
 	}

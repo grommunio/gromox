@@ -1956,7 +1956,7 @@ ec_error_t zs_copymessages(GUID hsession, uint32_t hsrcfolder,
 	return exmdb_client->movecopy_messages(src_store->get_dir(),
 	       pinfo->cpid, b_guest ? TRUE : false, pinfo->get_username(),
 	       psrc_folder->folder_id, pdst_folder->folder_id,
-	       (flags & MAPI_MOVE) ? false : TRUE, &ids,
+	       (flags & MAPI_MOVE) ? false : TRUE, ids,
 	       &b_partial) ? ecSuccess : ecError;
 }
 

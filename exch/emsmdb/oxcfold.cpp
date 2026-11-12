@@ -484,10 +484,9 @@ ec_error_t rop_movecopymessages(const EID_ARRAY *pmessage_ids,
 			return ecAccessDenied;
 	}
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
-	const EID_ARRAY ids = {pmessage_ids->count, pmessage_ids->pids};
 	if (!exmdb_client->movecopy_messages(plogon->get_dir(), pinfo->cpid,
 	    b_guest, rpc_user, psrc_folder->folder_id, pdst_folder->folder_id,
-	    b_copy, &ids, &b_partial))
+	    b_copy, *pmessage_ids, &b_partial))
 		return ecError;
 	*ppartial_completion = !!b_partial;
 	return ecSuccess;

@@ -1346,7 +1346,7 @@ ec_error_t cu_send_message(store_object &store, message_object &msg,
 
 	const EID_ARRAY ids = {1, &message_id};
 	if (!exmdb_client->movecopy_messages(store.get_dir(), cpid, false,
-	    STORE_OWNER_GRANTED, parent_id, folder_id, false, &ids, &b_partial) || b_partial)
+	    STORE_OWNER_GRANTED, parent_id, folder_id, false, ids, &b_partial) || b_partial)
 		return ecWarnWithErrors;
 	return ecSuccess;
 } catch (const std::bad_alloc &) {

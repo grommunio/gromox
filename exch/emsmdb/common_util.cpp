@@ -1673,7 +1673,7 @@ ec_error_t cu_send_message(logon_object &logon, message_object &msg,
 	const EID_ARRAY ids = {1, &message_id};
 	if (!exmdb_client->movecopy_messages(dir, cpid,
 	    false, STORE_OWNER_GRANTED, parent_id, folder_id, false,
-	    &ids, &b_partial)) {
+	    ids, &b_partial)) {
 		mlog2(LV_WARN, "W-1275: exrpc movecopy_message %s failed",
 			log_id.c_str());
 		return ecWarnWithErrors;

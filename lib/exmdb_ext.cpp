@@ -488,13 +488,10 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_movecopy_messages &d)
 	TRY(x.g_uint64(&d.src_fid));
 	TRY(x.g_uint64(&d.dst_fid));
 	TRY(x.g_bool(&d.b_copy));
-	d.pmessage_ids = cu_alloc<EID_ARRAY>();
-	if (d.pmessage_ids == nullptr)
-		return pack_result::alloc;
-	return x.g_eid_a(d.pmessage_ids);
+	return x.g_eid_a(&d.pmessage_ids);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_movecopy_messages &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_movecopy_messages_v &d)
 {
 	TRY(x.p_int32(-1));
 	TRY(x.p_uint32(d.cpid));
@@ -508,7 +505,7 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_movecopy_messages &d)
 	TRY(x.p_uint64(d.src_fid));
 	TRY(x.p_uint64(d.dst_fid));
 	TRY(x.p_bool(d.b_copy));
-	return x.p_eid_a(*d.pmessage_ids);
+	return x.p_eid_a(d.pmessage_ids);
 }
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_movecopy_folder &d)

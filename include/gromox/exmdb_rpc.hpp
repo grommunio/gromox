@@ -256,13 +256,21 @@ struct exreq_movecopy_message final : public exreq {
 	BOOL b_move = false;
 };
 
-struct exreq_movecopy_messages final : public exreq {
-	using view_t = exreq_movecopy_messages;
+struct exreq_movecopy_messages_v final : public exreq {
 	cpid_t cpid{};
 	BOOL b_guest = false, b_copy = false;
 	char *username = nullptr;
 	uint64_t src_fid = 0, dst_fid = 0;
-	EID_ARRAY *pmessage_ids = nullptr;
+	std::span<const eid_t> pmessage_ids;
+};
+
+struct exreq_movecopy_messages final : public exreq {
+	using view_t = exreq_movecopy_messages_v;
+	cpid_t cpid{};
+	BOOL b_guest = false, b_copy = false;
+	char *username = nullptr;
+	uint64_t src_fid = 0, dst_fid = 0;
+	std::vector<eid_t> pmessage_ids;
 };
 
 struct exreq_movecopy_folder final : public exreq {
