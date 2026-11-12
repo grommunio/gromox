@@ -1921,7 +1921,7 @@ static bool folder_clear_search_folder(db_conn &db,
  * code path for a full rebuild.
  */
 static bool sf_criteria_unchanged(db_conn &db, uint64_t fid_val,
-    const RESTRICTION *prestriction, const EID_ARRAY *pfolder_ids)
+    const RESTRICTION *prestriction, std::span<const eid_t> pfolder_ids)
 {
 	char sql_string[128];
 	if (prestriction != nullptr) {
@@ -1942,7 +1942,7 @@ static bool sf_criteria_unchanged(db_conn &db, uint64_t fid_val,
 		    memcmp(blob, ext_push.m_udata, blen) != 0)
 			return false;
 	}
-	if (pfolder_ids->count == 0)
+	if (pfolder_ids.empty())
 		/* Caller reuses current data set, which is identical by definition. */
 		return true;
 	snprintf(sql_string, std::size(sql_string), "SELECT included_fid FROM"
@@ -1953,15 +1953,15 @@ static bool sf_criteria_unchanged(db_conn &db, uint64_t fid_val,
 	std::vector<uint64_t> old_scope;
 	while (pstmt.step() == SQLITE_ROW)
 		old_scope.push_back(pstmt.col_uint64(0));
-	if (old_scope.size() != pfolder_ids->count)
+	if (old_scope.size() != pfolder_ids.size())
 		return false;
-	return std::all_of(pfolder_ids->cbegin(), pfolder_ids->cend(),
+	return std::all_of(pfolder_ids.cbegin(), pfolder_ids.cend(),
 	       [&](eid_t f) { return ct_contains(old_scope, f.gcv()); });
 }
 
 BOOL exmdb_server::set_search_criteria(const char *dir, cpid_t cpid,
     uint64_t folder_id, uint32_t search_flags, const RESTRICTION *prestriction,
-    const EID_ARRAY *pfolder_ids, BOOL *pb_result) try
+    std::span<const eid_t> pfolder_ids, BOOL *pb_result) try
 {
 	EXT_PULL ext_pull;
 	EXT_PUSH ext_push;
@@ -1979,17 +1979,15 @@ BOOL exmdb_server::set_search_criteria(const char *dir, cpid_t cpid,
 		return false;
 	folder_id = cu_resolve_folder(pdb->psqlite, folder_id);
 	auto fid_val = eid_t(folder_id).gcv();
-	if (pfolder_ids->count > 0) {
-		for (size_t i = 0; i < pfolder_ids->count; ++i) {
-			auto fid_val1 = pfolder_ids->pids[i].gcv();
-			BOOL b_included = false;
-			if (!cu_is_descendant_folder(pdb->psqlite, fid_val,
-			    fid_val1, &b_included))
-				return FALSE;	
-			if (b_included) {
-				*pb_result = FALSE;
-				return TRUE;
-			}
+	for (auto a_fid : pfolder_ids) {
+		auto fid_val1 = a_fid.gcv();
+		BOOL b_included = false;
+		if (!cu_is_descendant_folder(pdb->psqlite, fid_val,
+		    fid_val1, &b_included))
+			return FALSE;
+		if (b_included) {
+			*pb_result = FALSE;
+			return TRUE;
 		}
 	}
 	snprintf(sql_string, std::size(sql_string), "SELECT search_flags FROM"
@@ -2050,7 +2048,7 @@ BOOL exmdb_server::set_search_criteria(const char *dir, cpid_t cpid,
 	}
 
 	std::vector<uint64_t> scope_list;
-	if (pfolder_ids->count > 0) {
+	if (pfolder_ids.size() > 0) {
 		snprintf(sql_string, std::size(sql_string), "DELETE FROM search_scopes"
 		        " WHERE folder_id=%llu", LLU{fid_val});
 		if (pdb->exec(sql_string) != SQLITE_OK)
@@ -2064,8 +2062,8 @@ BOOL exmdb_server::set_search_criteria(const char *dir, cpid_t cpid,
 		              "FROM folders WHERE folder_id=?");
 		if (pstmt1 == nullptr)
 			return false;
-		for (size_t i = 0; i < pfolder_ids->count; ++i) {
-			auto le_folder = pfolder_ids->pids[i].gcv();
+		for (auto a_fid : pfolder_ids) {
+			auto le_folder = a_fid.gcv();
 			pstmt1.bind_int64(1, le_folder);
 			if (pstmt1.step() != SQLITE_ROW)
 				return false;

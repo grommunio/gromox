@@ -232,13 +232,21 @@ struct exreq_get_search_criteria final : public exreq {
 	uint64_t folder_id = 0;
 };
 
-struct exreq_set_search_criteria final : public exreq {
-	using view_t = exreq_set_search_criteria;
+struct exreq_set_search_criteria_v final : public exreq {
 	cpid_t cpid{};
 	uint64_t folder_id = 0;
 	uint32_t search_flags = 0;
 	RESTRICTION *prestriction = nullptr;
-	EID_ARRAY *pfolder_ids = nullptr;
+	std::span<const eid_t> pfolder_ids;
+};
+
+struct exreq_set_search_criteria final : public exreq {
+	using view_t = exreq_set_search_criteria_v;
+	cpid_t cpid{};
+	uint64_t folder_id = 0;
+	uint32_t search_flags = 0;
+	RESTRICTION *prestriction = nullptr;
+	std::vector<eid_t> pfolder_ids;
 };
 
 struct exreq_movecopy_message final : public exreq {

@@ -402,7 +402,7 @@ ec_error_t rop_setsearchcriteria(RESTRICTION *pres,
 		return ecError;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (!exmdb_client->set_search_criteria(plogon->get_dir(), pinfo->cpid,
-	    pfolder->folder_id, search_flags, pres, pfolder_ids, &b_result))
+	    pfolder->folder_id, search_flags, pres, *pfolder_ids, &b_result))
 		return ecError;
 	if (!b_result)
 		return ecSearchFolderScopeViolation;

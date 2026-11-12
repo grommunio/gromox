@@ -4993,7 +4993,7 @@ ec_error_t zs_setsearchcriteria(GUID hsession, uint32_t hfolder, uint32_t flags,
 		}
 	}
 	if (!exmdb_client->set_search_criteria(pstore->get_dir(), pinfo->cpid,
-	    pfolder->folder_id, flags, prestriction, &folder_ids, &b_result))
+	    pfolder->folder_id, flags, prestriction, folder_ids, &b_result))
 		return ecError;
 	return b_result ? ecSuccess : ecSearchFolderScopeViolation;
 }
