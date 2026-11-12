@@ -1056,9 +1056,11 @@ static int ical_reply_ical_identity()
 {
 	static constexpr struct {
 		const char *attendee, *sender;
+		bool attendee_first;
 	} cases[] = {
-		{"ATTENDEE;CN=Att One;PARTSTAT=ACCEPTED:mailto:att1@example.com", "att1@example.com"},
-		{"ATTENDEE;CN=Att One;PARTSTAT=ACCEPTED;SENT-BY=\"mailto:dlg@example.com\":mailto:att1@example.com", "dlg@example.com"},
+		{"ATTENDEE;CN=Att One;PARTSTAT=ACCEPTED:mailto:att1@example.com", "att1@example.com", false},
+		{"ATTENDEE;CN=Att One;PARTSTAT=ACCEPTED;SENT-BY=\"mailto:dlg@example.com\":mailto:att1@example.com", "dlg@example.com", false},
+		{"ATTENDEE;CN=Att One;PARTSTAT=ACCEPTED:mailto:att1@example.com", "att1@example.com", true},
 	};
 	fprintf(stderr, "=== ical_reply_ical_identity\n");
 	oxcical_converter cvt;
@@ -1073,11 +1075,13 @@ static int ical_reply_ical_identity()
 		return TRUE;
 	};
 	for (const auto &c : cases) {
+		std::string org = "ORGANIZER;CN=Org:mailto:org@example.com\r\n";
+		auto att = std::string(c.attendee) + "\r\n";
 		auto data = std::string("BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//EN\r\nMETHOD:REPLY\r\n"
 			"BEGIN:VEVENT\r\nUID:rpl\r\nDTSTAMP:20261005T100000Z\r\nSEQUENCE:0\r\n"
-			"DTSTART:20261030T090000Z\r\nDTEND:20261030T100000Z\r\n"
-			"ORGANIZER;CN=Org:mailto:org@example.com\r\n") +
-			c.attendee + "\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n";
+			"DTSTART:20261030T090000Z\r\nDTEND:20261030T100000Z\r\n") +
+			(c.attendee_first ? att + org : org + att) +
+			"END:VEVENT\r\nEND:VCALENDAR\r\n";
 		ical ic;
 		assert(ic.load_from_str_move(data.data()));
 		auto msg = cvt.ical_to_mapi_single(ic);
@@ -1092,6 +1096,12 @@ static int ical_reply_ical_identity()
 		    sndr == nullptr || strcmp(sndr, c.sender) != 0) {
 			fprintf(stderr, "%s: class %s repr %s name %s sender %s\n",
 			        c.attendee, znul(cls), znul(repr), znul(name), znul(sndr));
+			return EXIT_FAILURE;
+		}
+		/* like Exchange, the organizer is the only recipient */
+		auto rcpts = msg->children.prcpts;
+		if (rcpts == nullptr || rcpts->count != 1) {
+			fprintf(stderr, "%u recipients\n", rcpts != nullptr ? rcpts->count : 0);
 			return EXIT_FAILURE;
 		}
 		ical icalout;

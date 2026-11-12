@@ -831,6 +831,13 @@ static ec_error_t oxcical_parse_recipients(const ical_component &main_ev,
 			return ecSuccess;
 		organizer += 7;
 	}
+	/*
+	 * The ATTENDEE of a REPLY or COUNTER is the responder, which
+	 * oxcical_parse_organizer puts into PR_SENT_REPRESENTING. Exchange
+	 * lists only the organizer as recipient of a response.
+	 */
+	bool response = class_match_prefix(pmessage_class,
+	                "IPM.Schedule.Meeting.Resp") == 0;
 
 	prcpts = tarray_set_init();
 	if (prcpts == nullptr)
@@ -842,7 +849,7 @@ static ec_error_t oxcical_parse_recipients(const ical_component &main_ev,
 		/* Cf. [MS-OXCICAL] v20240416 §2.1.3.1.1.20.16 "property: ORGANIZER". */
 		auto is_attendee  = strcasecmp(piline->m_name.c_str(), "ATTENDEE") == 0;
 		auto is_organizer = strcasecmp(piline->m_name.c_str(), "ORGANIZER") == 0;
-		if (!is_attendee && !is_organizer)
+		if ((!is_attendee && !is_organizer) || (response && is_attendee))
 			continue;
 		paddress = piline->get_first_subvalue();
 		if (paddress == nullptr || strncasecmp(paddress, "MAILTO:", 7) != 0) {
@@ -3776,29 +3783,38 @@ static void oxcical_export_organizer(const MESSAGE_CONTENT &msg,
 }
 
 /**
- * The organizer of a reply is whoever the reply is addressed to. A response
- * message carries no organizer of its own — oxcical_parse_organizer discards
- * the ORGANIZER line of an incoming REPLY for that very reason — so the
- * recipient table is the only place left to read it from.
+ * The organizer of a reply is whoever the reply is addressed to. The
+ * representing identity of a response is the responder, so the organizer
+ * comes from the recipient table: the row flagged recipOrganizer, else
+ * the first To row.
  */
 static void oxcical_export_organizer_rcpt(const MESSAGE_CONTENT &msg,
     ical_component &com, const char *org_name, cvt_id2user id2user)
 {
 	if (msg.children.prcpts == nullptr)
 		return;
-	for (const auto &rcpt : *msg.children.prcpts) {
-		auto rcpttype = rcpt.get<const uint32_t>(PR_RECIPIENT_TYPE);
-		if (rcpttype != nullptr && *rcpttype != MAPI_TO)
-			continue;
+	auto emit = [&](const TPROPVAL_ARRAY &rcpt) {
 		std::string username;
 		if (!oxcmail_get_smtp_address(rcpt, nullptr /* tags_self */,
 		    org_name, id2user, username))
-			continue;
+			return false;
 		auto line = &com.append_line("ORGANIZER", "MAILTO:"s + username);
 		auto name = rcpt.get<const char>(PR_DISPLAY_NAME);
 		if (name != nullptr)
 			line->append_param("CN", name);
-		return;
+		return true;
+	};
+	for (const auto &rcpt : *msg.children.prcpts) {
+		auto fl = rcpt.get<const uint32_t>(PR_RECIPIENT_FLAGS);
+		if (fl != nullptr && *fl & recipOrganizer && emit(rcpt))
+			return;
+	}
+	for (const auto &rcpt : *msg.children.prcpts) {
+		auto rcpttype = rcpt.get<const uint32_t>(PR_RECIPIENT_TYPE);
+		if (rcpttype != nullptr && *rcpttype != MAPI_TO)
+			continue;
+		if (emit(rcpt))
+			return;
 	}
 }
 
