@@ -3466,6 +3466,11 @@ static bool oxcical_export_recipient_table(ical_component &pevent_component,
 			snprintf(tmp_value, sizeof(tmp_value), "MAILTO:%s", sentby);
 			piline->append_param("SENT-BY", tmp_value);
 		}
+		auto name = pmsg->proplist.get<const char>(
+		            PR_SENT_REPRESENTING_NAME);
+		if (name != nullptr && *name != '\0' &&
+		    strcasecmp(name, str) != 0)
+			piline->append_param("CN", name);
 		snprintf(tmp_value, sizeof(tmp_value), "MAILTO:%s", str);
 		piline->append_value(nullptr, tmp_value);
 		return true;

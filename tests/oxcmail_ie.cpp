@@ -1112,7 +1112,8 @@ static int ical_reply_ical_identity()
 			icstr.erase(pos, 3);
 		auto sb = strcmp(c.sender, "att1@example.com") == 0 ? "" :
 		          ";SENT-BY=\"MAILTO:dlg@example.com\"";
-		auto want = std::string("ATTENDEE;PARTSTAT=ACCEPTED") + sb + ":MAILTO:att1@example.com\r\n";
+		auto want = std::string("ATTENDEE;PARTSTAT=ACCEPTED") + sb +
+		            ";CN=Att One:MAILTO:att1@example.com\r\n";
 		if (icstr.find(want) == icstr.npos ||
 		    icstr.find("ORGANIZER;CN=Org:MAILTO:org@example.com\r\n") == icstr.npos) {
 			fprintf(stderr, "%s", icstr.c_str());
