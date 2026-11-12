@@ -993,6 +993,61 @@ static int ical_reply_identity()
 	return EXIT_SUCCESS;
 }
 
+/*
+ * Validated on Exchange: a received REPLY names its responder after From
+ * and Sender, whatever ATTENDEE and SENT-BY of the iCal part say.
+ */
+static int ical_reply_mail_identity()
+{
+	static constexpr struct {
+		const char *hdr, *attendee, *repr, *repr_name, *sender;
+	} cases[] = {
+		{"From: \"Nice Name\" <att1@example.com>\r\n",
+		 "ATTENDEE;PARTSTAT=ACCEPTED:mailto:att1@example.com",
+		 "att1@example.com", "Nice Name", "att1@example.com"},
+		{"From: att1@example.com\r\n",
+		 "ATTENDEE;CN=Two;PARTSTAT=DECLINED:mailto:att2@example.com",
+		 "att1@example.com", "att1@example.com", "att1@example.com"},
+		{"From: att1@example.com\r\n",
+		 "ATTENDEE;PARTSTAT=TENTATIVE;SENT-BY=\"mailto:att3@example.com\":mailto:att1@example.com",
+		 "att1@example.com", "att1@example.com", "att1@example.com"},
+		{"From: att1@example.com\r\nSender: att3@example.com\r\n",
+		 "ATTENDEE;PARTSTAT=ACCEPTED:mailto:att1@example.com",
+		 "att1@example.com", "att1@example.com", "att3@example.com"},
+	};
+	fprintf(stderr, "=== ical_reply_mail_identity\n");
+	for (const auto &c : cases) {
+		auto data = std::string(c.hdr) +
+			"To: org@example.com\r\nSubject: reply\r\nMIME-Version: 1.0\r\n"
+			"Content-Type: text/calendar; method=REPLY; charset=utf-8\r\n\r\n"
+			"BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//EN\r\nMETHOD:REPLY\r\n"
+			"BEGIN:VEVENT\r\nUID:rpl\r\nDTSTAMP:20261005T100000Z\r\nSEQUENCE:0\r\n"
+			"DTSTART:20261030T090000Z\r\nDTEND:20261030T100000Z\r\n"
+			"ORGANIZER;CN=Org:mailto:org@example.com\r\n" +
+			c.attendee + "\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n";
+		MAIL m;
+		assert(m.refonly_parse(data.data(), data.size()));
+		oxcmail_converter cvt;
+		cvt.alloc = g_alloc;
+		cvt.get_propids = ee_get_propids;
+		auto mc = cvt.inet_to_mapi(m);
+		assert(mc != nullptr);
+		auto cls = mc->proplist.get<const char>(PR_MESSAGE_CLASS);
+		auto repr = mc->proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
+		auto name = mc->proplist.get<const char>(PR_SENT_REPRESENTING_NAME);
+		auto sndr = mc->proplist.get<const char>(PR_SENDER_SMTP_ADDRESS);
+		if (cls == nullptr || strncmp(cls, "IPM.Schedule.Meeting.Resp.", 26) != 0 ||
+		    repr == nullptr || strcmp(repr, c.repr) != 0 ||
+		    name == nullptr || strcmp(name, c.repr_name) != 0 ||
+		    sndr == nullptr || strcmp(sndr, c.sender) != 0) {
+			fprintf(stderr, "%s: class %s repr %s name %s sender %s\n",
+			        c.attendee, znul(cls), znul(repr), znul(name), znul(sndr));
+			return EXIT_FAILURE;
+		}
+	}
+	return EXIT_SUCCESS;
+}
+
 static int ical_export_exception()
 {
 	/* GXL-796 */
@@ -2776,6 +2831,7 @@ int main()
 		E(select_parts_2), E(select_parts_3), E(select_parts_4),
 		E(select_parts_5), E(select_parts_6), E(select_parts_7),
 		E(ical_export_1), E(ical_export_2), E(ical_reply_identity),
+		E(ical_reply_mail_identity),
 		E(ical_export_exception), E(ical_export_allday_exception),
 		E(ical_allday_hint), E(ical_allday_date_zone),
 		E(ical_standalone_occurrence),
