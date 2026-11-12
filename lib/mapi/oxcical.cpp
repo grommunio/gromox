@@ -1388,7 +1388,9 @@ static bool oxcical_parse_location(const ical_component &main_event,
 	const char *pvalue;
 	char tmp_buff[1024];
 
-	pvalue = piline->get_first_subvalue();
+	/* An empty LOCATION of an override clears the series location */
+	pvalue = piline->value_list.empty() && pexception != nullptr ? "" :
+	         piline->get_first_subvalue();
 	if (pvalue == nullptr)
 		return true;
 	tmp_len = strlen(pvalue);
@@ -1410,6 +1412,11 @@ static bool oxcical_parse_location(const ical_component &main_event,
 	if (pmsg->proplist.set(PROP_TAG(PT_UNICODE, *plast_propid), tmp_buff) != ecSuccess)
 		return false;
 	(*plast_propid) ++;
+	if (pexception != nullptr && pext_exception != nullptr) {
+		pexception->overrideflags |= ARO_LOCATION;
+		pexception->location = tmp_buff;
+		pext_exception->location = tmp_buff;
+	}
 	pvalue = piline->get_first_paramval("ALTREP");
 	if (pvalue == nullptr)
 		return true;
@@ -1419,11 +1426,6 @@ static bool oxcical_parse_location(const ical_component &main_event,
 	if (pmsg->proplist.set(PROP_TAG(PT_UNICODE, *plast_propid), pvalue) != ecSuccess)
 		return false;
 	(*plast_propid) ++;
-	if (pexception != nullptr && pext_exception != nullptr) {
-		pexception->overrideflags |= ARO_LOCATION;
-		pexception->location = tmp_buff;
-		pext_exception->location = tmp_buff;
-	}
 	return true;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
