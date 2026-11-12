@@ -837,6 +837,60 @@ static int ical_exception_inherit()
 	return EXIT_SUCCESS;
 }
 
+static int ical_exception_overrides()
+{
+	auto data = std::string("BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//EN\r\n") +
+		ical_berlin +
+		"BEGIN:VEVENT\r\nUID:exc-ovr\r\nDTSTAMP:20261005T100000Z\r\n"
+		"SUMMARY:daily\r\nLOCATION:Room A\r\nRRULE:FREQ=DAILY;COUNT=5\r\n"
+		"DTSTART;TZID=Europe/Berlin:20261020T100000\r\nDTEND;TZID=Europe/Berlin:20261020T110000\r\n"
+		"END:VEVENT\r\n"
+		"BEGIN:VEVENT\r\nUID:exc-ovr\r\nDTSTAMP:20261005T100000Z\r\n"
+		"SUMMARY:daily\r\nLOCATION:Room A\r\n"
+		"RECURRENCE-ID;TZID=Europe/Berlin:20261021T100000\r\n"
+		"DTSTART;TZID=Europe/Berlin:20261021T140000\r\nDTEND;TZID=Europe/Berlin:20261021T150000\r\n"
+		"END:VEVENT\r\n"
+		"BEGIN:VEVENT\r\nUID:exc-ovr\r\nDTSTAMP:20261005T100000Z\r\n"
+		"SUMMARY:\r\nLOCATION:\r\n"
+		"RECURRENCE-ID;TZID=Europe/Berlin:20261022T100000\r\n"
+		"DTSTART;TZID=Europe/Berlin:20261022T140000\r\nDTEND;TZID=Europe/Berlin:20261022T150000\r\n"
+		"END:VEVENT\r\n"
+		"BEGIN:VEVENT\r\nUID:exc-ovr\r\nDTSTAMP:20261005T100000Z\r\n"
+		"SUMMARY:moved\r\nLOCATION:Room B\r\n"
+		"RECURRENCE-ID;TZID=Europe/Berlin:20261023T100000\r\n"
+		"DTSTART;TZID=Europe/Berlin:20261023T140000\r\nDTEND;TZID=Europe/Berlin:20261023T150000\r\n"
+		"END:VEVENT\r\nEND:VCALENDAR\r\n";
+	fprintf(stderr, "=== ical_exception_overrides\n");
+	auto msg = ical_load(std::move(data));
+	assert(msg != nullptr);
+	APPOINTMENT_RECUR_PAT apr{};
+	assert(ical_recur(*msg, apr));
+	assert(apr.pexceptioninfo.size() == 3);
+	/*
+	 * Measured on Exchange: a SUMMARY equal to the series is inherited,
+	 * a LOCATION is an override even when equal, empty values blank.
+	 */
+	static constexpr struct {
+		uint16_t flags;
+		const char *subject, *location;
+	} want[] = {
+		{ARO_LOCATION, "", "Room A"},
+		{ARO_SUBJECT | ARO_LOCATION, "", ""},
+		{ARO_SUBJECT | ARO_LOCATION, "moved", "Room B"},
+	};
+	for (size_t i = 0; i < std::size(want); ++i) {
+		auto &e = apr.pexceptioninfo[i];
+		auto f = e.overrideflags & (ARO_SUBJECT | ARO_LOCATION);
+		if (f != want[i].flags || e.subject != want[i].subject ||
+		    e.location != want[i].location) {
+			fprintf(stderr, "exception %zu: flags %x subject \"%s\" location \"%s\"\n",
+			        i, f, e.subject.c_str(), e.location.c_str());
+			return EXIT_FAILURE;
+		}
+	}
+	return EXIT_SUCCESS;
+}
+
 static int ical_exception_origdate()
 {
 	static constexpr char data[] =
@@ -3083,7 +3137,7 @@ int main()
 		E(vexport_calendar), E(openpgp_roundtrip),
 		E(openpgp_legacy_layout),
 		E(ical_exception_roundtrip), E(ical_exception_origdate),
-		E(ical_exception_inherit),
+		E(ical_exception_inherit), E(ical_exception_overrides),
 		E(ical_moved_exception_dates), E(ical_rid_other_zone),
 		E(ical_dtend_other_zone),
 		E(meeting_prefixes),

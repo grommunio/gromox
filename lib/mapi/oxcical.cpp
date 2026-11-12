@@ -1619,7 +1619,9 @@ static bool oxcical_parse_summary(const ical_component &main_event,
 	const char *pvalue;
 	char tmp_buff[1024];
 
-	pvalue = piline->get_first_subvalue();
+	/* An empty SUMMARY of an override blanks the series subject */
+	pvalue = piline->value_list.empty() && pexception != nullptr ? "" :
+	         piline->get_first_subvalue();
 	if (pvalue == nullptr)
 		return true;
 	tmp_len = strlen(pvalue);
@@ -2739,6 +2741,19 @@ static ec_error_t oxcical_import_internal(const char *method,
 			    *event, start_itime, end_itime, pmsg)) {
 				errstr = "E-2729";
 				return ecInvalidParam;
+			}
+			/*
+			 * Exchange keeps a SUMMARY equal to the series as
+			 * inherited, so a later rename of the series reaches
+			 * it.
+			 */
+			auto ssubj = pmsg->proplist.get<const char>(PR_SUBJECT);
+			if (ei_new.overrideflags & ARO_SUBJECT &&
+			    ssubj != nullptr && ei_new.subject == ssubj) {
+				ei_new.overrideflags &= ~ARO_SUBJECT;
+				ei_new.subject.clear();
+				ee_new.subject.clear();
+				pembedded->proplist.erase(PR_SUBJECT);
 			}
 
 			piline = event->get_line("RECURRENCE-ID");
