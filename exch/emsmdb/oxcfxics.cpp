@@ -1381,7 +1381,7 @@ ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 				    CP_ACP, eid, PR_FOLDER_TYPE, &pvalue))
 					return ecError;
 				if (pvalue == nullptr)
-					return ecSuccess;
+					continue;
 				if (*static_cast<uint32_t *>(pvalue) == FOLDER_SEARCH)
 					goto DELETE_FOLDER;
 			}
