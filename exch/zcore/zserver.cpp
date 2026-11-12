@@ -5254,7 +5254,7 @@ ec_error_t zs_link_messages(GUID hsession, BINARY search_entryid,
 		return ecSuccess;
 	BOOL b_partial = false;
 	return exmdb_client->link_messages(maildir.c_str(), cpid, folder_id,
-	       &ids, &b_partial) ? ecSuccess : ecError;
+	       ids, &b_partial) ? ecSuccess : ecError;
 }
 
 ec_error_t zs_essdn_to_username(const char *essdn, char **username)

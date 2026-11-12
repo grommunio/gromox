@@ -1605,14 +1605,14 @@ BOOL exmdb_server::link_message(const char *dir, cpid_t cpid,
  *              treated as idempotent/silent successes, matching link_message.
  */
 BOOL exmdb_server::link_messages(const char *dir, cpid_t cpid,
-	uint64_t folder_id, const EID_ARRAY *message_ids, BOOL *pb_partial)
+    uint64_t folder_id, std::span<const eid_t> message_ids, BOOL *pb_partial)
 {
 	uint32_t folder_type;
 
 	*pb_partial = false;
 	if (!exmdb_server::is_private())
 		return false;
-	if (message_ids == nullptr || message_ids->count == 0)
+	if (message_ids.empty())
 		return TRUE;
 	auto db = db_engine_get_db(dir);
 	if (!db)
@@ -1630,8 +1630,8 @@ BOOL exmdb_server::link_messages(const char *dir, cpid_t cpid,
 	auto dbase = db->lock_base_wr();
 	db_conn::NOTIFQ notifq;
 	bool b_partial = false, b_linked = false;
-	for (size_t i = 0; i < message_ids->count; ++i) {
-		auto mid_val = message_ids->pids[i].gcv();
+	for (auto a_mid : message_ids) {
+		auto mid_val = a_mid.gcv();
 		char sql_string[256];
 		snprintf(sql_string, std::size(sql_string), "SELECT message_id FROM "
 		          "messages WHERE message_id=%llu", LLU{mid_val});

@@ -1585,17 +1585,14 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_link_messages &d)
 {
 	TRY(x.g_nlscp(&d.cpid));
 	TRY(x.g_uint64(&d.folder_id));
-	d.message_ids = cu_alloc<EID_ARRAY>();
-	if (d.message_ids == nullptr)
-		return pack_result::alloc;
-	return x.g_eid_a(d.message_ids);
+	return x.g_eid_a(&d.message_ids);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_link_messages &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_link_messages_v &d)
 {
 	TRY(x.p_uint32(d.cpid));
 	TRY(x.p_uint64(d.folder_id));
-	return x.p_eid_a(*d.message_ids);
+	return x.p_eid_a(d.message_ids);
 }
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_unlink_message &d)

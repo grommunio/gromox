@@ -776,11 +776,17 @@ struct exreq_link_message final : public exreq {
 	uint64_t folder_id = 0, message_id = 0;
 };
 
-struct exreq_link_messages final : public exreq {
-	using view_t = exreq_link_messages;
+struct exreq_link_messages_v final : public exreq {
 	cpid_t cpid{};
 	uint64_t folder_id = 0;
-	EID_ARRAY *message_ids = nullptr;
+	std::span<const eid_t> message_ids;
+};
+
+struct exreq_link_messages final : public exreq {
+	using view_t = exreq_link_messages_v;
+	cpid_t cpid{};
+	uint64_t folder_id = 0;
+	std::vector<eid_t> message_ids;
 };
 
 struct exreq_unlink_message final : public exreq {
