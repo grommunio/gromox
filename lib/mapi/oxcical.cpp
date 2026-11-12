@@ -4148,7 +4148,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
     const message_content &msg, const std::string &log_id_s, ical &pical,
     const std::string &org_name_s, cvt_id2user id2user, EXT_BUFFER_ALLOC alloc,
     GET_PROPIDS get_propids, const char *parent_uid = nullptr,
-    const char *series_subject = nullptr) try
+    const message_content *series = nullptr) try
 {
 	const PROPERTY_NAME namequeries[] = {
 		{MNID_ID, PSETID_Appointment, PidLidAppointmentCounterProposal},
@@ -4405,10 +4405,15 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 	if (err != nullptr)
 		return err;
 
+	/*
+	 * An exception without its own subject or location shows those of
+	 * the series. Readers of the VEVENT do not inherit them, so write
+	 * them out, like Exchange does.
+	 */
+	auto inherit = b_exceptional && series != nullptr ? series : nullptr;
 	str = pmsg->proplist.get<char>(PR_SUBJECT);
-	/* VEVENT readers do not inherit SUMMARY from the series */
-	if (str == nullptr && b_exceptional && series_subject != nullptr)
-		str = series_subject;
+	if (str == nullptr && inherit != nullptr)
+		str = inherit->proplist.get<char>(PR_SUBJECT);
 	if (str != nullptr) {
 		auto piline = &pcomponent->append_line("SUMMARY", str);
 		if (planguage != nullptr)
@@ -4524,10 +4529,17 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 	if (psequence != nullptr)
 		pcomponent->append_line("SEQUENCE", std::to_string(*psequence));
 
-	str = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids[l_location]));
+	auto loctag = PROP_TAG(PT_UNICODE, propids[l_location]);
+	auto locmsg = pmsg;
+	str = pmsg->proplist.get<char>(loctag);
+	if (str == nullptr && inherit != nullptr) {
+		locmsg = inherit;
+		str = inherit->proplist.get<char>(loctag);
+	}
 	if (str != nullptr) {
 		auto piline = &pcomponent->append_line("LOCATION", str);
-		str = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids[l_locationurl]));
+		str = locmsg->proplist.get<char>(PROP_TAG(PT_UNICODE,
+		      propids[l_locationurl]));
 		if (str != nullptr)
 			piline->append_param("ALTREP", str);
 		if (planguage != nullptr)
@@ -4559,7 +4571,6 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 	if (!b_exceptional && pmsg->children.pattachments != nullptr) {
 		auto uid_line = pcomponent->get_line("UID");
 		auto uid_val  = uid_line != nullptr ? uid_line->get_first_subvalue() : nullptr;
-		auto master_subject = pmsg->proplist.get<char>(PR_SUBJECT);
 		for (auto &attachment : *pmsg->children.pattachments) {
 			auto pembedded = attachment.pembedded;
 			if (pembedded == nullptr)
@@ -4575,8 +4586,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 				continue;
 			auto estr = oxcical_export_internal(method, tzid,
 			            *pembedded, log_id, pical, org_name,
-			            id2user, alloc, get_propids, uid_val,
-			            master_subject);
+			            id2user, alloc, get_propids, uid_val, pmsg);
 			if (estr.size() > 0)
 				return estr;
 		}

@@ -781,6 +781,62 @@ static int ical_exception_roundtrip()
 	return EXIT_SUCCESS;
 }
 
+static constexpr char ical_berlin[] =
+	"BEGIN:VTIMEZONE\r\nTZID:Europe/Berlin\r\n"
+	"BEGIN:DAYLIGHT\r\nTZOFFSETFROM:+0100\r\nTZOFFSETTO:+0200\r\n"
+	"DTSTART:19700329T020000\r\nRRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=3\r\nEND:DAYLIGHT\r\n"
+	"BEGIN:STANDARD\r\nTZOFFSETFROM:+0200\r\nTZOFFSETTO:+0100\r\n"
+	"DTSTART:19701025T030000\r\nRRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=10\r\nEND:STANDARD\r\n"
+	"END:VTIMEZONE\r\n";
+
+static size_t count_of(const std::string &hay, const char *needle)
+{
+	size_t n = 0;
+	for (auto p = hay.find(needle); p != hay.npos; p = hay.find(needle, p + 1))
+		++n;
+	return n;
+}
+
+static int ical_exception_inherit()
+{
+	auto data = std::string("BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//EN\r\n") +
+		ical_berlin +
+		"BEGIN:VEVENT\r\nUID:exc-inh\r\nDTSTAMP:20261005T100000Z\r\n"
+		"SUMMARY:daily\r\nLOCATION:Room A\r\nRRULE:FREQ=DAILY;COUNT=5\r\n"
+		"DTSTART;TZID=Europe/Berlin:20261020T100000\r\nDTEND;TZID=Europe/Berlin:20261020T110000\r\n"
+		"END:VEVENT\r\n"
+		"BEGIN:VEVENT\r\nUID:exc-inh\r\nDTSTAMP:20261005T100000Z\r\n"
+		"RECURRENCE-ID;TZID=Europe/Berlin:20261022T100000\r\n"
+		"DTSTART;TZID=Europe/Berlin:20261022T140000\r\nDTEND;TZID=Europe/Berlin:20261022T150000\r\n"
+		"END:VEVENT\r\n"
+		"BEGIN:VEVENT\r\nUID:exc-inh\r\nDTSTAMP:20261005T100000Z\r\n"
+		"SUMMARY:moved\r\nLOCATION:Room B\r\n"
+		"RECURRENCE-ID;TZID=Europe/Berlin:20261023T100000\r\n"
+		"DTSTART;TZID=Europe/Berlin:20261023T140000\r\nDTEND;TZID=Europe/Berlin:20261023T150000\r\n"
+		"END:VEVENT\r\nEND:VCALENDAR\r\n";
+	fprintf(stderr, "=== ical_exception_inherit\n");
+	auto msg = ical_load(std::move(data));
+	assert(msg != nullptr);
+	oxcical_converter cvt;
+	cvt.log_id = "-";
+	cvt.org_name = "x500org";
+	cvt.alloc = g_alloc;
+	cvt.get_propids = ee_get_propids;
+	ical icalout;
+	assert(cvt.mapi_to_ical(*msg, icalout));
+	std::string icstr;
+	assert(icalout.serialize(icstr) == ecSuccess);
+	/* the bare override shows the series values, the other keeps its own */
+	if (count_of(icstr, "SUMMARY:daily\r\n") != 2 ||
+	    count_of(icstr, "LOCATION:Room A\r\n") != 2 ||
+	    count_of(icstr, "SUMMARY:moved\r\n") != 1 ||
+	    count_of(icstr, "LOCATION:Room B\r\n") != 1) {
+		fprintf(stderr, "%s", icstr.c_str());
+		return EXIT_FAILURE;
+	}
+	return EXIT_SUCCESS;
+}
+
 static int ical_exception_origdate()
 {
 	static constexpr char data[] =
@@ -3027,6 +3083,7 @@ int main()
 		E(vexport_calendar), E(openpgp_roundtrip),
 		E(openpgp_legacy_layout),
 		E(ical_exception_roundtrip), E(ical_exception_origdate),
+		E(ical_exception_inherit),
 		E(ical_moved_exception_dates), E(ical_rid_other_zone),
 		E(ical_dtend_other_zone),
 		E(meeting_prefixes),
