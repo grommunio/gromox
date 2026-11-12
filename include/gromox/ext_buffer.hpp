@@ -191,6 +191,7 @@ struct GX_EXPORT EXT_PULL {
 	pack_result g_abk_eid(EMSAB_ENTRYID *);
 	pack_result g_oneoff_eid(ONEOFF_ENTRYID *);
 	pack_result g_flatentry_a(BINARY_ARRAY *);
+	pack_result g_eid_a(std::vector<eid_t> *, uint8_t ix = 4);
 	pack_result g_eid_a(EID_ARRAY *, uint8_t ix = 4);
 	pack_result g_systime(SYSTEMTIME *);
 	pack_result g_tzstruct(TZSTRUCT *);

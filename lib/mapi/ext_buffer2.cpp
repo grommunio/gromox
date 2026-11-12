@@ -239,6 +239,28 @@ pack_result EXT_PUSH::p_propid_a(std::span<const gromox::propid_t> r)
 #undef PULL_AN
 #undef PULL_AC
 
+pack_result EXT_PULL::g_eid_a(std::vector<eid_t> *r, uint8_t ix) try
+{
+	size_t count = 0;
+	if (ix == 2) {
+		uint16_t z;
+		TRY(g_uint16(&z));
+		CLAMP16(z);
+		count = z;
+	} else {
+		uint32_t z;
+		TRY(g_uint32(&z));
+		CLAMP32(z);
+		count = z;
+	}
+	r->resize(count);
+	for (size_t i = 0; i < count; ++i)
+		TRY(g_uint64(&(*r)[i].m_value));
+	return pack_result::ok;
+} catch (const std::bad_alloc &) {
+	return pack_result::alloc;
+}
+
 pack_result EXT_PULL::g_fb(freebusy_event *fb_event)
 {
 	int64_t t;
