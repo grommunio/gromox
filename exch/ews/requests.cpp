@@ -4419,6 +4419,9 @@ void process(mGetItemRequest &&request, XMLElement *response, const EWSContext &
 	data.ResponseMessages.reserve(request.ItemIds.size());
 	sShape shape(request.ItemShape);
 	shape.add(PR_SUBJECT);
+	/* Like Exchange, unlike FindItem */
+	if (request.ItemShape.BaseShape.index() >= 1)
+		shape.special |= sShape::Attendees;
 	auto actor = get_auth_info(ctx.context_id()).username;
 	uint32_t max_get = ctx.plugin().max_get_items, gotten = 0;
 
