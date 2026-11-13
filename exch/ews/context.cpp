@@ -2686,8 +2686,10 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 	/* IsMeeting is only there when the shape asked for it */
 	bool meeting = calItem.IsMeeting && *calItem.IsMeeting;
 	if (!calItem.IsMeeting) {
-		auto flags = getItemProp<uint32_t>(dir, mid, PROP_TAG(PT_LONG,
-		             getNamedPropId(dir, NtAppointmentStateFlags)));
+		auto propid = getNamedPropId(dir, NtAppointmentStateFlags);
+		const proptag_t tag = PROP_TAG(PT_LONG, propid);
+		auto props = getItemProps(dir, mid, {&tag, 1});
+		auto flags = props.get<const uint32_t>(tag);
 		meeting = flags != nullptr && *flags & asfMeeting;
 	}
 	if (!meeting)
