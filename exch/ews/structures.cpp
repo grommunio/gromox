@@ -899,9 +899,9 @@ void tRecurrenceType::zone(int32_t z)
  * @brief      Mark the range dates of a stored recurrence with its zone
  *
  * The pattern stays in the item's time zone and the range dates carry its
- * offset, as in Exchange's GetItem responses. Only done for series whose
- * stored start agrees with the item start, so that series written by
- * earlier versions are returned as before.
+ * offset on their day, as in Exchange's GetItem responses. Only done for
+ * series whose stored start agrees with the item start, so that series
+ * written by earlier versions are returned as before.
  *
  * @param      rec     Recurrence in the item's time zone
  * @param      apr     Stored recurrence pattern
@@ -921,6 +921,13 @@ static void recurrence_zone(tRecurrenceType &rec,
 		return;
 	}
 	rec.zone(east);
+	auto r = std::get_if<tEndDateRecurrenceRange>(&rec.RecurrenceRange);
+	int64_t b;
+	if (r == nullptr || tz == nullptr ||
+	    !tz_to_offset(*tz, clock::to_time_t(r->EndDate), b) ||
+	    !tz_to_offset(*tz, clock::to_time_t(r->EndDate) + b * 60, b))
+		return;
+	r->EndDateZone = -b;
 }
 
 /**
