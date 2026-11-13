@@ -385,6 +385,8 @@ class EWSContext {
 	void markInvited(const std::string &, const Structures::sFolderSpec &, uint64_t) const;
 	uint32_t nextSequence(const std::string&, const Structures::sFolderSpec&, uint64_t, bool, uint64_t) const;
 	std::string rcptAddress(const TPROPVAL_ARRAY &) const;
+	bool addressable(const TPROPVAL_ARRAY &) const;
+	bool has_rcpt_address(const MESSAGE_CONTENT &) const;
 	bool sendMeetingResponse(const Structures::tItemId&, MESSAGE_CONTENT&, bool) const;
 	BINARY serialize(const XID&) const;
 	const char *culture() const;
@@ -429,7 +431,6 @@ class EWSContext {
 	static char *cpystr(const std::string_view);
 
 	static void assertIdType(Structures::tBaseItemId::IdType, Structures::tBaseItemId::IdType);
-	static bool has_rcpt_address(const MESSAGE_CONTENT &);
 	static void ext_error(pack_result, const char* = nullptr, const char* = nullptr);
 
 private:

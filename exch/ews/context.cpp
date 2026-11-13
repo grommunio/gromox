@@ -5101,21 +5101,33 @@ const BINARY *EWSContext::findContactPhoto(const std::string &dir,
 	return nullptr;
 }
 
+static bool is_organizer(const TPROPVAL_ARRAY &rcpt)
+{
+	auto flags = rcpt.get<const uint32_t>(PR_RECIPIENT_FLAGS);
+	return flags != nullptr && *flags & recipOrganizer;
+}
+
 /**
- * @brief      Check whether a message has a recipient with an address
+ * @brief      Check whether an attendee row has an address to send to
  */
-bool EWSContext::has_rcpt_address(const MESSAGE_CONTENT &content)
+bool EWSContext::addressable(const TPROPVAL_ARRAY &rcpt) const
+{
+	auto a = rcptAddress(rcpt);
+	return a.find_first_not_of(" \t") != a.npos;
+}
+
+/**
+ * @brief      Check whether a message has an attendee to send to
+ *
+ * The organizer row of a meeting does not count.
+ */
+bool EWSContext::has_rcpt_address(const MESSAGE_CONTENT &content) const
 {
 	if (content.children.prcpts == nullptr)
 		return false;
-	for (const auto &rcpt : *content.children.prcpts) {
-		auto a = rcpt.get<const char>(PR_SMTP_ADDRESS);
-		if (a != nullptr && *a != '\0')
+	for (const auto &rcpt : *content.children.prcpts)
+		if (!is_organizer(rcpt) && addressable(rcpt))
 			return true;
-		a = rcpt.get<const char>(PR_EMAIL_ADDRESS);
-		if (a != nullptr && *a != '\0')
-			return true;
-	}
 	return false;
 }
 
@@ -5146,6 +5158,18 @@ void EWSContext::send(const std::string &dir, uint64_t log_msg_id,
 	props.insert(props.end(), ident.begin(), ident.end());
 	auto content = msg;
 	content.proplist = {static_cast<uint16_t>(props.size()), props.data()};
+	/* Attendees without an address would become <invalid@invalid> */
+	std::vector<TPROPVAL_ARRAY *> rows;
+	TARRAY_SET rcptset;
+	auto cls = msg.proplist.get<const char>(PR_MESSAGE_CLASS);
+	if (cls != nullptr &&
+	    class_match_prefix(cls, "IPM.Schedule.Meeting") == 0) {
+		for (auto &rcpt : *msg.children.prcpts)
+			if (is_organizer(rcpt) || addressable(rcpt))
+				rows.push_back(deconst(&rcpt));
+		rcptset = {static_cast<uint32_t>(rows.size()), rows.data()};
+		content.children.prcpts = &rcptset;
+	}
 	std::string log_id;
 	auto mail = vmime::make_shared<vmime::message>();
 	oxcmail_converter cvt;
@@ -5170,7 +5194,7 @@ void EWSContext::send(const std::string &dir, uint64_t log_msg_id,
 	for (auto &rcpt : *content.children.prcpts) {
 		/* The organizer row of a meeting is not an addressee */
 		auto flags = rcpt.get<const uint32_t>(PR_RECIPIENT_FLAGS);
-		if (flags != nullptr && *flags & recipOrganizer) {
+		if (is_organizer(rcpt)) {
 			organizer = true;
 			continue;
 		}
@@ -5180,11 +5204,12 @@ void EWSContext::send(const std::string &dir, uint64_t log_msg_id,
 		if (!addr.EmailAddress)
 			continue;
 		normalize(addr);
-		if (!addr.EmailAddress->empty())
-			rcpts.emplace_back(*addr.EmailAddress);
+		rcpts.emplace_back(*addr.EmailAddress);
 	}
 	if (rcpts.empty() && organizer)
 		return;
+	if (rcpts.empty())
+		throw EWSError::MissingRecipients(E3115);
 	auto err = cu_send_vmail(mail, m_plugin.smtp_url.c_str(),
 	           m_auth_info.username, rcpts);
 	if (err != ecSuccess)
@@ -5940,7 +5965,7 @@ void EWSContext::sendMeetingUpdate(const std::string &dir,
 		throw EWSError::ItemNotFound(E3404);
 	auto cls = cur->proplist.get<const char>(PR_MESSAGE_CLASS);
 	if (cls == nullptr || class_match_prefix(cls, "IPM.Appointment") != 0 ||
-	    cur->children.prcpts == nullptr || cur->children.prcpts->count == 0)
+	    !has_rcpt_address(*cur))
 		return;
 	/*
 	 * read_message returns pointers backed by ndr_stack regions, which
@@ -6064,8 +6089,7 @@ void EWSContext::sendOccurrenceUpdate(const std::string &dir,
 	auto cls = content->proplist.get<const char>(PR_MESSAGE_CLASS);
 	if (cls == nullptr ||
 	    class_match_prefix(cls, "IPM.Appointment") != 0 ||
-	    content->children.prcpts == nullptr ||
-	    content->children.prcpts->count == 0)
+	    !has_rcpt_address(*content))
 		return;
 	sendInstance(dir, parent, meid.messageId(), *content, basedate,
 		"IPM.Schedule.Meeting.Request", saveCopy);
