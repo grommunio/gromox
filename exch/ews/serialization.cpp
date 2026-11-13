@@ -943,6 +943,7 @@ void tCalendarItem::serialize(tinyxml2::XMLElement *xml) const
 	XMLDUMPT(StartTimeZoneId);
 	XMLDUMPT(EndTimeZoneId);
 	XMLDUMPT(IntendedFreeBusyStatus);
+	XMLDUMPT(IsOrganizer);
 	XMLDUMPT(DoNotForwardMeeting);
 }
 
