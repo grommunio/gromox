@@ -3395,6 +3395,12 @@ void process(mGetUserAvailabilityRequest &&request, XMLElement *response, const 
 	const auto windowEnd = timezone.remove(TimeWindow.EndTime);
 	auto start = clock::to_time_t(windowStart);
 	auto end   = clock::to_time_t(windowEnd);
+	auto interval = view_options.interval();
+	if (view_options.merged() && (interval < 5 || interval > 1440 ||
+	    interval * 60 > end - start))
+		throw EWSError::InvalidMergedFreeBusyInterval(E3614);
+	if (view_options.merged() && end - start > 62 * 86400)
+		throw EWSError::TimeIntervalTooBig(E3615);
 
 	for (const tMailboxData &MailboxData : request.MailboxDataArray) try {
 		std::string maildir;

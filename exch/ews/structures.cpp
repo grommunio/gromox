@@ -2871,6 +2871,43 @@ static bool has_calendar_details(const Enum::FreeBusyViewType &view)
 	return view == "Detailed" || view == "DetailedMerged";
 }
 
+bool tFreeBusyViewOptions::merged() const
+{
+	return RequestedView && (*RequestedView == "MergedOnly" ||
+	       *RequestedView == "FreeBusyMerged" ||
+	       *RequestedView == "DetailedMerged");
+}
+
+int32_t tFreeBusyViewOptions::interval() const
+{
+	return MergedFreeBusyIntervalInMinutes.value_or(30);
+}
+
+/**
+ * One digit per interval from the window start: 0 free, 1 tentative,
+ * 2 busy, 3 out of office.
+ */
+static std::string merged_freebusy(const std::vector<freebusy_event> &events,
+    time_t start, time_t end, time_t step)
+{
+	std::string merged((end - start + step - 1) / step, '0');
+	for (const auto &ev : events) {
+		char c = ev.busy_status == olTentative ? '1' :
+		         ev.busy_status == olBusy ? '2' :
+		         ev.busy_status == olOutOfOffice ? '3' : '0';
+		if (c == '0' || ev.end_time <= ev.start_time ||
+		    ev.end_time <= start || ev.start_time >= end)
+			continue;
+		size_t first = std::max(ev.start_time, start) - start;
+		size_t last = std::min(ev.end_time, end) - start;
+		first /= step;
+		last = (last + step - 1) / step;
+		for (auto i = first; i < last; ++i)
+			merged[i] = std::max(merged[i], c);
+	}
+	return merged;
+}
+
 tFreeBusyView::tFreeBusyView(const char *username, const char *dir,
     const char *org, time_t start_time, time_t end_time,
     const tFreeBusyViewOptions &options)
@@ -2892,6 +2929,9 @@ tFreeBusyView::tFreeBusyView(const char *username, const char *dir,
 		FreeBusyViewType = "FreeBusyMerged";
 	else
 		FreeBusyViewType = requested;
+	if (options.merged())
+		MergedFreeBusy = merged_freebusy(fb_data, start_time, end_time,
+		                 options.interval() * 60);
 
 	/* Exchange omits an empty CalendarEventArray, and clients rely on it */
 	if (fb_data.empty() || !has_calendar_events(FreeBusyViewType))

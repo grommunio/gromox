@@ -3071,6 +3071,9 @@ struct tFreeBusyViewOptions {
 	tFreeBusyViewOptions() = default;
 	tFreeBusyViewOptions(const tinyxml2::XMLElement *);
 
+	bool merged() const;
+	int32_t interval() const;
+
 	tDuration TimeWindow;
 	std::optional<int32_t> MergedFreeBusyIntervalInMinutes;
 	std::optional<Enum::FreeBusyViewType> RequestedView;
