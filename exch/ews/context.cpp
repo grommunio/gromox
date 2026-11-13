@@ -3865,7 +3865,7 @@ void EWSContext::updateAttendees(const std::string &dir,
 		     entry != nullptr;
 		     entry = entry->NextSiblingElement("Attendee")) {
 			tAttendee att(entry);
-			if (att.empty_address())
+			if (!att.addressable())
 				continue;
 			auto rcpt = rcpts->emplace();
 			att.Mailbox.mkRecipient(rcpt, type);
@@ -6930,7 +6930,7 @@ void EWSContext::toContent(const std::string &dir, tCalendarItem &item,
 	using attendees_t = decltype(item.RequiredAttendees);
 	auto addressed = [](const attendees_t &list) STATIC_IN_CXX23 {
 		return list && std::any_of(list->begin(), list->end(),
-		       [](const tAttendee &a) { return !a.empty_address(); });
+		       [](const tAttendee &a) { return a.addressable(); });
 	};
 	if (addressed(item.RequiredAttendees) ||
 	    addressed(item.OptionalAttendees) || addressed(item.Resources)) {
@@ -6942,7 +6942,7 @@ void EWSContext::toContent(const std::string &dir, tCalendarItem &item,
 			if (!list)
 				return;
 			for (const auto &att : *list) {
-				if (att.empty_address())
+				if (!att.addressable())
 					continue;
 				auto rcpt = rcpts->emplace();
 				att.Mailbox.mkRecipient(rcpt, type);
