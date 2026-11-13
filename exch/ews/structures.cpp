@@ -2921,8 +2921,7 @@ tFreeBusyView::tFreeBusyView(const char *username, const char *dir,
 		[](const freebusy_event &fb_event) STATIC_IN_CXX23 {
 			return fb_event.has_details;
 		});
-	auto requested = options.RequestedView.value_or(
-		Enum::FreeBusyViewType(detailed ? "Detailed" : "FreeBusy"));
+	auto requested = options.RequestedView.value_or("FreeBusy");
 	if (requested == "Detailed" && !detailed)
 		FreeBusyViewType = "FreeBusy";
 	else if (requested == "DetailedMerged" && !detailed)
