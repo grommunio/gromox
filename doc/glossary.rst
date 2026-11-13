@@ -1,6 +1,6 @@
 ..
 	SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-	SPDX-FileCopyrightText: 2023-2024 grommunio GmbH
+	SPDX-FileCopyrightText: 2023-2026 grommunio GmbH
 
 Overview
 ========
@@ -212,16 +212,27 @@ ESSDN.MdbDN
 	Private MDB``. Exchange and Gromox can generate this ESSDN kind for the
 	``<MdbDN>`` element, but no practical use has been seen.
 
+Replica
+	Every store can have many replicas. An analogue in the source code
+	development world is: a clone (of e.g. a Git repository). Every OST
+	file constitutes a replica. Replicas are identified by GUIDs. replguids
+	are used e.g. for constructing PR_SOURCE_KEY and PR_CHANGE_KEY.
+
+Replica ID
+	The server tracks replguids it has been and assigns a 16-bit
+	integer (unclear if signed or unsigned), ("replid" in source
+	code). This is stored as replguidmap. Replica ID 1 typically
+	refers to the server replica (especially in documentation and
+	commentary).
+
 Database GUID
-	Randomly-generated value on mailbox creation.
-	A value which is found in ``mdb01.edb`` in table ``MailboxIdentity``,
+	A different name for replica GUID (replguid) used in MS specifications
+	and e.g. MFCMAPI. The value is randomly generated on replica
+	initialization.
+	The value is found in ``mdb01.edb`` in table ``MailboxIdentity``,
 	column ``LocalIdGuid`` in flatlsb32 representation.
-	In Exchange, dbguid is distinct from Store GUID.
-	In Gromox, dbguid is the same value as GABUID.
-	In Outlook Cached Mode, every OST file has its own dbguid. (Deleting
-	the OST file leads a new dbguid being generated.)
-	It MFCMAPI/OLSpy, the value shows up as part of Change Keys, PCLs,
-	entryids, etc.
+	In Exchange, replica 1's dbguid is distinct from Store GUID.
+	In Gromox, replica 1's dbguid is the same value as GABUID.
 
 Folder Database GUID
 	Visible in EX entryids (with conditions) at bytes 22-38.
@@ -424,15 +435,17 @@ GABUID
 	12 fixed bytes {XXXXXXXX-0afb-7df6-9192-49886aa738ce}.
 
 PR_CHANGE_KEY
-	Identifier for the most recent change.
+	Identifier for the most recent change. 16-byte dbguid + 6-byte CN.
 
 PR_SOURCE_KEY
 	Internal/global identifier (GID) for the object (folder/message).
-	16-byte dbguid + 6-byte GCV. When Outlook creates new objects in a
-	mailbox, it allocates a GCV number from the *primary mailbox of the
-	profile* rather than the mailbox where the object is created. As a
-	result, the dbguid of PR_SOURCE_KEY need not match the dbguid of the
-	mailbox where the object is created.
+	16-byte dbguid + 6-byte GCV. When cached-mode Outlook creates new
+	objects in a mailbox, it allocates a GCV number from the *primary
+	mailbox of the profile* rather than the mailbox where the object is
+	created. [Our best guess: Shared mailboxes may be opened by many users
+	(replicas). If every replica were to obtain a block of GCVs (cf.
+	rop_getlocalreplicaids), the shared mailbox could run out of GCVs
+	sooner rather than later. So instead, GCVs from $primary are used.]
 
 PR_RECORD_KEY
 	In Exchange, similar to EX entryid.
@@ -449,32 +462,26 @@ MAPI Provider UID
 	Can be a fixed value like muidOOP, muidContabDLL, muidEMSAB, etc.
 	If not, it is often MailboxInstanceGuid/PR_STORE_RECORD_KEY.
 
-Replicas
-	A set of Database GUIDs of actors that have modified objects in a
-	mailbox. For example, if user15 modifies a message in user21's mailbox,
-	then user15's primary mailbox's dbguid is added to the user21's
-	replguidmap. This is because Outlook, when creating new objects in
-	user21's mailbox, use user15's GIDs for PR_SOURCE_KEY.
-
-Replica ID
-	16-bit shorthand value for a particular Replica GUID. Likely purpose
-	was reduction of network traffic in transferring ICS data.
-
 ReplidGuidMap, replguidmap
 	A per-mailbox table with a bijective mapping between 16-bit replids and
 	16-byte replguids.
 
 	It is found in ``mdb01.edb`` as table ``ReplidGuidMap``, containing:
 
-	* replid 1 generally contains the Database GUID (mandated by OXCFXICS
-	  etc.)
-	* replid 2 is the same across different mailboxes and deployments:
+	* replid 1 generally refers to the server replica (mandated
+	  by OXCFXICS etc.)
+	* replid 2 in Exchange mailboxes has been observed to contain
+	  a fixed GUID that occurs in every mailbox in every
+	  deployment (and is otherwise unclear why it even exists):
 	  {ed33cbe5-94e2-48b6-8bea-bba984896933}
-	* replid 3 same: {68349a54-323d-4a38-9aa9-e00a683131ba}
-	* replid 4 same: {bb0754de-7f26-4d08-932f-fe7a9d22f8bd}
-	* replid 5 generally contains the Mapping Signature GUID
+	* replid 3 in Exchange:
+	  {68349a54-323d-4a38-9aa9-e00a683131ba}
+	* replid 4 in Exchange:
+	  {bb0754de-7f26-4d08-932f-fe7a9d22f8bd}
+	* replid 5 in Exchange contains the Mapping Signature GUID
 
-	Subsequent replids are freely assigned on a first-come-first-serve basis.
+	It is unclear why Exchange has these GUIDs in the replguidmap. Anyhow,
+	we have reserved the entries in Gromox for the time being.
 
 	The ExtensionBlob column of the ReplidGuidMap table has a property that
 	can hint at the trigger of the map entry creation, e.g. ``Admin``,
