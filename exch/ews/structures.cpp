@@ -2541,16 +2541,15 @@ void tCalendarItem::update(const sShape& shape)
 {
 	tItem::update(shape);
 	sCalendarMeetingRequestCommon::update(shape);
-	fromProp(shape.get(NtCalendarIsOrganizer), IsOrganizer);
-	/*
-	 * Only answer when the appointment state was loaded: the owner
-	 * organizes every item in the calendar that was not received,
-	 * including appointments without attendees.
-	 */
-	if (auto tag = shape.tag(NtAppointmentStateFlags);
-	    !IsOrganizer.has_value() && tag != 0 && shape.requested(tag))
-		IsOrganizer.emplace(!AppointmentState ||
-		                    (*AppointmentState & asfReceived) == 0);
+	/* Not received means organized by the owner */
+	if (shape.specials() & sShape::IsOrganizer) {
+		auto org = shape.get<uint8_t>(NtCalendarIsOrganizer, sShape::FL_ANY);
+		auto st = shape.get<uint32_t>(NtAppointmentStateFlags, sShape::FL_ANY);
+		/* An exception without either keeps the value of its series */
+		if (org != nullptr || st != nullptr || !IsOrganizer)
+			IsOrganizer.emplace(org != nullptr ? *org != 0 :
+			                    st == nullptr || !(*st & asfReceived));
+	}
 
 	const TAGGED_PROPVAL* prop;
 	if ((prop = shape.get(NtGlobalObjectId))) {
@@ -4781,8 +4780,6 @@ decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
 	{"item:ReminderIsSet", {NtReminderSet, PT_BOOLEAN}},
 	{"item:ReminderMinutesBeforeStart", {NtReminderDelta, PT_LONG}},
 	{"meeting:IsOrganizer", {NtCalendarIsOrganizer, PT_BOOLEAN}},
-	{"calendar:IsOrganizer", {NtCalendarIsOrganizer, PT_BOOLEAN}},
-	{"calendar:IsOrganizer", {NtAppointmentStateFlags, PT_LONG}},
 	{"meeting:IsOutOfDate", {NtMeetingType, PT_LONG}},
 	{"meeting:RecurrenceId", {NtExceptionReplaceTime, PT_SYSTIME}},
 	{"meeting:ResponseType", {NtResponseStatus, PT_LONG}},
@@ -4820,6 +4817,7 @@ decltype(tFieldURI::specialMap) tFieldURI::specialMap = {{
 	{"calendar:ConflictingMeetingCount", sShape::Conflicts},
 	{"calendar:ConflictingMeetings", sShape::Conflicts},
 	{"calendar:FirstOccurrence", sShape::Occurrences},
+	{"calendar:IsOrganizer", sShape::IsOrganizer},
 	{"calendar:LastOccurrence", sShape::Occurrences},
 	{"calendar:OptionalAttendees", sShape::OptionalAttendees},
 	{"calendar:RequiredAttendees", sShape::RequiredAttendees},
@@ -5513,6 +5511,7 @@ void tItemResponseShape::tags(sShape& shape) const
 			shape.add(*named.first, named.second, sShape::FL_FIELD);
 	}
 	if (baseShape >= 2) {
+		shape.special |= sShape::IsOrganizer;
 		for (auto tag : tagsAllProperties)
 			shape.add(tag, sShape::FL_FIELD);
 		for (const auto& named : namedTagsAllProperties)
@@ -5527,6 +5526,9 @@ void tItemResponseShape::tags(sShape& shape) const
 	 */
 	shape.add(NtAppointmentSubType, PT_BOOLEAN);
 	shape.add(NtCommonStart, PT_SYSTIME);
+	if (shape.special & sShape::IsOrganizer)
+		shape.add(NtCalendarIsOrganizer, PT_BOOLEAN)
+		     .add(NtAppointmentStateFlags, PT_LONG);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
