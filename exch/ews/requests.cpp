@@ -4971,6 +4971,18 @@ static void process_upditem_2(mUpdateItemRequest &request, const EWSContext &ctx
 	auto ident = ctx.submitIdentity(dir, sendcontent->proplist, drop);
 	sprops.insert(sprops.end(), ident.begin(), ident.end());
 
+	/* Stamp the draft only after it was sent */
+	message_content_ptr content(sendcontent->dup());
+	if (content == nullptr)
+		throw EWSError::NotEnoughMemory(E3532);
+	for (const auto &prop : sprops)
+		if (content->proplist.set(prop) != ecSuccess)
+			throw EWSError::NotEnoughMemory(E3530);
+	for (auto tag : drop)
+		content->proplist.erase(tag);
+	ctx.validate_sendas_perms(*content);
+	ctx.send(dir, mid.messageId().gcv(), *content);
+
 	const TPROPVAL_ARRAY proplist = {static_cast<uint16_t>(sprops.size()), sprops.data()};
 	PROBLEM_ARRAY problems;
 	if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
@@ -4979,12 +4991,6 @@ static void process_upditem_2(mUpdateItemRequest &request, const EWSContext &ctx
 	if (!drop.empty() && !ctx.plugin().exmdb.remove_message_properties(
 	    dir.c_str(), CP_ACP, mid.messageId(), drop))
 		throw EWSError::ItemSave(E3531);
-	if (!ctx.plugin().exmdb.read_message(dir.c_str(),
-	    username, CP_ACP, mid.messageId(), &sendcontent) ||
-	    sendcontent == nullptr)
-		throw EWSError::ItemNotFound(E3466);
-	ctx.validate_sendas_perms(*sendcontent);
-	ctx.send(dir, mid.messageId().gcv(), *sendcontent);
 
 	if (*request.MessageDisposition == Enum::SendAndSaveCopy) {
 		sFolderSpec sentitems = ctx.resolveFolder(tDistinguishedFolderId(Enum::sentitems));

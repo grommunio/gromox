@@ -601,7 +601,6 @@ E(3462, "failed to write the updated recipient table");
 E(3463, "failed to flush the instance after updating recipients");
 E(3464, "failed to read message for sending");
 E(3465, "failed to set submit properties on message");
-E(3466, "failed to reread message for sending");
 E(3467, "failed to allocate message id in Sent Items");
 E(3468, "failed to move sent message to Sent Items");
 E(3469, "failed to delete draft after send");
