@@ -8,6 +8,7 @@
 #include <vmime/message.hpp>
 #include <gromox/mail.hpp>
 #include <gromox/mail_func.hpp>
+#include <gromox/mjson.hpp>
 #include <gromox/util.hpp>
 
 using namespace std::string_literals;
@@ -158,6 +159,35 @@ static void parity_with_mail()
 	assert(base64_decode(nd["mimes"][2]["cid"].asString()) == "<cid1@x>");
 }
 
+/* BODYSTRUCTURE labels the UTF-8 name of a digest as utf-8 */
+static void structure_name_label()
+{
+	const auto eml =
+		"Content-Type: multipart/mixed; boundary=b\r\n\r\n"
+		"--b\r\nContent-Type: text/plain\r\n\r\nx\r\n"
+		"--b\r\nContent-Type: application/pdf\r\n"
+		"Content-Disposition: attachment; filename*=utf-8''"
+		"%D0%BE%D1%82%D1%87%D1%91%D1%82.pdf\r\n\r\nQUJD\r\n"
+		"--b--\r\n"s;
+	auto d = vdigest(eml);
+	d["file"] = "";
+	MJSON mj;
+	assert(mj.load_from_json(d));
+	mjson_io io;
+	std::string out;
+	assert(mj.fetch_structure(io, "us-ascii", true, out) >= 0);
+	auto want = "\"NAME\" \"=?utf-8?b?0L7RgtGH0ZHRgi5wZGY=?=\""s;
+	assert(out.find(want) != out.npos);
+
+	/* raw koi8-r bytes, as gromox 3.3 stored them, keep the old label */
+	d["charset"] = "koi8-r";
+	d["mimes"][1]["filename"] = base64_encode("\xcf\xd4\xde\xa3\xd4.pdf");
+	assert(mj.load_from_json(d));
+	out.clear();
+	assert(mj.fetch_structure(io, "us-ascii", true, out) >= 0);
+	assert(out.find("\"NAME\" \"=?koi8-r?b?z9Teo9QucGRm?=\"") != out.npos);
+}
+
 int main()
 {
 	single_part();
@@ -166,5 +196,6 @@ int main()
 	digest_default();
 	empty_tail_part();
 	parity_with_mail();
+	structure_name_label();
 	return EXIT_SUCCESS;
 }
