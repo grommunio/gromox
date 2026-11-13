@@ -84,6 +84,7 @@ Makefile.in
 /tests/imapargs
 /tests/jsontest
 /tests/lzxpress
+/tests/mdigest
 /tests/oxcmail_ie
 /tests/ucvttest
 /tests/udb
