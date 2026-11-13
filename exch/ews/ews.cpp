@@ -664,6 +664,48 @@ static std::string_view to_sv(const XMLPrinter &p)
 }
 
 /**
+ * Re-emit a serialized GetStreamingEvents response the way Exchange puts it on
+ * the wire: a default-namespaced Envelope with "soap11" Header and Body, no XML
+ * declaration, " />" self-closing tags, and a trailing newline.
+ *
+ * Outlook for Mac only acts on the notifications of a streaming subscription
+ * (and refreshes the view by itself) if the stream looks like this. With the
+ * regular serialization it keeps the stream open but ignores what arrives on it.
+ */
+static std::string exchange_stream_form(const std::string &src, const SOAP::VersionInfo &ver)
+{
+	static constexpr char open_tag[] = "<m:GetStreamingEventsResponse";
+	static constexpr char close_tag[] = "</m:GetStreamingEventsResponse>";
+	auto b = src.find(open_tag);
+	auto e = src.rfind(close_tag);
+	if (b == src.npos || e == src.npos)
+		return src;
+	auto gt = src.find('>', b);
+	if (gt == src.npos || gt >= e)
+		return src;
+	std::string inner = src.substr(gt + 1, e - gt - 1);
+	for (size_t pos = 0; (pos = inner.find("/>", pos)) != inner.npos; pos += 3)
+		inner.insert(pos, " ");
+	return fmt::format(
+		"<Envelope xmlns=\"http://schemas.xmlsoap.org/soap/envelope/\">"
+		"<soap11:Header xmlns:soap11=\"http://schemas.xmlsoap.org/soap/envelope/\">"
+		"<ServerVersionInfo xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" "
+		"xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" "
+		"MajorVersion=\"{}\" MinorVersion=\"{}\" MajorBuildNumber=\"{}\" "
+		"MinorBuildNumber=\"{}\" Version=\"{}\" "
+		"xmlns=\"http://schemas.microsoft.com/exchange/services/2006/types\" />"
+		"</soap11:Header>"
+		"<soap11:Body xmlns:soap11=\"http://schemas.xmlsoap.org/soap/envelope/\">"
+		"<m:GetStreamingEventsResponse "
+		"xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" "
+		"xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" "
+		"xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" "
+		"xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">"
+		"{}</m:GetStreamingEventsResponse></soap11:Body></Envelope>\n",
+		ver.server[0], ver.server[1], ver.server[2], ver.server[3], ver.schema, inner);
+}
+
+/**
  * @brief      NotificationContext state management
  *
  * Update the notification context, processing available events, and manage
@@ -694,7 +736,8 @@ int EWSContext::notify()
 		/* First call after initialization -> write context data */
 		m_response.doc.Print(&printer);
 		writeheader(m_ctx_id, m_code, 0, true);
-		writechunk(m_ctx_id, to_sv(printer), logResponse, loglevel);
+		writechunk(m_ctx_id, exchange_stream_form(std::string(to_sv(printer)),
+		           m_plugin.server_version()), logResponse, loglevel);
 		nctx.state = NS::S_WRITE;
 		return HPM_RETRIEVE_WRITE;
 	}
@@ -708,7 +751,8 @@ int EWSContext::notify()
 	auto flush = [&]() {
 		data.serialize(response);
 		envelope.doc.Print(&printer);
-		writechunk(m_ctx_id, to_sv(printer), logResponse, loglevel);
+		writechunk(m_ctx_id, exchange_stream_form(std::string(to_sv(printer)),
+		           m_plugin.server_version()), logResponse, loglevel);
 		return HPM_RETRIEVE_WRITE;
 	};
 
