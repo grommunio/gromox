@@ -770,10 +770,12 @@ static void local_date(time_point &date, std::optional<int32_t> &zone,
 /**
  * @brief      Convert a client-supplied recurrence to the item's time zone
  *
- * The pattern and range are given relative to the request's time zone
- * (or the zone of the range start date, if it has one). A start date
- * without a zone on the local day of the item start is taken as local,
- * since responses give the range in the item's time zone.
+ * In an item_local frame, only range dates with a zone are converted to
+ * the local date they denote. Otherwise, the pattern and range are given
+ * relative to the request's time zone (or the zone of the range start
+ * date, if it has one). A start date without a zone on the local day of
+ * the item start is taken as local, since responses give the range in
+ * the item's time zone.
  *
  * @param      rec    Recurrence as received
  * @param      frame  Time zone of the request
@@ -825,13 +827,17 @@ bool has_element(const tinyxml2::XMLElement *xml, const char *name)
 /**
  * @brief      Determine the time zone of a request's recurrence data
  *
- * Requests with MeetingTimeZone (Exchange 2007 style) carry the zone with
- * the item and are not converted. Without a TimeZoneContext header,
- * recurrences are in UTC. A TimeZoneContext that cannot be resolved
- * (including one lacking the mandatory TimeZoneDefinition) leaves the
- * recurrence unconverted rather than guessing UTC. Outlook for Mac sends
- * no TimeZoneContext, but reads and writes recurrences in the item's time
- * zone.
+ * Exchange takes recurrence patterns and range dates in the item's time
+ * zone, whatever the request's TimeZoneContext says. macOS Calendar frames
+ * them in the time zone of the request instead, that is TimeZoneContext or
+ * UTC without one. Requests with MeetingTimeZone (Exchange 2007 style)
+ * carry the zone with the item and are not converted. A TimeZoneContext
+ * that cannot be resolved (including one lacking the mandatory
+ * TimeZoneDefinition) leaves the recurrence unconverted rather than
+ * guessing UTC.
+ *
+ * @param      req         Request envelope
+ * @param      user_agent  User-Agent of the request
  *
  * @return     Frame, or nothing for no conversion
  */
@@ -841,7 +847,7 @@ std::optional<sRecurrenceFrame> make_recurrence_frame(const SOAP::Envelope &req,
 	if (has_element(req.body, "MeetingTimeZone"))
 		return std::nullopt;
 	sRecurrenceFrame frame;
-	if (strncmp(user_agent.c_str(), "MacOutlook/", 11) == 0) {
+	if (!user_agent.starts_with("AppleExchangeWebServices/")) {
 		frame.item_local = true;
 		return frame;
 	}
