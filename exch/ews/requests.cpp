@@ -1679,7 +1679,10 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 			}, item);
 			msg.Items.emplace_back(ctx.create(dir, *targetFolder, *content, atts));
 		}
-		if (std::holds_alternative<tCalendarItem>(item) &&
+		/* Like Exchange, only save an appointment without attendees */
+		bool cal_invite = std::holds_alternative<tCalendarItem>(item) &&
+		                  ctx.has_rcpt_address(*content);
+		if (cal_invite &&
 		    request.SendMeetingInvitations == Enum::SendToAllAndSaveCopy) {
 			sFolderSpec sentitems = ctx.resolveFolder(tDistinguishedFolderId(Enum::sentitems));
 			uint64_t newMid;
@@ -1714,7 +1717,7 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 			if (!msg.Items.empty())
 				refresh_changekey(ctx, dir, messageId, msg.Items.back());
 		}
-		if (std::holds_alternative<tCalendarItem>(item) &&
+		if (cal_invite &&
 		    request.SendMeetingInvitations == Enum::SendOnlyToAll) {
 			auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
 			content->proplist.set(PR_MESSAGE_CLASS, "IPM.Schedule.Meeting.Request");
