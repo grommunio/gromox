@@ -420,6 +420,7 @@ class sShape {
 	static constexpr uint64_t Conflicts =         1 << 18;
 	static constexpr uint64_t Redacted =          1 << 19; ///< Private item withheld from the reader
 	static constexpr uint64_t AssociatedCalendarItemId = 1 << 20;
+	static constexpr uint64_t IsOrganizer =       1 << 21;
 
 	static constexpr uint64_t Recipients = ToRecipients | CcRecipients | BccRecipients | ReplyToRecipients;
 	static constexpr uint64_t Attendees = RequiredAttendees | OptionalAttendees | Resources;
@@ -1130,7 +1131,7 @@ struct tFieldURI {
 	//Types.xsd:402
 	static std::unordered_multimap<std::string, proptag_t> tagMap; ///< Mapping for normal properties
 	static std::unordered_multimap<std::string, std::pair<PROPERTY_NAME, proptype_t>> nameMap; ///< Mapping for named properties
-	static std::array<SMEntry, 29> specialMap; ///< Mapping for special properties
+	static std::array<SMEntry, 30> specialMap; ///< Mapping for special properties
 };
 
 /**
