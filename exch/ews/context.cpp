@@ -3795,6 +3795,13 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 	content.proplist.count = emb_props.size();
 	content.proplist.ppropval = emb_props.data();
 
+	/* The exception carries the attendees of the series */
+	TARRAY_SET master_rcpts{};
+	if (!exmdb.get_message_rcpts(dir.c_str(), mid, &master_rcpts))
+		throw EWSError::ItemSave(E3458);
+	if (master_rcpts.count > 0)
+		content.children.prcpts = &master_rcpts;
+
 	/* Write attachment with embedded message */
 	ATTACHMENT_CONTENT ac{};
 	ac.proplist = att_list;
@@ -3866,6 +3873,109 @@ void EWSContext::stampInstance(const std::string &dir, uint64_t mid,
 	if (!m_plugin.exmdb.set_instance_properties(dir.c_str(),
 	    instanceId, &props, &problems))
 		throw EWSError::ItemSave(E3584);
+}
+
+using attendee_key = std::pair<std::string, uint32_t>;
+
+static attendee_key make_key(std::string &&addr, const TPROPVAL_ARRAY &row)
+{
+	auto type = row.get<const uint32_t>(PR_RECIPIENT_TYPE);
+	return {std::move(addr), type != nullptr ? *type & 0xf : 0};
+}
+
+static bool has_key(const std::vector<attendee_key> &v, const attendee_key &k)
+{
+	return std::any_of(v.cbegin(), v.cend(), [&](const attendee_key &o) {
+	       return o.second == k.second &&
+	              strcasecmp(o.first.c_str(), k.first.c_str()) == 0; });
+}
+
+/**
+ * @brief      Apply a change of the series attendees to its exceptions
+ *
+ * @param      dir      Store directory
+ * @param      fid      Parent folder ID
+ * @param      mid      Message ID of the series
+ * @param      removed  Addresses and kinds removed from the series
+ * @param      added    Recipient rows added to the series
+ */
+void EWSContext::propagateAttendees(const std::string &dir, uint64_t fid,
+    uint64_t mid, const std::vector<attendee_key> &removed,
+    const std::vector<const TPROPVAL_ARRAY *> &added) const
+{
+	auto &exmdb = m_plugin.exmdb;
+	auto inst = m_plugin.loadMessageInstance(dir, fid, mid);
+	std::vector<uint32_t> nums;
+	if (!attachment_nums(m_plugin, dir, inst->instanceId, nums))
+		throw EWSError::ItemSave(E3616);
+	for (auto num : nums) {
+		auto aInst = m_plugin.loadAttachmentInstance(dir, fid, mid, num);
+		std::shared_ptr<EWSPlugin::ExmdbInstance> eInst;
+		try {
+			eInst = m_plugin.loadEmbeddedInstance(dir, aInst);
+		} catch (const DispatchError &) {
+			continue;
+		}
+		static constexpr proptag_t ctags[] = {PR_MESSAGE_CLASS};
+		TPROPVAL_ARRAY cprops{};
+		if (!exmdb.get_instance_properties(dir.c_str(), 0,
+		    eInst->instanceId, proptag_cspan{ctags}, &cprops))
+			throw EWSError::ItemSave(E3616);
+		auto cls = cprops.get<const char>(PR_MESSAGE_CLASS);
+		if (cls == nullptr ||
+		    class_match_prefix(cls, IPM_Appointment_Exception) != 0)
+			continue;
+		uint16_t count = 0;
+		TARRAY_SET cur{};
+		if (!exmdb.get_message_instance_rcpts_num(dir.c_str(),
+		    eInst->instanceId, &count) ||
+		    (count > 0 && !exmdb.get_message_instance_rcpts(dir.c_str(),
+		    eInst->instanceId, 0, count, &cur)))
+			throw EWSError::ItemSave(E3616);
+		if (cur.count == 0)
+			continue;
+		tarray_set_ptr set(tarray_set_init());
+		if (set == nullptr)
+			throw EWSError::NotEnoughMemory(E3617);
+		std::vector<attendee_key> kept;
+		uint32_t row_id = 0;
+		auto append = [&](const TPROPVAL_ARRAY &row) {
+			tpropval_array_ptr dup(row.dup());
+			if (dup == nullptr ||
+			    dup->set(PR_ROWID, &row_id) != ecSuccess ||
+			    set->append_move(std::move(dup)) != ecSuccess)
+				throw EWSError::NotEnoughMemory(E3617);
+			++row_id;
+		};
+		bool changed = false;
+		for (const auto &row : cur) {
+			auto k = make_key(rcptAddress(row), row);
+			if (!k.first.empty() && has_key(removed, k)) {
+				changed = true;
+				continue;
+			}
+			kept.emplace_back(std::move(k));
+			append(row);
+		}
+		for (auto row : added) {
+			if (has_key(kept, make_key(rcptAddress(*row), *row)))
+				continue;
+			append(*row);
+			changed = true;
+		}
+		if (!changed)
+			continue;
+		ec_error_t err = ecSuccess;
+		if (!exmdb.empty_message_instance_rcpts(dir.c_str(),
+		    eInst->instanceId) ||
+		    !exmdb.update_message_instance_rcpts(dir.c_str(),
+		    eInst->instanceId, set.get()) ||
+		    !exmdb.flush_instance(dir.c_str(),
+		    eInst->instanceId, &err) || err != ecSuccess ||
+		    !exmdb.flush_instance(dir.c_str(),
+		    aInst->instanceId, &err) || err != ecSuccess)
+			throw EWSError::ItemSave(E3616);
+	}
 }
 
 /**
@@ -3952,12 +4062,46 @@ void EWSContext::updateAttendees(const std::string &dir,
 			throw EWSError::NotEnoughMemory(E3456);
 		++row_id;
 	}
+	auto firstNew = rcpts->count;
 	if (shape.requiredAttendees)
 		parseAttendees(shape.requiredAttendees, MAPI_TO);
 	if (shape.optionalAttendees)
 		parseAttendees(shape.optionalAttendees, MAPI_CC);
 	if (shape.resourceAttendees)
 		parseAttendees(shape.resourceAttendees, MAPI_BCC);
+
+	/* Attendees removed from and added to the replaced kinds */
+	std::vector<attendee_key> newKeys, replaced, removed;
+	std::vector<const TPROPVAL_ARRAY *> added;
+	for (auto i = firstNew; i < rcpts->count; ++i)
+		newKeys.emplace_back(make_key(rcptAddress(*rcpts->pparray[i]),
+		                     *rcpts->pparray[i]));
+	for (size_t i = 0; i < oldRcpts.count; ++i) {
+		auto &row = *oldRcpts.pparray[i];
+		auto type = row.get<const uint32_t>(PR_RECIPIENT_TYPE);
+		auto flags = row.get<const uint32_t>(PR_RECIPIENT_FLAGS);
+		if (type == nullptr ||
+		    (flags != nullptr && *flags & recipOrganizer))
+			continue;
+		auto t = *type & 0xf;
+		if ((t == MAPI_TO && shape.requiredAttendees) ||
+		    (t == MAPI_CC && shape.optionalAttendees) ||
+		    (t == MAPI_BCC && shape.resourceAttendees))
+			replaced.emplace_back(oldAddrs[i], t);
+	}
+	for (const auto &k : replaced)
+		if (!k.first.empty() && !has_key(newKeys, k))
+			removed.emplace_back(k);
+	for (auto i = firstNew; i < rcpts->count; ++i)
+		if (!has_key(replaced, newKeys[i - firstNew]))
+			added.emplace_back(rcpts->pparray[i]);
+	if (!removed.empty() || !added.empty()) try {
+		propagateAttendees(dir, parent.folderId, mid, removed, added);
+	} catch (...) {
+		/* Do not leave a half-updated instance for others to flush */
+		m_plugin.unloadMessageInstance(dir, mid);
+		throw;
+	}
 
 	if (rcpts->count > 0) {
 		if (!exmdb.update_message_instance_rcpts(dir.c_str(),
@@ -5551,13 +5695,15 @@ void EWSContext::sendInstance(const std::string &dir,
  * ATTENDEE, DTSTAMP and SEQUENCE from the exception message, which
  * UpdateItem creates without them.
  *
- * @param      msg     Duplicated series message
- * @param      props   Properties to set
+ * @param      msg      Duplicated series message
+ * @param      props    Properties to set
+ * @param      replace  Give all exceptions the recipients of @msg, not
+ *                      only those without recipients
  *
  * @return     false if memory ran out
  */
 static bool stamp_exceptions(MESSAGE_CONTENT &msg,
-    const std::vector<TAGGED_PROPVAL> &props)
+    const std::vector<TAGGED_PROPVAL> &props, bool replace = false)
 {
 	if (msg.children.pattachments == nullptr)
 		return true;
@@ -5573,7 +5719,7 @@ static bool stamp_exceptions(MESSAGE_CONTENT &msg,
 				return false;
 		auto rcpts = at.pembedded->children.prcpts;
 		if (msg.children.prcpts == nullptr ||
-		    (rcpts != nullptr && rcpts->count > 0))
+		    (!replace && rcpts != nullptr && rcpts->count > 0))
 			continue;
 		rcpts = msg.children.prcpts->dup();
 		if (rcpts == nullptr)
@@ -5833,7 +5979,8 @@ void EWSContext::cancelRemovedAttendees(const std::string &dir,
 	/* RFC 5546 §3.2.5: every VEVENT of the CANCEL needs these */
 	ident.push_back({seq_tag, &newseq});
 	ident.push_back({PROP_TAG(PT_SYSTIME, ids[5]), &now});
-	if (!stamp_exceptions(*cancel, ident))
+	/* The exceptions no longer list the removed attendees */
+	if (!stamp_exceptions(*cancel, ident, true))
 		throw EWSError::NotEnoughMemory(E3406);
 	send(dir, mid, *cancel);
 	if (!saveCopy)
