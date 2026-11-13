@@ -4949,6 +4949,50 @@ static bool read_flag_only(const tItemChange &change)
 	return !change.Updates.empty();
 }
 
+/**
+ * @brief      Refuse an UpdateItem whose send would fail
+ *
+ * Exchange rejects the whole request, the update included, when a
+ * recipient of the message to send is not resolved.
+ */
+static void upd_check_resolved(const EWSContext &ctx, const std::string &dir,
+    uint64_t mid, const sShape &shape)
+{
+	void *cls = nullptr;
+	if (!ctx.plugin().exmdb.get_message_property(dir.c_str(), nullptr,
+	    CP_ACP, mid, PR_MESSAGE_CLASS, &cls) || cls == nullptr ||
+	    class_match_prefix(static_cast<const char *>(cls), "IPM.Note") != 0)
+		return;
+	const tinyxml2::XMLElement *given[] = {
+		shape.toRecipients, shape.ccRecipients, shape.bccRecipients,
+	};
+	for (auto xml : given) {
+		if (xml == nullptr)
+			continue;
+		for (auto e = xml->FirstChildElement("Mailbox"); e != nullptr;
+		     e = e->NextSiblingElement("Mailbox")) {
+			tEmailAddressType addr(e);
+			if (!addr.empty() && !addr.addressable())
+				throw EWSError::InvalidRecipients(E3618(*addr.Name));
+		}
+	}
+	TARRAY_SET rows{};
+	if (!ctx.plugin().exmdb.get_message_rcpts(dir.c_str(), mid, &rows))
+		throw EWSError::ItemNotFound(E3494);
+	for (const auto &row : rows) {
+		auto type = row.get<const uint32_t>(PR_RECIPIENT_TYPE);
+		auto flags = row.get<const uint32_t>(PR_RECIPIENT_FLAGS);
+		/* Same rows as EWSContext::send() checks */
+		if ((type != nullptr && *type >= MAPI_TO && *type <= MAPI_BCC &&
+		    given[*type - MAPI_TO] != nullptr) ||
+		    (flags != nullptr && (*flags & recipOrganizer ||
+		    !(*flags & recipSendable))) || ctx.addressable(row))
+			continue;
+		auto name = row.get<const char>(PR_DISPLAY_NAME);
+		throw EWSError::InvalidRecipients(E3618(name != nullptr ? name : ""));
+	}
+}
+
 static void process_upditem_2(mUpdateItemRequest &request, const EWSContext &ctx,
     const std::string &dir, const char *username, sMessageEntryId &mid)
 {
@@ -5192,6 +5236,10 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 		}
 		tContact::genFields(shape);
 		tCalendarItem::setDatetimeFields(shape);
+		if (!change.ItemId.isOccurrence() && request.MessageDisposition &&
+		    (*request.MessageDisposition == Enum::SendOnly ||
+		    *request.MessageDisposition == Enum::SendAndSaveCopy))
+			upd_check_resolved(ctx, dir, mid.messageId(), shape);
 		if (shape.recurrence && change.ItemId.isOccurrence())
 			throw EWSError::InvalidPropertySet(E3484);
 		if (shape.recurrence)

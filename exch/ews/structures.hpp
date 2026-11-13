@@ -809,6 +809,7 @@ struct tEmailAddressType : public NS_EWS_Types {
 	/* A usable address, or neither address nor name */
 	bool addressable() const { return !blank(EmailAddress); }
 	bool empty() const { return blank(EmailAddress) && blank(Name); }
+	void unresolved();
 	static bool blank(const std::optional<std::string> &s)
 	{
 		return !s || s->find_first_not_of(" \t") == s->npos;
