@@ -2589,15 +2589,17 @@ void EWSContext::loadSpecial(const std::string &dir, uint64_t fid,
     uint64_t mid, tMeetingMessage &meetMsg, uint64_t special) const
 {
 	loadSpecial(dir, fid, mid, static_cast<tMessage &>(meetMsg), special);
-	if (!meetMsg.UID || meetMsg.AssociatedCalendarItemId)
+	if (!(special & sShape::AssociatedCalendarItemId) ||
+	    meetMsg.AssociatedCalendarItemId)
 		return;
 	/*
 	 * Populate AssociatedCalendarItemId by searching the
 	 * calendar for an item matching the CleanGlobalObjectId.
 	 */
-	auto goid = getItemProp<BINARY>(dir, mid,
-	    PROP_TAG(PT_BINARY, getNamedPropId(dir,
-	    NtCleanGlobalObjectId)));
+	auto propid = getNamedPropId(dir, NtCleanGlobalObjectId);
+	const proptag_t tag = PROP_TAG(PT_BINARY, propid);
+	auto props = getItemProps(dir, mid, {&tag, 1});
+	auto goid = props.get<const BINARY>(tag);
 	if (goid == nullptr || goid->cb == 0)
 		return;
 	sFolderSpec calFolder;
