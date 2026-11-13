@@ -2178,6 +2178,7 @@ void process(mFindItemRequest &&request, XMLElement *response, const EWSContext 
 	response->SetName("m:FindItemResponse");
 
 	sShape shape(request.ItemShape);
+	shape.special &= ~sShape::AssociatedCalendarItemId;
 	shape.x500Org = ctx.plugin().x500_org_name.c_str();
 	uint8_t tableFlags = request.Traversal == Enum::SoftDeleted ? TABLE_FLAG_SOFTDELETES :
 	                     request.Traversal == Enum::Associated ? TABLE_FLAG_ASSOCIATED :
@@ -4302,6 +4303,7 @@ void process(mSyncFolderItemsRequest &&request, XMLElement *response, const EWSC
 		throw DispatchError(E3031);
 
 	sShape shape(request.ItemShape);
+	shape.special &= ~sShape::AssociatedCalendarItemId;
 	ctx.restrictShape(dir, folder, rights, shape);
 	sMailboxInfo mbinfo = ctx.getMailboxInfo(dir, folder.location == folder.PUBLIC);
 	// Generate message entry IDs on the fly as we have all necessary information
