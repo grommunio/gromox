@@ -89,6 +89,7 @@ class EWSError : public DispatchError {
 	ERR(InvalidFreeBusyViewType) ///< Requested free busy view type is invalid
 	ERR(InvalidId) ///< ItemId or ChangeKey malformed
 	ERR(InvalidIdNotAnItemAttachmentId) ///< Attachment id expected, but got something else
+	ERR(InvalidMergedFreeBusyInterval) ///< Bad MergedFreeBusyIntervalInMinutes
 	ERR(InvalidExtendedPropertyValue) ///< Value of extended property does not match its type
 	ERR(InvalidOccurrenceId) ///< Cannot deserialize occurrence ID
 	ERR(InvalidPropertySet) ///< Property cannot be set on this item
@@ -114,6 +115,7 @@ class EWSError : public DispatchError {
 	ERR(SendAsDenied) ///< Caller may not send as or on behalf of the claimed sender
 	ERR(ServerBusy) ///< Server declined to process the request (e.g. batch exceeds a configured limit)
 	ERR(SubscriptionAccessDenied) ///< Trying to access subscription from another user
+	ERR(TimeIntervalTooBig) ///< Free/busy window longer than allowed
 	ERR(TimeZone) ///< Invalid or missing time zone
 	ERR(ValueOutOfRange) ///< Value cannot be interpreted correctly (only applied to dates according to official documentation)
 #undef ERR
@@ -682,6 +684,8 @@ E(3610, "failed to delete the Outlook rule blob");
 E(3611, "failed to write the inbox rules");
 E(3612, "the inbox rule limit has been reached");
 E(3613, "user configuration message has no entry id");
+E(3614, "invalid merged free/busy interval");
+E(3615, "free/busy window longer than 62 days");
 
 #undef E
 }
