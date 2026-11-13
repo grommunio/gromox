@@ -188,6 +188,33 @@ static void structure_name_label()
 	assert(out.find("\"NAME\" \"=?koi8-r?b?z9Teo9QucGRm?=\"") != out.npos);
 }
 
+/*
+ * MAIL and vmail_to_digest agree on raw 8-bit names: UTF-8 is kept, other
+ * bytes are read as windows-1252.
+ */
+static void raw_8bit_name()
+{
+	static constexpr struct {
+		const char *raw, *want;
+	} cases[] = {
+		{"\xd0\xbe\xd1\x82\xd1\x87\xd1\x91\xd1\x82.pdf",
+		 "\xd0\xbe\xd1\x82\xd1\x87\xd1\x91\xd1\x82.pdf"},
+		{"\xcf\xd4\xde\xa3\xd4.pdf",
+		 "\xc3\x8f\xc3\x94\xc3\x9e\xc2\xa3\xc3\x94.pdf"},
+		{"\x81\x8d\x80.pdf", "\xc2\x81\xc2\x8d\xe2\x82\xac.pdf"},
+	};
+	for (const auto &c : cases) {
+		auto eml = "From: a@b.c\r\nSubject: s\r\n"
+			"Content-Type: multipart/mixed; boundary=\"b\"\r\n\r\n"
+			"--b\r\nContent-Type: text/plain\r\n\r\nx\r\n"
+			"--b\r\nContent-Type: application/pdf; name=\""s +
+			c.raw + "\"\r\n\r\nQUJD\r\n--b--\r\n";
+		auto nd = vdigest(eml), od = odigest(eml);
+		assert(base64_decode(nd["mimes"][1]["filename"].asString()) == c.want);
+		assert(base64_decode(od["mimes"][1]["filename"].asString()) == c.want);
+	}
+}
+
 int main()
 {
 	single_part();
@@ -197,5 +224,6 @@ int main()
 	empty_tail_part();
 	parity_with_mail();
 	structure_name_label();
+	raw_8bit_name();
 	return EXIT_SUCCESS;
 }

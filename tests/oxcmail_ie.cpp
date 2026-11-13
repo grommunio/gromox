@@ -258,6 +258,47 @@ static int select_parts_1()
 	return 0;
 }
 
+/*
+ * A raw UTF-8 attachment name (RFC 6532) keeps its characters. Raw bytes
+ * that are not UTF-8 are read as windows-1252, like Exchange does.
+ */
+static int raw_8bit_filename()
+{
+	static constexpr struct {
+		const char *raw, *want;
+	} cases[] = {
+		{"\xd0\xbe\xd1\x82\xd1\x87\xd1\x91\xd1\x82.pdf",
+		 "\xd0\xbe\xd1\x82\xd1\x87\xd1\x91\xd1\x82.pdf"},
+		{"\xcf\xd4\xde\xa3\xd4.pdf",
+		 "\xc3\x8f\xc3\x94\xc3\x9e\xc2\xa3\xc3\x94.pdf"},
+		{"\x81\x8d\x80.pdf", "\xc2\x81\xc2\x8d\xe2\x82\xac.pdf"},
+	};
+	fprintf(stderr, "=== raw_8bit_filename\n");
+	for (const auto &c : cases) {
+		auto data = std::string("From: a@example.com\r\nSubject: s\r\nMIME-Version: 1.0\r\n"
+			"Content-Type: multipart/mixed; boundary=\"b\"\r\n\r\n"
+			"--b\r\nContent-Type: text/plain\r\n\r\nx\r\n"
+			"--b\r\nContent-Type: application/pdf; name=\"") + c.raw + "\"\r\n"
+			"Content-Disposition: attachment\r\n"
+			"Content-Transfer-Encoding: base64\r\n\r\nQUJD\r\n--b--\r\n";
+		MAIL m;
+		assert(m.refonly_parse(data.data(), data.size()));
+		oxcmail_converter cvt;
+		cvt.alloc = g_alloc;
+		cvt.get_propids = ee_get_propids;
+		auto mc = cvt.inet_to_mapi(m);
+		assert(mc != nullptr);
+		auto atl = mc->children.pattachments;
+		assert(atl != nullptr && atl->count == 1);
+		auto v = atl->pplist[0]->proplist.get<const char>(PR_ATTACH_LONG_FILENAME);
+		if (v == nullptr || strcmp(v, c.want) != 0) {
+			fprintf(stderr, "PR_ATTACH_LONG_FILENAME: %s\n", znul(v));
+			return EXIT_FAILURE;
+		}
+	}
+	return EXIT_SUCCESS;
+}
+
 static int select_parts_1a()
 {
 	fprintf(stderr, "== T1a\n");
@@ -3245,6 +3286,7 @@ int main()
 		int (*fct)();
 	} tests[] = {
 		E(excess_attachment), E(nested_boundary_prefix),
+		E(raw_8bit_filename),
 		E(select_parts_1), E(select_parts_1a),
 		E(ical_meeting_attendees),
 		E(select_parts_2), E(select_parts_3), E(select_parts_4),

@@ -1225,11 +1225,11 @@ bool MIME::get_filename(std::string &file_name) const try
 	/* RFC 2231 */
 	if (get_field("Content-Disposition", raw_val)) {
 		raw_val.insert(0, "Content-Disposition: ");
-		vhdr.parse(raw_val);
+		vhdr.parse(vpctx, raw_val);
 		auto phf = vmime::dynamicCast<vmime::parameterizedHeaderField>(vhdr.ContentDisposition());
 		if (phf != nullptr) {
 			if (auto par = phf->findParameter("filename")) {
-				file_name = par->getValue().getConvertedText(vmime::charsets::UTF_8);
+				file_name = vmail_param_utf8(par->getValue());
 				return true;
 			}
 		}
@@ -1237,11 +1237,11 @@ bool MIME::get_filename(std::string &file_name) const try
 	/* RFC 2184 */
 	if (get_field("Content-Type", raw_val)) {
 		raw_val.insert(0, "Content-Type: ");
-		vhdr.parse(raw_val);
+		vhdr.parse(vpctx, raw_val);
 		auto phf = vmime::dynamicCast<vmime::parameterizedHeaderField>(vhdr.ContentType());
 		if (phf != nullptr) {
 			if (auto par = phf->findParameter("name")) {
-				file_name = par->getValue().getConvertedText(vmime::charsets::UTF_8);
+				file_name = vmail_param_utf8(par->getValue());
 				return true;
 			}
 		}
