@@ -27,6 +27,8 @@
 # 3. The shared folder must be available from Windows and Linux (mount.cifs)
 #    and have enough space for all .pst files. To conserve disk space, delete
 #    the .pst file after each import by setting $DeletePST = $true.
+#    Then only the mailboxes in work need space, see $Threads, and the
+#    mailboxes that could not be imported. Their .pst files are kept.
 #
 # 4. Test the SSH login for plink.exe that it accepts the host key.
 #
@@ -36,7 +38,7 @@
 #    If the mailboxes are already created:
 #      $CreateGrommunioMailbox = $false
 #      $OnlyCreateGrommunioMailbox = $false
-#    In this case, the script migrates the Exchange data into existing mailboxes, mailbox by mailbox.
+#    In this case, the script migrates the Exchange data into existing mailboxes, $Threads mailboxes at a time.
 #
 #    The mailboxes should be created during the migration process:
 #      $CreateGrommunioMailbox = $true
@@ -222,6 +224,8 @@ $IgnoreFile = "exchange2grommunio.ignore"
 $DeletePST = $true
 
 # Wait after each mailbox import and allow exiting.
+# No new mailbox is started then, and the question comes when the
+# mailboxes in work have finished.
 # See $StopMarker how to interrupt migration
 $WaitAfterImport = $true
 
@@ -261,7 +265,7 @@ $MailboxLanguage = "de_DE"
 #$Organization = "-o 1"
 $Organization = ""
 
-# Stop marker, if $WaitAfterImport = $false, create this file and migration will be interrupted after current mailbox
+# Stop marker, if $WaitAfterImport = $false, create this file and migration will be interrupted after the mailboxes in work
 $StopMarker = "exchange2grommunio.STOP"
 
 # Write timestamps and summary to this log file.
@@ -278,6 +282,26 @@ $MigrationPriority = "Normal"
 $BadItemLimit = 0
 #$BadItemLimit = "unlimited"
 
+# Number of mailboxes that are exported and imported at the same time.
+# The exports run inside Exchange and the imports on the grommunio server,
+# so more threads put more load on both. With $DeletePST = $true the shared
+# folder needs space for $Threads .pst files at a time, and for the kept
+# files of mailboxes that could not be imported.
+# All threads are only kept busy with $WaitAfterImport = $false.
+# Use 1 to migrate the mailboxes one after the other.
+$Threads = 4
+
+# An import that could not open the .pst file is repeated this many times,
+# with a pause of one minute.
+$ImportRetries = 3
+
+# Import an existing .pst file instead of exporting the mailbox again.
+# This is useful after a failed import, the .pst files of such mailboxes
+# are kept. Mind that items of a partly imported mailbox are imported twice.
+# Every <address>.pst in the shared folder is taken for a current export.
+# Remove the files of mailboxes that must be exported anew.
+$ReusePST = $false
+
 # Seconds to wait for Exchange to release the .pst file after an export.
 # The mailbox is not imported when the file is still locked after that time.
 # Use 0 to wait without limit.
@@ -285,9 +309,6 @@ $LockTimeout = 3600
 
 # Note: there is no detection in this code for EX_2016_CU6.
 $Exchange_Newer_2016_CU6 = $true
-
-# Name of our MailboxExportRequests. Requests with other names are not touched.
-$ExportRequestName = "exchange2grommunio"
 
 #
 # From here on, no code or variables need changing by the user of this script.
@@ -330,12 +351,18 @@ $ExportRequestName = "exchange2grommunio"
 #$BadItemLimit = 0
 #$BadItemLimit = "unlimited"
 #$LockTimeout = 3600
+#$Threads = 4
+#$ImportRetries = 3
+#$ReusePST = $false
 #>
 # Use configuration file named "exchange2grommunio.config.ps1" to override the
 # configuration values above instead of changing the values in this script.
 if (Test-Path $PSScriptRoot/exchange2grommunio.config.ps1) {
 	. $PSScriptRoot/exchange2grommunio.config.ps1
 }
+
+# Name of our MailboxExportRequests. Requests with other names are not touched.
+$ExportRequestName = "exchange2grommunio"
 
 # Overwrite File locations (after eventually sourcing exchange2grommunio.config.ps1)
 $StopMarker = Join-Path -Path $WinSharedFolder -ChildPath $StopMarker
@@ -631,6 +658,426 @@ function Test-Previous-Status
 	}
 }
 
+# Quote an argument for the command line of a Windows program.
+#
+function Quote-WinArg
+{
+	Param(
+		[parameter(Mandatory=$True)]
+		$Arg
+	)
+	if ($Arg -notmatch '[\s"]') {
+		return $Arg
+	}
+	$Arg = $Arg -replace '(\\*)"', '$1$1\"'
+	$Arg = $Arg -replace '(\\+)$', '$1$1'
+	return '"' + $Arg + '"'
+}
+
+# Print new lines of a running import and collect them for the logs.
+#
+function Read-ImportOutput
+{
+	Param(
+		[parameter(Mandatory=$True)]
+		$Job,
+		[parameter(Mandatory=$True)]
+		$Final
+	)
+	$Text = ""
+	$Stream = $null
+	Try {
+		$Stream = New-Object System.IO.FileStream($Job.OutFile, 'Open', 'Read', 'ReadWrite')
+		$Length = $Stream.Length - $Job.OutPos
+		if ($Length -gt 0) {
+			$Buffer = New-Object byte[] $Length
+			[void]$Stream.Seek($Job.OutPos, 'Begin')
+			$Length = $Stream.Read($Buffer, 0, $Length)
+			if (!$Final) {
+				# Leave an unfinished line for the next round
+				$Length = [Array]::LastIndexOf($Buffer, [byte]10, $Length - 1) + 1
+			}
+			$Text = [System.Text.Encoding]::UTF8.GetString($Buffer, 0, $Length)
+			$Job.OutPos += $Length
+		}
+	}
+	Catch {
+		if ($Final) {
+			Write-MLog "Warning: output of the import of $($Job.Mbox) could not be read." yellow
+		}
+	}
+	Finally {
+		if ($Stream) {
+			$Stream.Close()
+		}
+	}
+	if ($Final -and (Test-Path -Path ($Job.OutFile + ".err"))) {
+		# Messages of plink itself
+		$Text += [System.IO.File]::ReadAllText($Job.OutFile + ".err")
+	}
+	foreach ($Line in ($Text -split "`r?`n")) {
+		if ($Line -eq "") {
+			continue
+		}
+		[void]$Job.Output.Add($Line)
+		if ($Threads -gt 1) {
+			Write-Host "[$($Job.Mbox)] $Line"
+		} else {
+			Write-Host $Line
+		}
+	}
+}
+
+# Clean up and request the export of a mailbox.
+#
+function Start-Mailbox
+{
+	Param(
+		[parameter(Mandatory=$True)]
+		$Job
+	)
+	$MigMBox = $Job.Mbox
+
+	Write-MLog "" white
+	# Clean up before exporting a mailbox
+	# Remove our old MailboxExportRequest of this mailbox
+	Write-MLog "Removing old MailboxExportRequest of $MigMBox." green
+	$OldRequest = Get-MailboxExportRequest -Mailbox $Job.ExportMbox -Name $ExportRequestName -ErrorAction SilentlyContinue
+	# The .pst file of an unfinished export is not complete
+	$Complete = (!$OldRequest) -or ("$($OldRequest.Status)" -eq "Completed")
+	if ($OldRequest) {
+		$OldRequest | Remove-MailboxExportRequest -Confirm:$false
+	}
+
+	if ($OnlyCreateGrommunioMailbox) {
+		$Job.State = "create"
+		return
+	}
+	$script:MailboxesTotal++
+
+	if ($ReusePST -and $Complete -and (Test-Path -Path $Job.Pst)) {
+		Write-MLog "Using the existing $MigMBox.pst file, the mailbox is not exported again." yellow
+		$Job.Size = [math]::ceiling($(Get-Item $Job.Pst).length/(1024*1024))
+		$Job.LockStart = (GET-DATE)
+		$Job.State = "unlock"
+		return
+	}
+
+	# Remove old / orphaned .pst file
+	if (Test-Path -Path $Job.Pst) {
+		Remove-Item -ErrorAction SilentlyContinue -Path $Job.Pst
+		Write-MLog "Removing outdated $MigMBox.pst file." yellow
+	}
+	Write-MLog "" white
+
+	# Create a .pst file for every mailbox found on system.
+	#
+	Write-MLog "Exporting mailbox $MigMBox to file $MigMBox.pst..." green
+
+	# Exchange 2010 only supports "Normal, High" for the -Priority parameter
+	#
+	$Job.ExportStart = (GET-DATE)
+	$expRequest = New-MailboxExportRequest -Mailbox $Job.ExportMbox -Name $ExportRequestName -FilePath $Job.Pst -Priority $MigrationPriority -ExcludeDumpster -BadItemLimit $BadItemLimit
+	$expRequest | Format-Table -HideTableHeaders | Out-Host
+	if (!$expRequest) {
+		# Give up at once in Step-Export
+		$Job.Missing = 30
+	}
+	$Job.State = "export"
+}
+
+# Look after a running export.
+#
+function Step-Export
+{
+	Param(
+		[parameter(Mandatory=$True)]
+		$Job
+	)
+	$MigMBox = $Job.Mbox
+	$ExpLogFile = $Job.ExpLogFile
+
+	# We probably should include a timeout to detect hanging exports.
+	$expRequest = Get-MailboxExportRequest -Mailbox $Job.ExportMbox -Name $ExportRequestName -ErrorAction SilentlyContinue
+	if (!$expRequest) {
+		# Not created, or removed by somebody else
+		$Job.Missing++
+		if ($Job.Missing -lt 30) {
+			return
+		}
+		$expStatus = "Missing"
+	} else {
+		$Job.Missing = 0
+		$expStatus = "$($expRequest.Status)"
+		$expPercent = [int]($expRequest | Get-MailboxExportRequestStatistics).PercentComplete
+		Write-Progress -Id $Job.Slot -Activity "Export: $MigMBox" -Status "$expPercent% Complete:" -PercentComplete $expPercent;
+		Write-Debug "DEBUG: $MigMBox $expStatus / $expPercent"
+	}
+	# https://learn.microsoft.com/en-us/powershell/module/exchange/get-mailboxexportrequest?view=exchange-ps#-status
+	$ExportOK = $false
+	if ($expStatus -eq "Completed") {
+		$ExportOK = $true
+	} elseif ($expStatus -eq "CompletedWithWarning") {
+		Write-MLog "Warning: Export Result of ${MigMBox}: $expStatus" yellow
+		$ExportOK = $true
+	} elseif (@("AutoSuspended","Failed","Suspended","Missing") -contains $expStatus) {
+		Write-MLog "Error: Export Result of ${MigMBox}: $expStatus" red
+		if ($expRequest) {
+			$expRequest | Get-MailboxExportRequestStatistics -IncludeReport -Diagnostic | ConvertTo-Json | Add-Content -Path ($ExpLogFile + ".diagnostic")
+		}
+	} else {
+		return
+	}
+	# End display of progress bar
+	Write-Progress -Id $Job.Slot -Completed -Activity "Export: $MigMBox"
+
+	# Export
+	if ($expRequest) {
+		$expRequest | Get-MailboxExportRequestStatistics -IncludeReport | ConvertTo-Json | Add-Content -Path $ExpLogFile
+		$expRequest | Remove-MailboxExportRequest -Confirm:$false
+	}
+	$Duration = [math]::ceiling($(NEW-TIMESPAN -Start $Job.ExportStart -End (GET-DATE)).TotalSeconds)
+	Write-MLog "Export of mailbox $MigMBox took $Duration seconds." green
+
+	# Show size of exported mailbox in MB.
+	if (Test-Path -Path $Job.Pst) {
+		if ((Get-Item $Job.Pst).length -gt 0mb) {
+			$Job.Size = [math]::ceiling($(Get-Item $Job.Pst).length/(1024*1024))
+			Write-MLog "Size of mailbox $MigMBox.pst is $($Job.Size) MB" green
+		}
+	} elseif ($ExportOK) {
+		Write-MLog "Error mailbox $MigMBox.pst do not exist!" red
+		$ExportOK = $false
+	}
+
+	if ($ExportOK) {
+		Write-Mlog "Wait until the file lock of $MigMBox.pst is released." yellow
+		$Job.LockStart = (GET-DATE)
+		$Job.State = "unlock"
+		Step-Unlock $Job
+		return
+	}
+	# A partial file must not be taken for an export later on
+	Remove-Item -ErrorAction SilentlyContinue -Path $Job.Pst
+	if (Test-Path -Path $Job.Pst) {
+		Write-MLog "Warning: the incomplete $MigMBox.pst could not be removed." yellow
+	}
+	$script:MailboxesExportFailed++
+	$script:ExportErrorsMBX += $MigMBox + ", "
+	# Do not import this mailbox
+	$Job.Skip = $true
+	$Job.State = "create"
+}
+
+# Wait until the file lock of the .pst file is released.
+#
+function Step-Unlock
+{
+	Param(
+		[parameter(Mandatory=$True)]
+		$Job
+	)
+	$MigMBox = $Job.Mbox
+	$Waited = [math]::floor($(NEW-TIMESPAN -Start $Job.LockStart -End (GET-DATE)).TotalSeconds)
+
+	if (!(isLocked $Job.Pst)) {
+		Write-Progress -Id $Job.Slot -Completed -Activity "Unlock: $MigMBox"
+		Write-MLog "PST lock of $MigMBox.pst cleared, after $Waited seconds." green
+		$script:MailboxesExported++
+		$Job.Unlocked = $true
+		$Job.State = "create"
+		return
+	}
+	if (($LockTimeout -le 0) -or ($Waited -lt $LockTimeout)) {
+		Write-Progress -Id $Job.Slot -Activity "Unlock: $MigMBox" -Status "Locked for $Waited seconds"
+		return
+	}
+	Write-Progress -Id $Job.Slot -Completed -Activity "Unlock: $MigMBox"
+	Write-MLog "Error: $MigMBox.pst is still locked after $Waited seconds, mailbox is not imported." red
+	$script:MailboxesExportFailed++
+	$script:ExportErrorsMBX += $MigMBox + ", "
+	$Job.Skip = $true
+	$Job.State = "create"
+}
+
+# If requested, create the grommunio mailbox. Then start the import.
+#
+function Step-Create
+{
+	Param(
+		[parameter(Mandatory=$True)]
+		$Job
+	)
+	$MigMBox = $Job.Mbox
+
+	if ($CreateGrommunioMailbox) {
+		Write-MLog "Create grommunio mailbox: $MigMBox." green
+		if ($PowerShellOld) {
+			.\plink.exe @PLINKARGS "grommunio-admin ldap downsync -l $MailboxLanguage $MigMBox $Organization" | Out-Host
+			$CMDExitCode = $lastexitcode
+		} else {
+			.\plink.exe @PLINKARGS "grommunio-admin ldap downsync -l $MailboxLanguage $MigMBox $Organization" 2>&1 | Foreach-Object ToString | Tee-Object -Variable TeeVar | Out-Host
+			$CMDExitCode = $lastexitcode
+			# Save plink output to $LogFile
+			Write-MLog "---" none
+			Add-Content -Path $LogFile -Value $TeeVar
+			Write-MLog "---" none
+		}
+		if ($CMDExitCode -eq 0) {
+			Write-Mlog "Mailbox: $MigMBox created successfully." green
+			$script:MailboxesCreated++
+		} else {
+			Write-MLog "Creation of mailbox: $MigMBox failed." red
+			$script:MailboxesCreateFailed++
+			$script:CreateErrorsMBX += $MigMBox + ", "
+			if ($StopOnError) {
+				$script:WaitAfterImport = $true
+			}
+			# If we get a create error, do not import the mailbox.
+			$Job.Skip = $true
+		}
+	}
+
+	if ($Job.Skip -or $OnlyCreateGrommunioMailbox) {
+		$Job.State = "done"
+		return
+	}
+	$Job.ImportStart = (GET-DATE)
+	Start-Import $Job
+}
+
+# Using plink, start importing this mailbox and .pst
+# file on the grommunio host.
+#
+function Start-Import
+{
+	Param(
+		[parameter(Mandatory=$True)]
+		$Job
+	)
+	$MigMBox = $Job.Mbox
+	$ImpLogFile = $Job.ImpLogFile
+
+	Write-MLog "" white
+	Write-MLog "Starting import of mailbox: $MigMBox in grommunio." green
+	Write-UserLog "Starting import of mailbox: $MigMBox in grommunio."
+	Write-UserLog ""
+	# The CIFS client may see the lock a little longer than Windows.
+	# Give it up to 60 seconds before the import is started.
+	$LinuxPST = "'$LinuxSharedFolder/$MigMBox.pst'"
+	$ImportCmd = "n=0; until head -c 1 $LinuxPST >/dev/null 2>&1; do [ -e $LinuxPST ] || break; n=`$((n+1)); [ `$n -ge 30 ] && break; sleep 2; done; gromox-e2ghelper -u '$MigMBox' -- -s $LinuxPST 2>&1"
+	$ArgList = @($PLINKARGS | Where-Object { "$_" -ne "" }) + $ImportCmd
+	$ArgLine = ($ArgList | ForEach-Object { Quote-WinArg "$_" }) -join " "
+	$Job.Try++
+	$Job.OutPos = 0
+	$Job.Output = New-Object System.Collections.ArrayList
+	# The import runs in the background, its output goes to a file.
+	# The empty input keeps plink away from the keyboard.
+	[System.IO.File]::WriteAllBytes($Job.OutFile + ".in", (New-Object byte[] 0))
+	$Job.Process = Start-Process -FilePath (Join-Path -Path $PSScriptRoot -ChildPath plink.exe) -ArgumentList $ArgLine -NoNewWindow -PassThru -RedirectStandardInput ($Job.OutFile + ".in") -RedirectStandardOutput $Job.OutFile -RedirectStandardError ($Job.OutFile + ".err")
+	if ($Job.Process) {
+		# Without the handle the exit code is lost
+		[void]$Job.Process.Handle
+	}
+	$Job.State = "import"
+}
+
+# Look after a running import.
+#
+function Step-Import
+{
+	Param(
+		[parameter(Mandatory=$True)]
+		$Job
+	)
+	$MigMBox = $Job.Mbox
+	$ImpLogFile = $Job.ImpLogFile
+
+	$CMDExitCode = 1
+	if ($Job.Process) {
+		if (!$Job.Process.HasExited) {
+			Read-ImportOutput $Job $false
+			$Running = [math]::floor($(NEW-TIMESPAN -Start $Job.ImportStart -End (GET-DATE)).TotalSeconds)
+			Write-Progress -Id $Job.Slot -Activity "Import: $MigMBox" -Status "Running for $Running seconds"
+			return
+		}
+		$Job.Process.WaitForExit()
+		$CMDExitCode = $Job.Process.ExitCode
+		Read-ImportOutput $Job $true
+	}
+	Write-Progress -Id $Job.Slot -Completed -Activity "Import: $MigMBox"
+	Remove-Item -ErrorAction SilentlyContinue -Path $Job.OutFile, ($Job.OutFile + ".err"), ($Job.OutFile + ".in")
+	# Save plink output to $LogFile
+	Write-MLog "---" none
+	Add-Content -Path $LogFile -Value $Job.Output
+	Add-Content -Path $ImpLogFile -Value $Job.Output
+	Write-MLog "---" none
+
+	if (($CMDExitCode -ne 0) -and ($Job.Try -le $ImportRetries) -and (($Job.Output -join "`n") -match "Could not open.*Device or resource busy")) {
+		# Nothing was imported so far, another try does no harm
+		Write-MLog "Import of mailbox: $MigMBox could not open the .pst file, next try in 60 seconds." yellow
+		Write-UserLog "Import of mailbox: $MigMBox could not open the .pst file, next try in 60 seconds."
+		$Job.RetryDate = (GET-DATE).AddSeconds(60)
+		$Job.State = "retry"
+		return
+	}
+	if ($CMDExitCode -eq 0) {
+		$Job.ImportOK = $true
+		Write-MLog "Import of mailbox: $MigMBox done." green
+		Write-UserLog "Import of mailbox: $MigMBox done."
+		Add-Content -Path (Join-Path -Path $WinSharedFolder -ChildPath exchange2grommunio.done) -Value $MigMbox
+		$script:MailboxesImported++
+		$script:MailboxesMB += $Job.Size
+	} else {
+		Write-MLog "Mailbox: $MigMBox imported with errors." red
+		Write-UserLog "Mailbox: $MigMBox imported with errors."
+		$script:MailboxesImportFailed++
+		Add-Content -Path (Join-Path -Path $WinSharedFolder -ChildPath exchange2grommunio.failed) -Value $MigMbox
+		$script:ImportErrorsMBX += $MigMBox + ", "
+		# Wait for admin to make a decision.
+		if ($StopOnError) {
+			$script:WaitAfterImport = $true
+		}
+	}
+	# Show import time in seconds.
+	$Duration = [math]::ceiling($(NEW-TIMESPAN -Start $Job.ImportStart -End (GET-DATE)).TotalSeconds)
+	Write-MLog "Import of mailbox $MigMBox took $Duration seconds." green
+	Write-UserLog "Import of mailbox $MigMBox took $Duration seconds."
+	$Job.State = "done"
+}
+
+# The work on a mailbox has ended, with or without success.
+#
+function Stop-Mailbox
+{
+	Param(
+		[parameter(Mandatory=$True)]
+		$Job
+	)
+	$MigMBox = $Job.Mbox
+
+	if ($DeletePST -and $Job.ImportOK) {
+		Write-MLog "Remove the imported .pst file: $($Job.Pst) to save disk space." green
+		if (Test-Path -Path $Job.Pst) {
+			Remove-Item -ErrorAction SilentlyContinue -Path $Job.Pst
+		} else {
+			Write-MLog "Error .pst file: $($Job.Pst) not found." red
+		}
+	} elseif ($Job.Unlocked -and !$Job.ImportOK) {
+		Write-MLog "Keeping $($Job.Pst), the mailbox was not imported." yellow
+	}
+	Write-MLog "" white
+	Write-MLog "Total of $MailboxesTotal mailboxes processed, $MailboxesSkipped mailboxes skipped, $MailboxesCreated mailboxes created, $MailboxesImported mailboxes imported, " yellow
+	Write-MLog "$MailboxesCreateFailed mailboxes creation failed, $MailboxesImportFailed imports failed. $MailboxesMB MB of mailbox data imported." yellow
+	Write-MLog "" white
+
+	# if $StopMarker exists, interrupt migration and ask the Admin
+	if (Test-Path -Path $StopMarker) {
+		$script:WaitAfterImport = $true
+		Write-MLog "Stop marker: $StopMarker found, interrupting migration." yellow
+	}
+}
+
 # The Main code
 #
 # Do we use an old PowerShell == Version 2.0?
@@ -695,6 +1142,13 @@ if ($OnlyCreateGrommunioMailbox ) {
 	$CreateGrommunioMailbox = $true
 }
 
+$Number = 0
+if (![int]::TryParse("$Threads", [ref]$Number) -or ($Number -lt 1)) {
+	Write-MLog "Invalid `$Threads '$Threads', using 1." yellow
+	$Number = 1
+}
+$Threads = $Number
+
 # Remove all spaces before and after the mail address lists
 #
 $ImportMboxes = $ImportMboxes.trim()
@@ -727,6 +1181,10 @@ Write-MLog "`$LogFile ...................: $LogFile" none
 Write-MLog "`$MigrationPriority .........: $MigrationPriority" none
 Write-MLog "`$Organization ..............: $Organization" none
 Write-MLog "`$BadItemLimit ..............: $BadItemLimit" none
+Write-MLog "`$LockTimeout ...............: $LockTimeout" none
+Write-MLog "`$Threads ...................: $Threads" none
+Write-MLog "`$ImportRetries .............: $ImportRetries" none
+Write-MLog "`$ReusePST ..................: $ReusePST" none
 Write-MLog "" none
 Write-MLog "`$PowerShellOld .............: $PowerShellOld" none
 Write-MLog "`$PSScriptRoot ..............: $PSScriptRoot" none
@@ -752,303 +1210,145 @@ Test-Exchange
 Linux-Mount
 Test-Share
 
-# If we get a create error, do not import the mailbox.
-#
-$SkipImportCreateError = $false
+$LogPath = (Join-Path -Path $WinSharedFolder -ChildPath logs)
+New-Item -Path $LogPath -ErrorAction SilentlyContinue -Type Directory | Out-Null
 
 #
 # The migration loop
 #
+# Up to $Threads mailboxes are in work at a time. Exchange exports them on
+# its own and the imports run as background processes, so this loop only
+# starts the next step of each mailbox and looks after the running ones.
+#
 # Set parameter -ResultSize Unlimited. This will return all mailboxes rather than just the first 1000.
-foreach ($Mailbox in (Get-Mailbox -ResultSize Unlimited | Sort-Object -Property Alias)) {
-	$MigMBox = $Mailbox.PrimarySmtpAddress.ToString().ToLower()
-	$LogPath = (Join-Path -Path $WinSharedFolder -ChildPath logs)
-	New-Item -Path $LogPath -ErrorAction Ignore -Type Directory
-	$ImpLogFile = Join-Path -Path $LogPath -ChildPath ($MigMbox + "." + (Get-Date -Format FileDate) + ".import.log")
-	$ExpLogFile = Join-Path -Path $LogPath -ChildPath ($MigMbox + "." + (Get-Date -Format FileDate) + ".export.json")
-	Write-Debug "`nMigMBox: $MigMBox`nImpLogFile: $ImpLogFile`nExpLogFile: $ExpLogFile"
-	# $MigMBox is now in lower case
+$Mailboxes = @(Get-Mailbox -ResultSize Unlimited | Sort-Object -Property Alias)
+$NextMailbox = 0
+$Jobs = @()
+# No new mailbox is started while we wait to ask the Admin
+$Pause = $false
 
-	if ($ImportList.Count -gt 0) {
-		# Use $ImportMboxes only if it contains a minimum of one mail address
-		if ($ImportList -contains $MigMBox) {
-			Write-MLog "Mailbox: $MigMBox found in `$ImportMboxes list." green
-		} else {
+while ($true) {
+	while ((!$Pause) -and ($Jobs.Count -lt $Threads) -and ($NextMailbox -lt $Mailboxes.Count)) {
+		$Mailbox = $Mailboxes[$NextMailbox]
+		$NextMailbox++
+		$MigMBox = $Mailbox.PrimarySmtpAddress.ToString().ToLower()
+		# $MigMBox is now in lower case
+
+		if ($ImportList.Count -gt 0) {
+			# Use $ImportMboxes only if it contains a minimum of one mail address
+			if ($ImportList -contains $MigMBox) {
+				Write-MLog "Mailbox: $MigMBox found in `$ImportMboxes list." green
+			} else {
+				$MailboxesSkipped++
+				$MailboxesTotal++
+				Write-MLog "Ignoring mailbox: $MigMBox, mailbox not in `$ImportMboxes list." yellow
+				continue
+			}
+		} # if ($ImportList.Count -gt 0)
+
+		if ($IgnoreList -contains $MigMBox) {
 			$MailboxesSkipped++
 			$MailboxesTotal++
-			Write-MLog "Ignoring mailbox: $MigMBox, mailbox not in `$ImportMboxes list." yellow
+			Write-MLog "Ignoring mailbox: $MigMBox, found mailbox in `$IgnoreMboxes list." yellow
 			continue
 		}
-	} # if ($ImportList.Count -gt 0)
 
-	if ($IgnoreList -contains $MigMBox) {
-		$MailboxesSkipped++
-		$MailboxesTotal++
-		Write-MLog "Ignoring mailbox: $MigMBox, found mailbox in `$IgnoreMboxes list." yellow
+		# This is experimental, ignore all internal/system mailboxes on this Exchange system.
+		if ($MigMBox -match 'healthmailbox|systemmailbox|federatedemail|msexchdiscovery|msexchapproval') {
+			$MailboxesSkipped++
+			$MailboxesTotal++
+			$MailboxesExSystem++
+			$SkipExSystemMBX += $MigMBox + ", "
+			Write-MLog "Ignoring mailbox: $MigMBox, it is an Exchange system mailbox." green
+			continue
+		}
+
+		# -Mailbox
+		#
+		# The Mailbox parameter specifies the source mailbox where the
+		# contents are being exported from.
+		#
+		# In Exchange 2016 CU7 or later, this parameter is the type
+		# MailboxLocationIdParameter, so the easiest value that you can
+		# use to identify the mailbox is the Alias value.
+		#
+		# In Exchange 2016 CU6 or earlier, this parameter is the type
+		# MailboxOrMailUserIdParameter, so you can use any value that
+		# uniquely identifies the mailbox.
+		#
+		# https://docs.microsoft.com/en-us/powershell/module/exchange/new-mailboxexportrequest?view=exchange-ps
+		#
+		$ExportMbox = $Mailbox
+		if ($Exchange_Newer_2016_CU6) {
+			$ExportMbox = $Mailbox.Alias
+		}
+
+		# The slot number tells the progress bars apart
+		$Slot = 1
+		while (@($Jobs | Where-Object { $_.Slot -eq $Slot }).Count -gt 0) {
+			$Slot++
+		}
+		$ImpLogFile = Join-Path -Path $LogPath -ChildPath ($MigMbox + "." + (Get-Date -Format FileDate) + ".import.log")
+		$ExpLogFile = Join-Path -Path $LogPath -ChildPath ($MigMbox + "." + (Get-Date -Format FileDate) + ".export.json")
+		Write-Debug "`nMigMBox: $MigMBox`nImpLogFile: $ImpLogFile`nExpLogFile: $ExpLogFile"
+		$Job = @{
+			Mbox = $MigMBox
+			ExportMbox = $ExportMbox
+			Slot = $Slot
+			State = ""
+			Pst = "$WinSharedFolder\$MigMBox.pst"
+			ImpLogFile = $ImpLogFile
+			ExpLogFile = $ExpLogFile
+			OutFile = $ImpLogFile + ".tmp"
+			Size = 0
+			Missing = 0
+			Try = 0
+			Skip = $false
+			Unlocked = $false
+			ImportOK = $false
+		}
+		Start-Mailbox $Job
+		$Jobs += $Job
+	}
+
+	foreach ($Job in $Jobs) {
+		switch ($Job.State) {
+		"export" { Step-Export $Job }
+		"unlock" { Step-Unlock $Job }
+		"import" { Step-Import $Job }
+		"retry" {
+			if ((GET-DATE) -ge $Job.RetryDate) {
+				Start-Import $Job
+			}
+		}
+		}
+		# A step above may have moved the mailbox on, do not wait a round
+		if ($Job.State -eq "create") {
+			Step-Create $Job
+		}
+	}
+
+	$Finished = @($Jobs | Where-Object { $_.State -eq "done" })
+	$Jobs = @($Jobs | Where-Object { $_.State -ne "done" })
+	foreach ($Job in $Finished) {
+		Stop-Mailbox $Job
+	}
+	if (($Finished.Count -gt 0) -and $WaitAfterImport) {
+		# Let the other mailboxes in work finish, then ask
+		$Pause = $true
+	}
+
+	if ($Jobs.Count -gt 0) {
+		Start-Sleep -Seconds 1
 		continue
 	}
-
-	# This is experimental, ignore all internal/system mailboxes on this Exchange system.
-	if ($MigMBox -match 'healthmailbox|systemmailbox|federatedemail|msexchdiscovery|msexchapproval') {
-		$MailboxesSkipped++
-		$MailboxesTotal++
-		$MailboxesExSystem++
-		$SkipExSystemMBX += $MigMBox + ", "
-		Write-MLog "Ignoring mailbox: $MigMBox, it is an Exchange system mailbox." green
+	if (!$Pause) {
+		if ($NextMailbox -ge $Mailboxes.Count) {
+			break
+		}
 		continue
 	}
-
-	Write-MLog "" white
-
-	# -Mailbox
-	#
-	# The Mailbox parameter specifies the source mailbox where the
-	# contents are being exported from.
-	#
-	# In Exchange 2016 CU7 or later, this parameter is the type
-	# MailboxLocationIdParameter, so the easiest value that you can
-	# use to identify the mailbox is the Alias value.
-	#
-	# In Exchange 2016 CU6 or earlier, this parameter is the type
-	# MailboxOrMailUserIdParameter, so you can use any value that
-	# uniquely identifies the mailbox.
-	#
-	# https://docs.microsoft.com/en-us/powershell/module/exchange/new-mailboxexportrequest?view=exchange-ps
-	#
-	$ExportMbox = $Mailbox
-	if ($Exchange_Newer_2016_CU6) {
-		$ExportMbox = $Mailbox.Alias
-	}
-
-	# Clean up before exporting a mailbox
-	# Remove our old MailboxExportRequest of this mailbox
-	Write-MLog "Removing old MailboxExportRequest of $MigMBox." green
-	Get-MailboxExportRequest -Mailbox $ExportMbox -Name $ExportRequestName -ErrorAction SilentlyContinue | Remove-MailboxExportRequest -Confirm:$false
-
-	# Remove old / orphaned .pst file
-	if (Test-Path -Path $WinSharedFolder\$MigMBox.pst) {
-		Remove-Item -ErrorAction SilentlyContinue -Path $WinSharedFolder\$MigMBox.pst
-		Write-MLog "Removing outdated $MigMBox.pst file." yellow
-	}
-	Write-MLog "" white
-
-	$ExportOK = $false
-	if (!$OnlyCreateGrommunioMailbox ) {
-		# Create a .pst file for every mailbox found on system.
-		#
-		Write-MLog "Exporting mailbox $MigMBox to file $MigMBox.pst..." green
-
-		# Exchange 2010 only supports "Normal, High" for the -Priority parameter
-		#
-		$ExportStartDate = (GET-DATE)
-		New-MailboxExportRequest -Mailbox $ExportMbox -Name $ExportRequestName -FilePath $WinSharedFolder\$MigMBox.pst -Priority $MigrationPriority -ExcludeDumpster -BadItemLimit $BadItemLimit | Format-Table -HideTableHeaders
-		Write-Host -NoNewline "[Wait] " -fore yellow
-		$MailboxesTotal++
-
-		# Wait until the export request reaches a final state.
-		# We probably should include a timeout to detect hanging exports.
-		$expMissing = 0
-		while ($true) {
-			Start-Sleep -Seconds 1
-			$expRequest = Get-MailboxExportRequest -Mailbox $ExportMbox -Name $ExportRequestName -ErrorAction SilentlyContinue
-			if (!$expRequest) {
-				# Not created, or removed by somebody else
-				$expMissing++
-				if ($expMissing -lt 5) {
-					continue
-				}
-				$expStatus = "Missing"
-			} else {
-				$expMissing = 0
-				$expStatus = "$($expRequest.Status)"
-				$expPercent = [int]($expRequest | Get-MailboxExportRequestStatistics).PercentComplete
-				Write-Progress -Id 1 -Activity "Export: $MigMBox" -Status "$expPercent% Complete:" -PercentComplete $expPercent;
-				Write-Debug "DEBUG: $expStatus / $expPercent"
-			}
-			# https://learn.microsoft.com/en-us/powershell/module/exchange/get-mailboxexportrequest?view=exchange-ps#-status
-			if ($expStatus -eq "Completed") {
-				$ExportOK = $true
-				break
-			}
-			if ($expStatus -eq "CompletedWithWarning") {
-				Write-MLog "Warning: Export Result: $expStatus" yellow
-				$ExportOK = $true
-				break
-			}
-			if (@("AutoSuspended","Failed","Suspended","Missing") -contains $expStatus) {
-				Write-MLog "Error: Export Result: $expStatus" red
-				if ($expRequest) {
-					$expRequest | Get-MailboxExportRequestStatistics -IncludeReport -Diagnostic | ConvertTo-Json | Add-Content -Path ($ExpLogFile + ".diagnostic")
-				}
-				$MailboxesExportFailed++
-				$ExportErrorsMBX += $MigMBox + ", "
-				$SkipImportCreateError = $true
-				break
-			}
-		}
-		# End display of progress bar
-		Write-Progress -Id 1 -Completed -Activity "Export: $MigMBox"
-
-		# Export
-		if ($expRequest) {
-			$expRequest | Get-MailboxExportRequestStatistics -IncludeReport | ConvertTo-Json | Add-Content -Path $ExpLogFile
-			$expRequest | Remove-MailboxExportRequest -Confirm:$false
-		}
-		Write-MLog "" white
-		$Duration = [math]::ceiling($(NEW-TIMESPAN -Start $ExportStartDate -End (GET-DATE)).TotalSeconds)
-		Write-MLog "Export of mailbox $MigMBox took $Duration seconds." green
-
-		# Show size of exported mailbox in MB.
-		$size = 0
-		if (Test-Path $WinSharedFolder\$MigMBox.pst) {
-			if ((Get-Item $WinSharedFolder\$MigMBox.pst).length -gt 0mb) {
-				$size = [math]::ceiling($(Get-Item $WinSharedFolder\$MigMBox.pst).length/(1024*1024))
-				Write-MLog "Size of mailbox $MigMBox.pst is $size MB" green
-			}
-		} else {
-			Write-MLog "Error mailbox $MigMBox.pst do not exist!" red
-			# Do not import this mailbox
-			$SkipImportCreateError = $true
-			$ExportOK = $false
-		}
-
-		if ($ExportOK) {
-			Write-MLog "" white
-			Write-Mlog "Wait until the file lock of .pst file is released." yellow
-
-			# Wait until the file lock of .pst file is released.
-			$ExportOK = $false
-			$nTimeout = 0
-			Write-Host -NoNewline "[Unlock] " -fore yellow
-			While (($LockTimeout -le 0) -or ($nTimeout -lt $LockTimeout)) {
-				if (isLocked $WinSharedFolder\$MigMBox.pst) {
-					Write-Host -NoNewline "." -fore yellow
-				} else {
-					Write-Host -NoNewline " "
-					Write-MLog "PST lock cleared, after $nTimeout seconds." green
-					$MailboxesExported++
-					$ExportOK = $true
-					break
-				}
-				start-sleep -seconds 2
-				$nTimeout += 2
-			}
-			if (!$ExportOK) {
-				Write-Host ""
-				Write-MLog "Error: $MigMBox.pst is still locked after $nTimeout seconds, mailbox is not imported." red
-				$MailboxesExportFailed++
-				$ExportErrorsMBX += $MigMBox + ", "
-				$SkipImportCreateError = $true
-			}
-		}
-	}
-
-	Write-MLog "" white
-
-	# If requested, create the grommunio mailbox.
-	if ($CreateGrommunioMailbox) {
-		Write-MLog "Create grommunio mailbox: $MigMBox." green
-		if ($PowerShellOld) {
-			.\plink.exe @PLINKARGS "grommunio-admin ldap downsync -l $MailboxLanguage $MigMBox $Organization"
-			$CMDExitCode = $lastexitcode
-		} else {
-			.\plink.exe @PLINKARGS "grommunio-admin ldap downsync -l $MailboxLanguage $MigMBox $Organization" 2>&1 | Foreach-Object ToString | Tee-Object -Variable TeeVar
-			$CMDExitCode = $lastexitcode
-			# Save plink output to $LogFile
-			Write-MLog "---" none
-			Add-Content -Path $LogFile -Value $TeeVar
-			Write-MLog "---" none
-		}
-		if ($CMDExitCode -eq 0) {
-			Write-Mlog "Mailbox: $MigMBox created successfully." green
-			$MailboxesCreated++
-		} else {
-			Write-MLog "Creation of mailbox: $MigMBox failed." red
-			$MailboxesCreateFailed++
-			$CreateErrorsMBX += $MigMBox + ", "
-			if ($StopOnError) {
-				$WaitAfterImport = $true
-			}
-			$SkipImportCreateError = $true
-		}
-	}
-
-	$ImportOK = $false
-	if ( (!$SkipImportCreateError) -and (!$OnlyCreateGrommunioMailbox) ) {
-		Write-MLog "" white
-		$ImportStartDate=(GET-DATE)
-
-		# Using plink, start importing this mailbox and .pst
-		# file on the grommunio host.
-		Write-MLog "Starting import of mailbox: $MigMBox in grommunio." green
-		Write-UserLog "Starting import of mailbox: $MigMBox in grommunio."
-		Write-UserLog ""
-		# The CIFS client may see the lock a little longer than Windows.
-		# Give it up to 60 seconds before the import is started.
-		$ImportCmd = "n=0; until head -c 1 '$LinuxSharedFolder/$MigMBox.pst' >/dev/null 2>&1; do n=`$((n+1)); [ `$n -ge 30 ] && break; sleep 2; done; gromox-e2ghelper -u '$MigMBox' -- -s '$LinuxSharedFolder/$MigMBox.pst'"
-		if ($PowerShellOld) {
-			.\plink.exe @PLINKARGS $ImportCmd
-			$CMDExitCode = $lastexitcode
-		} else {
-			.\plink.exe @PLINKARGS $ImportCmd 2>&1 | Foreach-Object ToString | Tee-Object -Variable TeeVar
-			$CMDExitCode = $lastexitcode
-			# Save plink output to $LogFile
-			Write-MLog "---" none
-			#$TeeVar = $TeeVar.replace("`r`n`r","`r`n")
-			#$TeeVar = $TeeVar.replace("`n`r`n","`r`n")
-			Add-Content -Path $LogFile -Value $TeeVar
-			Write-UserLog "$TeeVar"
-			Write-MLog "---" none
-		}
-		if ($CMDExitCode -eq 0) {
-			$ImportOK = $true
-			Write-MLog "Import of mailbox: $MigMBox done." green
-			Write-UserLog "Import of mailbox: $MigMBox done."
-			Add-Content -Path (Join-Path -Path $WinSharedFolder -ChildPath exchange2grommunio.done) -Value $MigMbox
-			$MailboxesImported++
-			$MailboxesMB += $size
-		} else {
-			Write-MLog "Mailbox: $MigMBox imported with errors." red
-			Write-UserLog "Mailbox: $MigMBox imported with errors."
-			$MailboxesImportFailed++
-			Add-Content -Path (Join-Path -Path $WinSharedFolder -ChildPath exchange2grommunio.failed) -Value $MigMbox
-			$ImportErrorsMBX += $MigMBox + ", "
-			# Wait for admin to make a decision.
-			if ($StopOnError) {
-				$WaitAfterImport = $true
-			}
-		}
-		# Show import time in seconds.
-		$ImportEndDate = (GET-DATE)
-		$Duration = [math]::ceiling($(NEW-TIMESPAN -Start $ImportStartDate -End $ImportEndDate).TotalSeconds)
-		Write-MLog "Import of mailbox $MigMBox took $Duration seconds." green
-		Write-UserLog "Import of mailbox $MigMBox took $Duration seconds."
-	}
-
-	# Try to import the next mailbox.
-		$SkipImportCreateError = $false
-
-	if ($DeletePST -and $ImportOK) {
-		Write-MLog "Remove the imported .pst file: $WinSharedFolder\$MigMBox.pst to save disk space." green
-		if (Test-Path -Path $WinSharedFolder\$MigMBox.pst) {
-			Remove-Item -ErrorAction SilentlyContinue -Path $WinSharedFolder\$MigMBox.pst
-		} else {
-			Write-MLog "Error .pst file: $WinSharedFolder\$MigMBox.pst not found." red
-		}
-	} elseif ($ExportOK -and !$ImportOK) {
-		Write-MLog "Keeping $WinSharedFolder\$MigMBox.pst, the mailbox was not imported." yellow
-	}
-	Write-MLog "" white
-	Write-MLog "Total of $MailboxesTotal mailboxes processed, $MailboxesSkipped mailboxes skipped, $MailboxesCreated mailboxes created, $MailboxesImported mailboxes imported, " yellow
-	Write-MLog "$MailboxesCreateFailed mailboxes creation failed, $MailboxesImportFailed imports failed. $MailboxesMB MB of mailbox data imported." yellow
-	Write-MLog "" white
-
-	# if $StopMarker exists, interrupt migration and ask the Admin
-	if (Test-Path -Path $StopMarker) {
-		$WaitAfterImport = $true
-		Write-MLog "Stop marker: $StopMarker found, interrupting migration." yellow
-	}
-
+	$Pause = $false
 	if (!$WaitAfterImport) {
 		continue
 	}
