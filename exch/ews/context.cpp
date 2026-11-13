@@ -3880,6 +3880,12 @@ using attendee_key = std::pair<std::string, uint32_t>;
 static attendee_key make_key(std::string &&addr, const TPROPVAL_ARRAY &row)
 {
 	auto type = row.get<const uint32_t>(PR_RECIPIENT_TYPE);
+	/* Unresolved attendees go by their name */
+	if (addr.empty()) {
+		auto name = row.get<const char>(PR_DISPLAY_NAME);
+		if (name != nullptr && *name != '\0')
+			addr = std::string("\n") + name;
+	}
 	return {std::move(addr), type != nullptr ? *type & 0xf : 0};
 }
 
@@ -4016,7 +4022,7 @@ void EWSContext::updateAttendees(const std::string &dir,
 		     entry != nullptr;
 		     entry = entry->NextSiblingElement("Attendee")) {
 			tAttendee att(entry);
-			if (!att.addressable())
+			if (att.Mailbox.empty())
 				continue;
 			auto rcpt = rcpts->emplace();
 			att.Mailbox.mkRecipient(rcpt, type);
@@ -4087,7 +4093,8 @@ void EWSContext::updateAttendees(const std::string &dir,
 		if ((t == MAPI_TO && shape.requiredAttendees) ||
 		    (t == MAPI_CC && shape.optionalAttendees) ||
 		    (t == MAPI_BCC && shape.resourceAttendees))
-			replaced.emplace_back(oldAddrs[i], t);
+			replaced.emplace_back(make_key(std::string(oldAddrs[i]),
+			                      row));
 	}
 	for (const auto &k : replaced)
 		if (!k.first.empty() && !has_key(newKeys, k))
@@ -4103,10 +4110,17 @@ void EWSContext::updateAttendees(const std::string &dir,
 		throw;
 	}
 
-	if (rcpts->count > 0) {
-		if (!exmdb.update_message_instance_rcpts(dir.c_str(),
-		    inst->instanceId, rcpts))
-			throw EWSError::ItemSave(E3351);
+	if (rcpts->count > 0 &&
+	    !exmdb.update_message_instance_rcpts(dir.c_str(),
+	    inst->instanceId, rcpts))
+		throw EWSError::ItemSave(E3351);
+	/* Unresolved attendees alone do not make a meeting, like Exchange */
+	auto resolvable = [&](const TPROPVAL_ARRAY &r) {
+		auto f = r.get<const uint32_t>(PR_RECIPIENT_FLAGS);
+		return (f == nullptr || !(*f & recipOrganizer)) &&
+		       addressable(r);
+	};
+	if (std::any_of(rcpts->begin(), rcpts->end(), resolvable)) {
 		/* Set organizer properties when attendees are present */
 		auto oprops = meetingIdentity(dir);
 		/* MS-OXOCAL v22.1 §2.2.1.9/10/11 */
@@ -4203,6 +4217,8 @@ void EWSContext::updateMessageRecipients(const std::string &dir,
 		     entry != nullptr;
 		     entry = entry->NextSiblingElement("Mailbox")) {
 			tEmailAddressType addr(entry);
+			if (addr.empty())
+				continue;
 			auto rcpt = rcpts->emplace();
 			addr.mkRecipient(rcpt, type);
 			/* update_message_instance_rcpts wants PR_ROWID */
@@ -6330,8 +6346,10 @@ bool EWSContext::sendMeetingResponse(const tItemId &responseRef,
 		throw EWSError::ItemNotFound(E3143);
 	auto wantResp = reqContent->proplist.get<const uint8_t>(PR_RESPONSE_REQUESTED);
 	auto orgSmtp = reqContent->proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
-	if (!orgSmtp)
+	if (orgSmtp == nullptr || *orgSmtp == '\0')
 		orgSmtp = reqContent->proplist.get<const char>(PR_SENDER_SMTP_ADDRESS);
+	if (orgSmtp != nullptr && *orgSmtp == '\0')
+		orgSmtp = nullptr;
 	tEmailAddressType org;
 	if (orgSmtp != nullptr) {
 		org.EmailAddress = orgSmtp;
@@ -7134,8 +7152,12 @@ void EWSContext::toContent(const std::string &dir, tCalendarItem &item,
 		return list && std::any_of(list->begin(), list->end(),
 		       [](const tAttendee &a) { return a.addressable(); });
 	};
-	if (addressed(item.RequiredAttendees) ||
-	    addressed(item.OptionalAttendees) || addressed(item.Resources)) {
+	auto given = [](const attendees_t &list) STATIC_IN_CXX23 {
+		return list && std::any_of(list->begin(), list->end(),
+		       [](const tAttendee &a) { return !a.Mailbox.empty(); });
+	};
+	if (given(item.RequiredAttendees) ||
+	    given(item.OptionalAttendees) || given(item.Resources)) {
 		if (!content->children.prcpts && !(content->children.prcpts = tarray_set_init()))
 			throw EWSError::NotEnoughMemory(E3377);
 		TARRAY_SET* rcpts = content->children.prcpts;
@@ -7144,7 +7166,7 @@ void EWSContext::toContent(const std::string &dir, tCalendarItem &item,
 			if (!list)
 				return;
 			for (const auto &att : *list) {
-				if (!att.addressable())
+				if (att.Mailbox.empty())
 					continue;
 				auto rcpt = rcpts->emplace();
 				att.Mailbox.mkRecipient(rcpt, type);
@@ -7155,6 +7177,10 @@ void EWSContext::toContent(const std::string &dir, tCalendarItem &item,
 		add(item.RequiredAttendees, MAPI_TO);
 		add(item.OptionalAttendees, MAPI_CC);
 		add(item.Resources, MAPI_BCC);
+	}
+	/* Unresolved attendees alone do not make a meeting, like Exchange */
+	if (addressed(item.RequiredAttendees) ||
+	    addressed(item.OptionalAttendees) || addressed(item.Resources)) {
 		for (const auto &prop : meetingIdentity(dir))
 			shape.write(prop);
 		/* MS-OXOCAL v22.1 §2.2.1.9/10/11 */
@@ -7507,6 +7533,9 @@ void EWSContext::toContent(const std::string &dir, tItem &item, sShape &shape,
 
 void EWSContext::rcpt_add_unique(TARRAY_SET *rcpts, tEmailAddressType rcpt, uint32_t type) const
 {
+	/* Exchange drops a recipient without name and address */
+	if (rcpt.empty())
+		return;
 	if (rcpt.EmailAddress)
 		/* Normalize EX->SMTP for comparison */
 		normalize(rcpt);

@@ -3788,6 +3788,28 @@ tEmailAddressType::tEmailAddressType(const TPROPVAL_ARRAY& tps)
 		EmailAddress = data;
 		RoutingType = "SMTP";
 	}
+	if (blank(EmailAddress) &&
+	    (data = tps.get<const char>(PR_SMTP_ADDRESS)) != nullptr &&
+	    *data != '\0') {
+		EmailAddress = data;
+		RoutingType = "SMTP";
+	}
+	unresolved();
+}
+
+/**
+ * @brief      Present a recipient without address like Exchange
+ *
+ * exmdb fills in PR_ADDRTYPE "NONE" and an empty PR_EMAIL_ADDRESS.
+ */
+void tEmailAddressType::unresolved()
+{
+	if (addressable() || !RoutingType ||
+	    strcasecmp(RoutingType->c_str(), "NONE") != 0)
+		return;
+	EmailAddress.reset();
+	RoutingType.reset();
+	MailboxType.emplace("OneOff");
 }
 
 /**
@@ -3835,6 +3857,13 @@ tAttendee::tAttendee(const TPROPVAL_ARRAY& tps)
 		Mailbox.EmailAddress = data;
 		Mailbox.RoutingType = "SMTP";
 	}
+	if (tEmailAddressType::blank(Mailbox.EmailAddress) &&
+	    (data = tps.get<const char>(PR_SMTP_ADDRESS)) != nullptr &&
+	    *data != '\0') {
+		Mailbox.EmailAddress = data;
+		Mailbox.RoutingType = "SMTP";
+	}
+	Mailbox.unresolved();
 	auto trackStatus = tps.get<const uint32_t>(PR_RECIPIENT_TRACKSTATUS);
 	if (trackStatus)
 		ResponseType.emplace(respstatus_to_resptype(*trackStatus));
