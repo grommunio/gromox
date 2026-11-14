@@ -19,6 +19,7 @@
 #include <vmime/messageIdSequence.hpp>
 #include <vmime/stringContentHandler.hpp>
 #include <vmime/text.hpp>
+#include <vmime/utility/outputStreamStringAdapter.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/ical.hpp>
 #include <gromox/mapierr.hpp>
@@ -34,6 +35,52 @@
 using namespace std::string_literals;
 using namespace gromox;
 using namespace oxcmail;
+
+namespace {
+
+/**
+ * A message-id list that folds between the ids. vmail_default_genctx turns
+ * message-id wrapping off for Content-ID, and vmime then does not fold
+ * References or In-Reply-To at all. The first id stays on the header line.
+ */
+class folded_msgids final : public vmime::messageIdSequence {
+	public:
+	vmime::shared_ptr<vmime::component> clone() const override
+	{
+		auto c = vmime::make_shared<folded_msgids>();
+		c->copyFrom(*this);
+		return c;
+	}
+
+	protected:
+	void generateImpl(const vmime::generationContext &ctx,
+	    vmime::utility::outputStream &os, size_t pos,
+	    size_t *npos) const override
+	{
+		vmime::generationContext idctx(ctx);
+		idctx.setWrapMessageId(false);
+		for (size_t i = 0; i < getMessageIdCount(); ++i) {
+			std::string id;
+			vmime::utility::outputStreamStringAdapter s(id);
+			getMessageIdAt(i)->generate(idctx, s);
+			auto fits = pos + 1 + id.size() <= ctx.getMaxLineLength();
+			if (i == 0) {
+			} else if (!fits) {
+				os << vmime::NEW_LINE_SEQUENCE;
+				pos = vmime::NEW_LINE_SEQUENCE_LENGTH;
+			} else {
+				os << " ";
+				++pos;
+			}
+			os << id;
+			pos += id.size();
+		}
+		if (npos != nullptr)
+			*npos = pos;
+	}
+};
+
+}
 
 static const vmime::mediaType mt_plain(vmime::mediaTypes::TEXT, vmime::mediaTypes::TEXT_PLAIN);
 static const vmime::mediaType mt_octet(vmime::mediaTypes::APPLICATION, vmime::mediaTypes::APPLICATION_OCTET_STREAM);
@@ -648,9 +695,9 @@ static AWUR ec_error_t omv_export_mail_head(const message_content &mct,
 		vhead.MessageId()->setValue(vmime::messageId(str));
 	str = mct.proplist.get<char>(PR_INTERNET_REFERENCES); /* already has <> */
 	if (str != nullptr) {
-		vmime::messageIdSequence idlist;
-		idlist.parse(str);
-		vhead.References()->setValue(std::move(idlist));
+		auto idlist = vmime::make_shared<folded_msgids>();
+		idlist->parse(str);
+		vhead.References()->setValue(idlist);
 	}
 	auto sa = mct.proplist.get<STRING_ARRAY>(PROP_TAG(PT_MV_UNICODE, propids[l_keywords]));
 	if (sa != nullptr) {
@@ -666,9 +713,9 @@ static AWUR ec_error_t omv_export_mail_head(const message_content &mct,
 	}
 	str = mct.proplist.get<char>(PR_IN_REPLY_TO_ID); /* already has <> */
 	if (str != nullptr) {
-		vmime::messageIdSequence idlist;
-		idlist.parse(str);
-		vhead.InReplyTo()->setValue(std::move(idlist));
+		auto idlist = vmime::make_shared<folded_msgids>();
+		idlist->parse(str);
+		vhead.InReplyTo()->setValue(idlist);
 	}
 	str = mct.proplist.get<char>(PR_LIST_HELP);
 	if (str != nullptr)
