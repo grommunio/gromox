@@ -4952,6 +4952,144 @@ static bool read_flag_only(const tItemChange &change)
 	return !change.Updates.empty();
 }
 
+/* What an update of one occurrence needs to know about it */
+struct occ_info {
+	std::optional<std::pair<uint64_t, uint64_t>> times;
+	std::optional<TZDEF> start_zone, end_zone;
+};
+
+/* Local time of @utc, rechecked with the bias at that local time */
+static bool utc_to_local(const TZDEF &zone, time_t utc, time_t &local)
+{
+	int64_t bias;
+	if (!tz_to_offset(zone, utc, bias))
+		return false;
+	local = utc - bias * 60;
+	if (!tz_to_offset(zone, local, bias))
+		return false;
+	local = utc - bias * 60;
+	return true;
+}
+
+/**
+ * @brief      Read the times of an update in the zones Exchange uses
+ *
+ * setDatetimeFields converts the times left without offset with the new
+ * zone of their side.
+ *
+ * @param      occ   Times and zones when the update is for one occurrence
+ *
+ * @return     The sides whose time was taken from the stored item
+ */
+static uint8_t upd_zone_times(const EWSContext &ctx, const std::string &dir,
+    uint64_t mid, sShape &shape, const occ_info &occ)
+{
+	const proptag_t tags[] = {
+		shape.tag(NtCommonStart), shape.tag(NtCommonEnd),
+		shape.tag(NtAppointmentTimeZoneDefinitionStartDisplay),
+		shape.tag(NtAppointmentTimeZoneDefinitionEndDisplay),
+	};
+	auto &naive = shape.offsetProps;
+	bool any = shape.tzWrite != 0;
+	for (auto t : {tags[0], tags[1]})
+		any |= t != 0 && ct_contains(naive, t);
+	if (!any)
+		return 0;
+	for (const auto &name : {shape.tzStartName, shape.tzEndName})
+		if (!name.empty() && !lookup_tz_get_tzdef(name.c_str()))
+			throw EWSError::TimeZone(E3623);
+	auto props = ctx.getItemProps(dir, mid, proptag_cspan{tags});
+	uint64_t stored[2]{};
+	bool have[2]{};
+	if (occ.times) {
+		stored[0] = occ.times->first, stored[1] = occ.times->second;
+		have[0] = have[1] = true;
+	} else {
+		for (int k = 0; k < 2; ++k) {
+			auto v = props.get<const uint64_t>(tags[k]);
+			if (v != nullptr)
+				stored[k] = *v, have[k] = true;
+		}
+	}
+	uint8_t derived = 0;
+	auto side = [&](int k, uint8_t bit) {
+		auto ttag = tags[k];
+		if (ttag == 0)
+			return;
+		auto zone = k == 0 ? occ.start_zone : occ.end_zone;
+		if (!zone)
+			zone = binary_to_tzdef(props.get<const BINARY>(tags[k + 2]));
+		if (!zone)
+			return;
+		auto w = shape.writes(ttag);
+		bool given = w != nullptr, local = given && ct_contains(naive, ttag);
+		if (shape.tzWrite & bit) {
+			if (local)
+				return;
+			if (!given && !have[k])
+				return;
+			auto t = given ? *static_cast<const uint64_t *>(w->pvalue) : stored[k];
+			time_t wall;
+			if (!utc_to_local(*zone, rop_util_nttime_to_unix(t), wall))
+				return;
+			shape.write(TAGGED_PROPVAL{ttag, EWSContext::construct<uint64_t>(
+				rop_util_unix_to_nttime(wall))});
+			naive.emplace_back(ttag);
+			if (!given)
+				derived |= bit;
+			return;
+		}
+		if (!local)
+			return;
+		auto wall = rop_util_nttime_to_unix(*static_cast<const uint64_t *>(w->pvalue));
+		int64_t bias;
+		if (!tz_to_offset(*zone, wall, bias))
+			return;
+		shape.write(TAGGED_PROPVAL{ttag, EWSContext::construct<uint64_t>(
+			rop_util_unix_to_nttime(wall + bias * 60))});
+		std::erase(naive, ttag);
+	};
+	side(0, sShape::TZ_START);
+	side(1, sShape::TZ_END);
+	return derived;
+}
+
+/**
+ * @brief      Refuse an update that leaves the end before the start
+ *
+ * Exchange answers a zone change that causes it differently from times
+ * given that way.
+ */
+static void upd_check_order(const EWSContext &ctx, const std::string &dir,
+    uint64_t mid, const sShape &shape, const occ_info &occ, uint8_t derived)
+{
+	const proptag_t tags[] = {shape.tag(NtCommonStart), shape.tag(NtCommonEnd)};
+	auto ws = shape.writes(tags[0]), we = shape.writes(tags[1]);
+	if (ws == nullptr && we == nullptr)
+		return;
+	uint64_t start = 0, end = 0;
+	if (occ.times) {
+		std::tie(start, end) = *occ.times;
+	} else {
+		auto props = ctx.getItemProps(dir, mid, proptag_cspan{tags});
+		auto s = props.get<const uint64_t>(tags[0]);
+		auto e = props.get<const uint64_t>(tags[1]);
+		if (s != nullptr)
+			start = *s;
+		if (e != nullptr)
+			end = *e;
+	}
+	if (ws != nullptr)
+		start = *static_cast<const uint64_t *>(ws->pvalue);
+	if (we != nullptr)
+		end = *static_cast<const uint64_t *>(we->pvalue);
+	if (start == 0 || end == 0 || end >= start)
+		return;
+	if (derived != 0)
+		throw EWSError::ItemSavePropertyError(E3621);
+	throw EWSError::CalendarEndDateIsEarlierThanStartDate(E3622);
+}
+
 /**
  * @brief      Refuse a write without the current change key
  *
@@ -5245,6 +5383,11 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 		shape.add(NtAppointmentTimeZoneDefinitionEndDisplay, PT_BINARY);
 		shape.add(NtAppointmentTimeZoneDefinitionRecur, PT_BINARY);
 		shape.add(NtTimeZoneStruct, PT_BINARY);
+		/* Written by upd_zone_times and setDatetimeFields */
+		shape.add(NtCommonStart, PT_SYSTIME);
+		shape.add(NtCommonEnd, PT_SYSTIME);
+		shape.add(NtAppointmentStartWhole, PT_SYSTIME);
+		shape.add(NtAppointmentEndWhole, PT_SYSTIME);
 		shape.add(NtPrivate, PT_BOOLEAN);
 		shape.add(NtReminderSet, PT_BOOLEAN);
 		shape.add(NtReminderDelta, PT_LONG);
@@ -5263,7 +5406,25 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 			delete_attendees(update, shape);
 		}
 		tContact::genFields(shape);
+		std::optional<uint32_t> occBase;
+		if (change.ItemId.holds_alternative<tOccurrenceItemId>()) {
+			const auto &o = std::get<tOccurrenceItemId>(change.ItemId.asVariant());
+			occBase = ctx.resolveOccurrenceIndex(dir, mid.messageId(),
+			          o.InstanceIndex);
+		} else if (itemId.type == tItemId::ID_OCCURRENCE) {
+			occBase = sOccurrenceId(itemId.Id.data(), itemId.Id.size()).basedate;
+		}
+		occ_info occ;
+		if (occBase && (shape.tzWrite != 0 ||
+		    shape.writes(shape.tag(NtCommonStart)) != nullptr ||
+		    shape.writes(shape.tag(NtCommonEnd)) != nullptr)) {
+			occ.times = ctx.occurrenceTimes(dir, mid.messageId(), *occBase);
+			std::tie(occ.start_zone, occ.end_zone) = ctx.occurrenceZones(dir,
+				parentFolder.folderId, mid.messageId(), *occBase);
+		}
+		auto derived = upd_zone_times(ctx, dir, mid.messageId(), shape, occ);
 		tCalendarItem::setDatetimeFields(shape);
+		upd_check_order(ctx, dir, mid.messageId(), shape, occ, derived);
 		if (!change.ItemId.isOccurrence() && request.MessageDisposition &&
 		    (*request.MessageDisposition == Enum::SendOnly ||
 		    *request.MessageDisposition == Enum::SendAndSaveCopy))
