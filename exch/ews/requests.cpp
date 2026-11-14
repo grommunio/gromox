@@ -1677,6 +1677,19 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 				*flags &= ~(MSGFLAG_SUBMITTED | MSGFLAG_UNSENT);
 			content->proplist.set(PR_READ, &byte_value_one);
 		}
+		/*
+		 * Like Exchange, keep the delivery time a client gives and
+		 * default it to now. Sending stamps the submit time over the
+		 * one the client gave, which also becomes the Date header.
+		 */
+		auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
+		if (!content->proplist.has(PR_MESSAGE_DELIVERY_TIME) &&
+		    content->proplist.set(PR_MESSAGE_DELIVERY_TIME, now) == ecServerOOM)
+			throw EWSError::NotEnoughMemory(E3358);
+		if ((send_message && isMessageLike) ||
+		    !content->proplist.has(PR_CLIENT_SUBMIT_TIME))
+			if (content->proplist.set(PR_CLIENT_SUBMIT_TIME, now) == ecServerOOM)
+				throw EWSError::NotEnoughMemory(E3358);
 		/* Send first so that a failed send leaves no copy behind */
 		if (isMessageLike && !isResponse && send_message)
 			ctx.send(dir, 0, *content);
@@ -1707,7 +1720,6 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 				|| !result)
 				throw EWSError::InternalServerError(E3427);
 			const char* username = ctx.effectiveUser(sentitems);
-			auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
 			TAGGED_PROPVAL props[] = {
 				{PR_MESSAGE_CLASS, deconst("IPM.Schedule.Meeting.Request")},
 				{PR_RESPONSE_REQUESTED, deconst(&byte_value_one)},
@@ -1730,7 +1742,6 @@ void process(mCreateItemRequest &&request, XMLElement *response, const EWSContex
 		}
 		if (cal_invite &&
 		    request.SendMeetingInvitations == Enum::SendOnlyToAll) {
-			auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
 			content->proplist.set(PR_MESSAGE_CLASS, "IPM.Schedule.Meeting.Request");
 			content->proplist.set(PR_CLIENT_SUBMIT_TIME, now);
 			content->proplist.set(PR_MESSAGE_DELIVERY_TIME, now);
