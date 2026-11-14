@@ -457,6 +457,7 @@ class sShape {
 	const TAGGED_PROPVAL* writes(const PROPERTY_NAME&) const;
 
 	PROPTAG_ARRAY remove() const;
+	void remove(proptag_t);
 	const std::vector<gromox::proptag_t> &remove_vec() const { return dTags; }
 
 	bool requested(proptag_t, uint8_t = FL_FIELD) const;
@@ -1506,7 +1507,7 @@ struct tChangeDescription {
 	static void convText(const PROPERTY_NAME &, const tinyxml2::XMLElement *, sShape &);
 	static void convTzAttr(const PROPERTY_NAME &, const tinyxml2::XMLElement *, sShape &);
 	static void convInt32(const PROPERTY_NAME &, const tinyxml2::XMLElement *, sShape &);
-	static void convDouble(const PROPERTY_NAME &, const tinyxml2::XMLElement *, sShape &);
+	static void convPercentComplete(const tinyxml2::XMLElement *, sShape &);
 	template<typename ET, typename PT=uint32_t>
 	static void convEnumIndex(proptag_t, const tinyxml2::XMLElement *, sShape &);
 	template<typename ET, typename PT=uint32_t>
@@ -2203,6 +2204,26 @@ struct tTask : public tItem {
 	std::optional<Enum::TaskStatusType> Status;
 	std::optional<std::string> StatusDescription;
 	std::optional<int> TotalWork; // 0 <= TotalWork < 0x5AE980DF
+};
+
+/**
+ * @brief      Status, percentage and completion of a task
+ *
+ * Exchange keeps them in step whenever one of them is set, in the
+ * order the fields arrive.
+ */
+struct sTaskState {
+	void setPercent(double);
+	void setStatus(uint32_t);
+	void setCompleteDate(uint64_t);
+	void write(sShape &) const;
+
+	uint32_t status = 0; ///< PidLidTaskStatus
+	double percent = 0; ///< PidLidPercentComplete, 0.0 to 1.0
+	std::optional<uint64_t> completed; ///< PidLidTaskDateCompleted
+
+	private:
+	void settle();
 };
 
 /**

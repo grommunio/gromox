@@ -95,6 +95,7 @@ class EWSError : public DispatchError {
 	ERR(InvalidMergedFreeBusyInterval) ///< Bad MergedFreeBusyIntervalInMinutes
 	ERR(InvalidExtendedPropertyValue) ///< Value of extended property does not match its type
 	ERR(InvalidOccurrenceId) ///< Cannot deserialize occurrence ID
+	ERR(InvalidPercentCompleteValue) ///< PercentComplete outside 0 to 100
 	ERR(InvalidPropertySet) ///< Property cannot be set on this item
 	ERR(InvalidRecipients) ///< Recipient list is malformed
 	ERR(InvalidRestriction) ///< Restriction cannot be deserialized
@@ -699,6 +700,8 @@ E(3620, "the item changed since the change key was issued");
 E(3621, "the new zone would move the end before the start");
 E(3622, "the end of the item would precede its start");
 E(3623, "unknown time zone in the update");
+E(3624, "PercentComplete must be between 0 and 100");
+E(3625, "IsComplete is read-only, set Status or PercentComplete instead");
 
 #undef E
 }
