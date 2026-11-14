@@ -4957,6 +4957,38 @@ static void upd_task_state(const EWSContext &ctx, const std::string &dir,
 }
 
 /**
+ * @brief      Write the follow-up flag of an update
+ *
+ * The to-do flags depend on whether the item was sent, and the to-do
+ * title on the subject.
+ *
+ * @param      ctx    Request context
+ * @param      dir    Store directory
+ * @param      mid    Message ID of the item
+ * @param      shape  Shape of the update
+ */
+static void upd_flag(const EWSContext &ctx, const std::string &dir,
+    uint64_t mid, sShape &shape)
+{
+	auto reqTag = shape.tag(NtFlagRequest);
+	const proptag_t tags[] = {PR_MESSAGE_CLASS, PR_MESSAGE_FLAGS,
+		PR_SUBJECT, reqTag};
+	auto props = ctx.getItemProps(dir, mid, tags);
+	auto cls = props.get<const char>(PR_MESSAGE_CLASS);
+	/* Exchange cannot flag these */
+	if (cls != nullptr && (class_match_prefix(cls, "IPM.Task") == 0 ||
+	    class_match_prefix(cls, "IPM.Appointment") == 0))
+		throw EWSError::InternalServerError(E3626);
+	auto flags = props.get<const uint32_t>(PR_MESSAGE_FLAGS);
+	auto subject = props.get<const char>(PR_SUBJECT);
+	if (auto w = shape.writes(PR_SUBJECT))
+		subject = static_cast<const char *>(w->pvalue);
+	EWSContext::writeFlag(tFlagType(shape.flag), shape, subject,
+		flags != nullptr && *flags & MSGFLAG_UNSENT,
+		reqTag != 0 && props.has(reqTag));
+}
+
+/**
  * @brief      Apply DeleteItemField to a meeting attendee list
  *
  * An attendee list without Attendee children clears that kind, so
@@ -5474,11 +5506,16 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 		shape.add(NtRecurrenceType, PT_LONG);
 		shape.add(NtClipStart, PT_SYSTIME);
 		shape.add(NtClipEnd, PT_SYSTIME);
-		/* Written by sTaskState::write */
+		/* Written by sTaskState::write and upd_flag */
 		shape.add(NtTaskStatus, PT_LONG);
 		shape.add(NtPercentComplete, PT_DOUBLE);
 		shape.add(NtTaskComplete, PT_BOOLEAN);
 		shape.add(NtTaskDateCompleted, PT_SYSTIME);
+		/* Written by upd_flag */
+		shape.add(NtFlagRequest, PT_UNICODE);
+		shape.add(NtToDoTitle, PT_UNICODE);
+		shape.add(NtTaskStartDate, PT_SYSTIME);
+		shape.add(NtTaskDueDate, PT_SYSTIME);
 		ctx.getNamedTags(dir, shape, true);
 		std::optional<sTaskState> task;
 		for (const auto &update : change.Updates) {
@@ -5521,6 +5558,8 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 			ctx.applyRecurrence(dir, mid.messageId(), shape.recurrence, shape);
 		else if (!change.ItemId.isOccurrence())
 			ctx.moveRecurrence(dir, mid.messageId(), shape);
+		if (shape.flag != nullptr)
+			upd_flag(ctx, dir, mid.messageId(), shape);
 		const char* username = ctx.effectiveUser(parentFolder);
 		mUpdateItemResponseMessage msg;
 		uint32_t occ_basedate = 0;
