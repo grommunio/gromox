@@ -1433,6 +1433,47 @@ static int ical_reply_mail_identity()
 	return EXIT_SUCCESS;
 }
 
+static int envelope_from_fallback()
+{
+	static constexpr struct {
+		const char *hdr, *env, *repr;
+	} cases[] = {
+		{"", "env@example.com", "env@example.com"},
+		{"Sender: snd@example.com\r\n", "env@example.com",
+		 "snd@example.com"},
+		{"From: frm@example.com\r\n", "env@example.com",
+		 "frm@example.com"},
+		{"From: \r\n", "env@example.com", nullptr},
+		{"", "", nullptr},
+	};
+	fprintf(stderr, "=== envelope_from_fallback\n");
+	for (const auto &c : cases) {
+		auto data = std::string(c.hdr) + "To: rcpt@example.com\r\n"
+			"Subject: s\r\nContent-Type: text/plain\r\n\r\n"
+			"body\r\n";
+		MAIL m;
+		assert(m.refonly_parse(data.data(), data.size()));
+		oxcmail_converter cvt;
+		cvt.alloc = g_alloc;
+		cvt.get_propids = ee_get_propids;
+		cvt.envelope_from = c.env;
+		auto mc = cvt.inet_to_mapi(m);
+		assert(mc != nullptr);
+		auto repr = mc->proplist.get<const char>(
+		            PR_SENT_REPRESENTING_SMTP_ADDRESS);
+		auto sndr = mc->proplist.get<const char>(
+		            PR_SENDER_SMTP_ADDRESS);
+		if (c.repr == nullptr ? repr != nullptr || sndr != nullptr :
+		    repr == nullptr || strcmp(repr, c.repr) != 0 ||
+		    sndr == nullptr) {
+			fprintf(stderr, "%s/%s: repr %s\n", c.hdr, c.env,
+			        znul(repr));
+			return EXIT_FAILURE;
+		}
+	}
+	return EXIT_SUCCESS;
+}
+
 static int ical_reply_partstat_from()
 {
 	using namespace std::string_literals;
@@ -3485,7 +3526,7 @@ int main()
 		E(ical_export_1), E(ical_export_2), E(ical_reply_identity),
 		E(ical_reply_mail_identity), E(ical_reply_ical_identity),
 		E(ical_response_class), E(ical_reply_partstat_from),
-		E(ical_counter_export),
+		E(ical_counter_export), E(envelope_from_fallback),
 		E(ical_export_exception), E(ical_export_allday_exception),
 		E(ical_allday_hint), E(ical_allday_date_zone),
 		E(ical_standalone_occurrence),

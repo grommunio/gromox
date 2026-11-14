@@ -79,6 +79,8 @@ class GX_EXPORT oxcmail_converter {
 	bool add_rcvd_timestamp = false, unwrap_smime_clearsigned = false;
 	/* Domain for IMCEA addresses of originators that do not resolve */
 	const char *imcea_domain = nullptr;
+	/* SMTP envelope sender, stands in for missing From and Sender */
+	const char *envelope_from = nullptr;
 };
 
 struct GX_EXPORT oxcical_converter {

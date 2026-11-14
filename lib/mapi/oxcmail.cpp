@@ -2477,6 +2477,15 @@ std::unique_ptr<message_content, mc_delete> oxcmail_converter::inet_to_mapi(cons
 	field_param.b_classified = phead->get_field("X-Microsoft-Classified") != nullptr;
 	if (!phead->enum_field(oxcmail_enum_mail_head, &field_param))
 		return imp_null;
+	/* Validated on Exchange: an empty From line also prevents this */
+	if (envelope_from != nullptr && strchr(envelope_from, '@') != nullptr &&
+	    phead->get_field("From") == nullptr &&
+	    phead->get_field("Sender") == nullptr &&
+	    !oxcmail_parse_address(envelope_from, PR_SENT_REPRESENTING_NAME,
+	    PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_EMAIL_ADDRESS,
+	    PR_SENT_REPRESENTING_SMTP_ADDRESS, PR_SENT_REPRESENTING_SEARCH_KEY,
+	    PR_SENT_REPRESENTING_ENTRYID, &pmsg->proplist))
+		return imp_null;
 	auto b_sender_hdr = pmsg->proplist.has(PR_SENDER_SMTP_ADDRESS);
 	if (!pmsg->proplist.has(PR_SENDER_NAME) &&
 	    !pmsg->proplist.has(PR_SENDER_SMTP_ADDRESS)) {
