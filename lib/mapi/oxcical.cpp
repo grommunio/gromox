@@ -1434,8 +1434,6 @@ static bool oxcical_parse_organizer(const ical_component &main_event,
 	USERNAME_TO_ENTRYID username_to_entryid, MESSAGE_CONTENT *pmsg)
 {
 	auto piline = main_event.get_line("ORGANIZER");
-	if (piline == nullptr)
-		return true;
 	BINARY tmp_bin;
 	uint8_t tmp_buff[1024];
 	const char *paddress;
@@ -1446,8 +1444,15 @@ static bool oxcical_parse_organizer(const ical_component &main_event,
 		pvalue = pmsg->proplist.get<char>(PR_MESSAGE_CLASS_A);
 	if (pvalue == nullptr)
 		pvalue = "IPM.Note";
-	/* ignore ORGANIZER when METHOD is "REPLY" OR "COUNTER" */
-	if (class_match_prefix(pvalue, "IPM.Schedule.Meeting.Resp") == 0)
+	/*
+	 * A REPLY or COUNTER carries the organizer as its addressee, and the
+	 * responder is the ATTENDEE. The responder is whom the message
+	 * represents. The sender stays what the mail headers say.
+	 */
+	const bool response = class_match_prefix(pvalue, "IPM.Schedule.Meeting.Resp") == 0;
+	if (response)
+		piline = main_event.get_line("ATTENDEE");
+	if (piline == nullptr)
 		return true;
 	paddress = piline->get_first_subvalue();
 	if (paddress != nullptr) {
@@ -1471,7 +1476,7 @@ static bool oxcical_parse_organizer(const ical_component &main_event,
 		pdisplay_name = paddress;
 	if (pdisplay_name != nullptr) {
 		if (pmsg->proplist.set(PR_SENT_REPRESENTING_NAME, pdisplay_name) != ecSuccess ||
-		    pmsg->proplist.set(PR_SENDER_NAME, pdisplay_name) != ecSuccess)
+		    (!response && pmsg->proplist.set(PR_SENDER_NAME, pdisplay_name) != ecSuccess))
 			return false;
 	}
 	if (paddress == nullptr)
@@ -1500,8 +1505,11 @@ static bool oxcical_parse_organizer(const ical_component &main_event,
 	    pmsg->proplist.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, paddress) != ecSuccess ||
 	    pmsg->proplist.set(PR_SENT_REPRESENTING_SMTP_ADDRESS, paddress) != ecSuccess ||
 	    pmsg->proplist.set(PR_SENT_REPRESENTING_ENTRYID, &tmp_bin) != ecSuccess ||
-	    pmsg->proplist.set(PR_SENT_REPRESENTING_SEARCH_KEY, &srchkey) != ecSuccess ||
-	    pmsg->proplist.set(PR_SENDER_ADDRTYPE, "SMTP") != ecSuccess ||
+	    pmsg->proplist.set(PR_SENT_REPRESENTING_SEARCH_KEY, &srchkey) != ecSuccess)
+		return false;
+	if (response)
+		return true;
+	if (pmsg->proplist.set(PR_SENDER_ADDRTYPE, "SMTP") != ecSuccess ||
 	    pmsg->proplist.set(PR_SENDER_EMAIL_ADDRESS, paddress) != ecSuccess ||
 	    pmsg->proplist.set(PR_SENDER_SMTP_ADDRESS, paddress) != ecSuccess ||
 	    pmsg->proplist.set(PR_SENDER_ENTRYID, &tmp_bin) != ecSuccess ||
