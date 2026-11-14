@@ -161,8 +161,17 @@ void fromProp(const TAGGED_PROPVAL* prop, T& target)
  */
 void fromProp(const TAGGED_PROPVAL* prop, std::optional<sTimePoint>& target)
 {
-	if (prop)
-		target.emplace(sTimePoint::fromNT(*static_cast<const uint64_t*>(prop->pvalue)));
+	/*
+	 * Stores can hold impossible times, e.g. negative ones from a
+	 * misparsed year. xs:dateTime readers fail on what they would turn
+	 * into, so treat anything after the year 9999 as absent.
+	 */
+	static constexpr uint64_t year10000 = 2650467744000000000ULL;
+	if (prop == nullptr)
+		return;
+	auto nt = *static_cast<const uint64_t *>(prop->pvalue);
+	if (nt < year10000)
+		target.emplace(sTimePoint::fromNT(nt));
 }
 
 /**
@@ -5414,9 +5423,11 @@ void tItem::update(const sShape& shape)
 	fromProp(shape.get(PR_LAST_MODIFICATION_TIME), LastModifiedTime);
 	fromProp(shape.get(PR_MESSAGE_CLASS), ItemClass);
 	fromProp(shape.get(PR_MESSAGE_DELIVERY_TIME), DateTimeReceived);
-	if (!DateTimeReceived)
+	/* Only for a client that asked for it, not e.g. for IdOnly */
+	bool wantRcvd = shape.requested(PR_MESSAGE_DELIVERY_TIME);
+	if (!DateTimeReceived && wantRcvd)
 		fromProp(shape.get(PR_CREATION_TIME, sShape::FL_ANY), DateTimeReceived);
-	if (!DateTimeReceived)
+	if (!DateTimeReceived && wantRcvd)
 		fromProp(shape.get(PR_LAST_MODIFICATION_TIME, sShape::FL_ANY), DateTimeReceived);
 	if ((v32 = shape.get<const uint32_t>(PR_MESSAGE_FLAGS))) {
 		IsSubmitted = *v32 & MSGFLAG_SUBMITTED;

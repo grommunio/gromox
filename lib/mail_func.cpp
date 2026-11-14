@@ -886,6 +886,15 @@ BOOL parse_rfc822_timestamp(const char *str_time, time_t *ptime)
 		str_zone = strptime(str_time, "%d %b %Y %H:%M:%S ", &tmp_tm);
 	if (str_zone == nullptr)
 		return FALSE;
+	/*
+	 * RFC 5322 4.3: a two-digit year below 50 is 20xx, any other two- or
+	 * three-digit year is offset by 1900.
+	 */
+	auto year = tmp_tm.tm_year + 1900;
+	if (year >= 0 && year < 50)
+		tmp_tm.tm_year += 2000;
+	else if (year >= 50 && year < 1000)
+		tmp_tm.tm_year += 1900;
 	int west = 0;
 	if (!rfc822_zone_to_minwest(str_zone, &west, nullptr))
 		return FALSE;

@@ -1111,6 +1111,32 @@ static int t_stream_skip()
 	return EXIT_SUCCESS;
 }
 
+static int t_rfc822_years()
+{
+	/* RFC 5322 4.3 obsolete years */
+	static constexpr struct {
+		const char *in;
+		time_t out;
+	} cases[] = {
+		{"Thu, 12 Dec 2024 23:40:02 +0100", 1734043202},
+		{"12 Dec 24 23:40:02 +0100", 1734043202},
+		{"Thu, 12 Dec 124 23:40:02 +0100", 1734043202},
+		{"12 Dec 99 23:40:02 +0100", 945038402},
+		{"1 Jan 49 00:00:00 +0000", 2493072000},
+		{"1 Jan 50 00:00:00 +0000", -631152000},
+	};
+	for (const auto &c : cases) {
+		time_t t = 0;
+		assert(parse_rfc822_timestamp(c.in, &t));
+		if (t != c.out) {
+			fprintf(stderr, "%s: got %lld, expected %lld\n", c.in,
+			        static_cast<long long>(t), static_cast<long long>(c.out));
+			return EXIT_FAILURE;
+		}
+	}
+	return EXIT_SUCCESS;
+}
+
 static int runner()
 {
 	if (t_cookie_jar() != 0)
@@ -1129,7 +1155,7 @@ static int runner()
 		t_cmp_binary, t_cmp_guid, t_cmp_svreid, t_cmp_icaltime,
 		t_wildcard, t_utf8_prefix, t_eidcvt, t_bin2cstr, t_log_escape,
 		t_string, t_unfold, t_time, t_tzdef, t_floating_dt, t_essdn, t_fb_recur,
-		t_res_mvprop, t_srchkey_words, t_array_growth, t_stream_skip,
+		t_res_mvprop, t_srchkey_words, t_array_growth, t_rfc822_years, t_stream_skip,
 	};
 	for (auto f : fct) {
 		auto ret = f();
