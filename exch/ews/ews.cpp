@@ -506,6 +506,7 @@ static constexpr cfg_directive ews_cfg_defaults[] = {
 	{"ews_cache_interval", "5000"},
 	{"ews_cache_message_instance_lifetime", "30000"},
 	{"ews_event_stream_interval", "45000"},
+	{"ews_lenient_change_keys", "0", CFG_BOOL},
 	{"ews_log_filter", "!"},
 	{"ews_log_timestamp", ""},
 	{"ews_max_get_items", "0", CFG_SIZE},
@@ -549,6 +550,7 @@ void EWSPlugin::loadConfig()
 	mlog(LV_INFO, "[ews]: x500 org name is \"%s\"", x500_org_name.c_str());
 
 	cfg = config_file_initd("ews.cfg", get_config_path(), ews_cfg_defaults);
+	lenient_change_keys = cfg->get_ll("ews_lenient_change_keys");
 	pretty_response = cfg->get_ll("ews_pretty_response");
 	request_logging = cfg->get_ll("ews_request_logging");
 	response_logging = cfg->get_ll("ews_response_logging");
