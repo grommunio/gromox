@@ -3051,14 +3051,17 @@ decltype(tChangeDescription::fields) tChangeDescription::fields = {{
 	{"End", {[](auto &&...args) STATIC_IN_CXX23 { convDate(NtCommonEnd, args...); }}},
 	{"EndTimeZone", {[](const tinyxml2::XMLElement *xml, sShape &shape) STATIC_IN_CXX23 {
 		convTzAttr(NtCalendarTimeZone, xml, shape);
-		shape.tzWrite |= sShape::TZ_END;
-		if (auto id = xml->Attribute("Id"))
+		if (auto id = xml->Attribute("Id"); id != nullptr && *id != '\0') {
+			shape.tzWrite |= sShape::TZ_END;
 			shape.tzEndName = id;
+		}
 	}}},
 	{"EndTimeZoneId", {[](const tinyxml2::XMLElement *xml, sShape &shape) STATIC_IN_CXX23 {
 		convText(NtCalendarTimeZone, xml, shape);
-		shape.tzWrite |= sShape::TZ_END;
-		shape.tzEndName = znul(xml->GetText());
+		if (auto id = xml->GetText(); id != nullptr && *id != '\0') {
+			shape.tzWrite |= sShape::TZ_END;
+			shape.tzEndName = id;
+		}
 	}}},
 	{"FileAs", {[](auto &&...args) STATIC_IN_CXX23 { convText(NtFileAs, args...); }}},
 	{"FileAsMapping", {[](const tinyxml2::XMLElement *xml, sShape &shape) STATIC_IN_CXX23 {
@@ -3104,14 +3107,17 @@ decltype(tChangeDescription::fields) tChangeDescription::fields = {{
 	{"StartDate", {[](auto &&...args) STATIC_IN_CXX23 { convDate(NtTaskStartDate, args...); }, "Task"}},
 	{"StartTimeZone", {[](const tinyxml2::XMLElement *xml, sShape &shape) STATIC_IN_CXX23 {
 		convTzAttr(NtCalendarTimeZone, xml, shape);
-		shape.tzWrite |= sShape::TZ_START;
-		if (auto id = xml->Attribute("Id"))
+		if (auto id = xml->Attribute("Id"); id != nullptr && *id != '\0') {
+			shape.tzWrite |= sShape::TZ_START;
 			shape.tzStartName = id;
+		}
 	}}},
 	{"StartTimeZoneId", {[](const tinyxml2::XMLElement *xml, sShape &shape) STATIC_IN_CXX23 {
 		convText(NtCalendarTimeZone, xml, shape);
-		shape.tzWrite |= sShape::TZ_START;
-		shape.tzStartName = znul(xml->GetText());
+		if (auto id = xml->GetText(); id != nullptr && *id != '\0') {
+			shape.tzWrite |= sShape::TZ_START;
+			shape.tzStartName = id;
+		}
 	}}},
 	{"Status", {[](auto &&...args) STATIC_IN_CXX23 { convEnumIndex<Enum::TaskStatusType>(NtTaskStatus, args...); }, "Task"}},
 	{"Subject", {[](auto &&...args) STATIC_IN_CXX23 { convText(PR_SUBJECT, args...); }}},

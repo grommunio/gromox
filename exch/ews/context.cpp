@@ -2909,6 +2909,62 @@ bool EWSContext::sOccurrenceSeries::replaces(uint32_t basedate,
 }
 
 /**
+ * @brief      Current start and end of an occurrence (NT time)
+ */
+std::pair<uint64_t, uint64_t> EWSContext::occurrenceTimes(const std::string &dir,
+    uint64_t mid, uint32_t basedate) const
+{
+	auto t = loadSeriesTimes(dir, mid).occurrenceTimes(basedate);
+	return {rop_util_unix_to_nttime(clock::to_time_t(t.start)),
+	        rop_util_unix_to_nttime(clock::to_time_t(t.end))};
+}
+
+/**
+ * @brief      Zones of an occurrence, those of its exception if it has any
+ */
+std::pair<std::optional<TZDEF>, std::optional<TZDEF>>
+EWSContext::occurrenceZones(const std::string &dir, uint64_t fid, uint64_t mid,
+    uint32_t basedate) const
+{
+	auto &exmdb = m_plugin.exmdb;
+	const PROPERTY_NAME pn[] = {
+		{MNID_ID, PSETID_Appointment, PidLidExceptionReplaceTime},
+		NtAppointmentTimeZoneDefinitionStartDisplay,
+		NtAppointmentTimeZoneDefinitionEndDisplay,
+	};
+	const PROPNAME_ARRAY pna = {std::size(pn), deconst(pn)};
+	auto ids = getNamedPropIds(dir, pna);
+	if (ids.size() != std::size(pn) || ids[0] == 0)
+		return {};
+	const proptag_t etags[] = {PROP_TAG(PT_SYSTIME, ids[0]),
+		PROP_TAG(PT_BINARY, ids[1]), PROP_TAG(PT_BINARY, ids[2])};
+	auto series = loadSeriesTimes(dir, mid);
+	auto mInst = m_plugin.loadMessageInstance(dir, fid, mid);
+	std::vector<uint32_t> nums;
+	if (!attachment_nums(m_plugin, dir, mInst->instanceId, nums))
+		return {};
+	for (auto num : nums) {
+		auto aInst = m_plugin.loadAttachmentInstance(dir, fid, mid, num);
+		std::shared_ptr<EWSPlugin::ExmdbInstance> eInst;
+		try {
+			eInst = m_plugin.loadEmbeddedInstance(dir, aInst);
+		} catch (const DispatchError &) {
+			continue;
+		}
+		TPROPVAL_ARRAY eprops{};
+		if (!exmdb.get_instance_properties(dir.c_str(), 0, eInst->instanceId,
+		    proptag_cspan{etags}, &eprops))
+			continue;
+		auto extime = eprops.get<const uint64_t>(etags[0]);
+		if (extime == nullptr || !series.replaces(basedate, *extime))
+			continue;
+		return {binary_to_tzdef(eprops.get<const BINARY>(etags[1])),
+		        binary_to_tzdef(eprops.get<const BINARY>(etags[2]))};
+	}
+	return {};
+}
+
+/**
  * @brief      Load the recurrence and time zone of a series master
  *
  * Enough for occurrence times, unlike loadOccurrenceSeries().
@@ -4324,7 +4380,11 @@ void EWSContext::applyRecurrence(const std::string &dir, uint64_t mid,
 		throw EWSError::CalendarInvalidRecurrence(E3265);
 
 	std::optional<TZDEF> item_tz;
-	if (auto caltz = shape.writes(NtCalendarTimeZone))
+	if (!shape.tzStartName.empty())
+		item_tz = lookup_tz_get_tzdef(shape.tzStartName.c_str());
+	/* A new end zone alone leaves the series in its start zone */
+	else if (auto caltz = shape.writes(NtCalendarTimeZone);
+	         caltz != nullptr && !(shape.tzWrite & sShape::TZ_END))
 		item_tz = lookup_tz_get_tzdef(static_cast<const char *>(caltz->pvalue));
 	if (!item_tz && shape.tag(NtAppointmentTimeZoneDefinitionRecur) != 0) {
 		/* An item stored with an unknown zone name has no definition */
@@ -4677,12 +4737,17 @@ void EWSContext::moveRecurrence(const std::string &dir, uint64_t mid,
 	int64_t fallback = recurTzOffset(dir, mid, apr);
 	if (fallback < -840 || fallback > 840)
 		fallback = 0;
-	auto local = [&](time_t t) {
+	/* The old start is local to the old zone, if the update names a new one */
+	auto oldtz = binary_to_tzdef(props.get<const BINARY>(tags[2]));
+	if (!oldtz)
+		oldtz = tz;
+	auto local_in = [&](const std::optional<TZDEF> &z, time_t t) {
 		int64_t b;
-		if (!tz || !tz_to_offset(*tz, t, b))
+		if (!z || !tz_to_offset(*z, t, b))
 			b = fallback;
 		return t - b * 60;
 	};
+	auto local = [&](time_t t) { return local_in(tz, t); };
 	auto allday = shape.writes(tags[3]);
 	auto alldayv = allday != nullptr ? static_cast<const uint8_t *>(allday->pvalue) :
 	               props.get<const uint8_t>(tags[3]);
@@ -4691,7 +4756,7 @@ void EWSContext::moveRecurrence(const std::string &dir, uint64_t mid,
 		return rop_util_nttime_to_unix(p != nullptr ?
 		       *static_cast<const uint64_t *>(p->pvalue) : *o);
 	};
-	time_t os = local(rop_util_nttime_to_unix(*ostart));
+	time_t os = local_in(oldtz, rop_util_nttime_to_unix(*ostart));
 	time_t ns = local(nt(sp, ostart)), ne = local(nt(ep, oend));
 	if (isAllDay) {
 		/* tolerate an offset that is off by the DST bias */
@@ -6834,6 +6899,26 @@ void EWSContext::toContent(const std::string &dir, tCalendarItem &item,
 			endTime = localEndTime;
 		}
 		auto duration = localEndTime - localStartTime;
+		/* With a zone of its own, the end may be local to another zone */
+		std::string szone = item.StartTimeZoneId ? *item.StartTimeZoneId :
+		                    item.StartTimeZone ? item.StartTimeZone->Id :
+		                    item.timezoneId();
+		std::string ezone = item.EndTimeZoneId ? *item.EndTimeZoneId :
+		                    item.EndTimeZone ? item.EndTimeZone->Id : szone;
+		/* The end then stays with the start zone, see below */
+		if (!lookup_tz_get_tzdef(ezone.c_str()))
+			ezone = szone;
+		if (!isAllDay && ezone != szone) {
+			auto utc = [](time_t t, bool calc, int64_t off, const std::string &z) {
+				int64_t b;
+				auto tz = lookup_tz_get_tzdef(z.c_str());
+				if (!calc)
+					return t + static_cast<time_t>(off) * 60;
+				return tz && tz_to_offset(*tz, t, b) ? t + b * 60 : t;
+			};
+			duration = utc(localEndTime, calcEndOffset, endOffset, ezone) -
+			           utc(localStartTime, calcStartOffset, startOffset, szone);
+		}
 		struct tm startdate_tm;
 		/*
 		 * Use the RecurrenceRange's StartDate for the recurrence
@@ -7096,6 +7181,24 @@ void EWSContext::toContent(const std::string &dir, tCalendarItem &item,
 				throw EWSError::TimeZone(E3374);
 			item.Start.value().offset = std::chrono::minutes(startOffset);
 			item.End.value().offset = std::chrono::minutes(endOffset);
+		}
+	}
+	/* Like Exchange, the end may have a zone of its own */
+	std::string endTz = item.EndTimeZoneId ? *item.EndTimeZoneId :
+	                    item.EndTimeZone ? item.EndTimeZone->Id : std::string();
+	std::string startTz = item.StartTimeZoneId ? *item.StartTimeZoneId :
+	                      item.StartTimeZone ? item.StartTimeZone->Id :
+	                      item.timezoneId();
+	if (!startTz.empty() && !endTz.empty() && endTz != startTz) {
+		auto ebuf = lookup_tz_get_sv(endTz.c_str());
+		auto etz = ebuf != nullptr ? EXT_PULL::bin_to_tzdef(*ebuf) : std::nullopt;
+		if (etz && ebuf->size() <= UINT32_MAX) {
+			auto ebin = construct<BINARY>(BINARY{static_cast<uint32_t>(ebuf->size()),
+			            {deconst(ebuf->data())}});
+			shape.write(NtAppointmentTimeZoneDefinitionEndDisplay,
+				TAGGED_PROPVAL{PT_BINARY, ebin});
+			if (calcEndOffset && !tz_to_offset(*etz, endTime, endOffset))
+				throw EWSError::TimeZone(E3374);
 		}
 	}
 	// The named prop tags are not available in the shape at this point, so set

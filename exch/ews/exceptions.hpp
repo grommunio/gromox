@@ -63,6 +63,7 @@ class EWSError : public DispatchError {
 	ERR(CalendarCannotMoveOrCopyOccurrence) ///< Move/Copy of a single occurrence
 	ERR(CalendarCannotUseIdForOccurrenceId) ///< Id does not refer to an occurrence
 	ERR(CalendarCannotUseIdForRecurringMasterId) ///< Id does not refer to a recurring master
+	ERR(CalendarEndDateIsEarlierThanStartDate) ///< End before start
 	ERR(CalendarInvalidRecurrence) ///< Internal structure of the objects that represent the recurrence is invalid.
 	ERR(CalendarIsNotOrganizer) ///< Operation is reserved for the organizer of the meeting
 	ERR(CalendarOccurrenceIndexIsOutOfRecurrenceRange) ///< InstanceIndex beyond the end of the series
@@ -106,6 +107,7 @@ class EWSError : public DispatchError {
 	ERR(ItemNotFound) ///< Requested message object does not exist
 	ERR(ItemPropertyRequestFailed) ///< Failed to retrieve item property
 	ERR(ItemSave)  ///< Failed to set item properties
+	ERR(ItemSavePropertyError) ///< Properties would make the item inconsistent
 	ERR(MailRecipientNotFound) ///< Username could not be resolved internally
 	ERR(MissingRecipients) ///< Failed to send item because no recipients were specified
 	ERR(MoveCopyFailed) ///< Exmdb `movecopy_message` operation failed
@@ -693,6 +695,9 @@ E(3617, "out of memory updating the attendees of an exception");
 inline std::string E3618(std::string_view name) {return fmt::format("E-3618: recipient \"{}\" is not resolved", name);}
 E(3619, "a change key is needed unless ConflictResolution is AlwaysOverwrite");
 E(3620, "the item changed since the change key was issued");
+E(3621, "the new zone would move the end before the start");
+E(3622, "the end of the item would precede its start");
+E(3623, "unknown time zone in the update");
 
 #undef E
 }
