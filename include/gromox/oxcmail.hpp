@@ -91,6 +91,8 @@ struct GX_EXPORT oxcical_converter {
 	GET_PROPIDS get_propids = nullptr;
 	USERNAME_TO_ENTRYID username_to_entryid = nullptr;
 	gromox::cvt_id2user id2user = nullptr;
+	/* From address of the mail that carried a response */
+	const char *responder = nullptr;
 };
 
 struct GX_EXPORT oxvcard_converter {

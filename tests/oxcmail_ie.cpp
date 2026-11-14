@@ -1433,6 +1433,78 @@ static int ical_reply_mail_identity()
 	return EXIT_SUCCESS;
 }
 
+static int ical_reply_partstat_from()
+{
+	using namespace std::string_literals;
+	static constexpr struct {
+		const char *method, *hdr, *att1, *att2, *cls;
+	} cases[] = {
+		{"REPLY", "From: a1@example.com\r\n",
+		 "PARTSTAT=DECLINED:mailto:a2", "PARTSTAT=ACCEPTED:mailto:a1",
+		 "Pos"},
+		{"REPLY", "From: a1@example.com\r\n",
+		 "PARTSTAT=TENTATIVE:mailto:a1", "PARTSTAT=DECLINED:mailto:a2",
+		 "Tent"},
+		{"REPLY", "From: a1@example.com\r\n",
+		 "PARTSTAT=ACCEPTED:mailto:a2", "PARTSTAT=DECLINED:mailto:a1",
+		 "Neg"},
+		{"REPLY", "From: a1@example.com\r\n",
+		 "PARTSTAT=DECLINED:mailto:a2", nullptr, "Tent"},
+		{"REPLY", "From: a1@example.com\r\nSender: a3@example.com\r\n",
+		 "PARTSTAT=DECLINED:mailto:a3", "PARTSTAT=ACCEPTED:mailto:a1",
+		 "Pos"},
+		{"REPLY", "From: a3@example.com\r\n",
+		 "PARTSTAT=DECLINED:mailto:a2",
+		 "PARTSTAT=ACCEPTED;SENT-BY=\"mailto:a3@example.com\""
+		 ":mailto:a1",
+		 "Tent"},
+		{"REPLY", "From: A1@EXAMPLE.COM\r\n",
+		 "PARTSTAT=DECLINED:mailto:a2", "PARTSTAT=ACCEPTED:MAILTO:A1",
+		 "Pos"},
+		{"REPLY", "From: a1@example.com\r\n",
+		 "PARTSTAT=DECLINED:mailto:a2",
+		 "PARTSTAT=NEEDS-ACTION:mailto:a1",
+		 "Tent"},
+		{"COUNTER", "From: a1@example.com\r\n",
+		 "PARTSTAT=TENTATIVE:mailto:a2", "PARTSTAT=DECLINED:mailto:a1",
+		 "Neg"},
+		{"COUNTER", "From: a1@example.com\r\n",
+		 "PARTSTAT=DECLINED:mailto:a2", "PARTSTAT=ACCEPTED:mailto:a1",
+		 "Pos"},
+	};
+	fprintf(stderr, "=== ical_reply_partstat_from\n");
+	for (const auto &c : cases) {
+		auto att = "ATTENDEE;"s + c.att1 + "@example.com\r\n";
+		if (c.att2 != nullptr)
+			att += "ATTENDEE;"s + c.att2 + "@example.com\r\n";
+		auto data = c.hdr + "To: org@example.com\r\nSubject: reply\r\n"
+			"MIME-Version: 1.0\r\nContent-Type: text/calendar; "
+			"method="s + c.method + "; charset=utf-8\r\n\r\n"
+			"BEGIN:VCALENDAR\r\nVERSION:2.0\r\n"
+			"PRODID:-//test//EN\r\nMETHOD:" + c.method +
+			"\r\nBEGIN:VEVENT\r\nUID:rpl\r\n"
+			"DTSTAMP:20261005T100000Z\r\nSEQUENCE:0\r\n"
+			"DTSTART:20261030T090000Z\r\nDTEND:20261030T100000Z\r\n"
+			"ORGANIZER:mailto:org@example.com\r\n" + att +
+			"END:VEVENT\r\nEND:VCALENDAR\r\n";
+		MAIL m;
+		assert(m.refonly_parse(data.data(), data.size()));
+		oxcmail_converter cvt;
+		cvt.alloc = g_alloc;
+		cvt.get_propids = ee_get_propids;
+		auto mc = cvt.inet_to_mapi(m);
+		assert(mc != nullptr);
+		auto cls = mc->proplist.get<const char>(PR_MESSAGE_CLASS);
+		auto want = "IPM.Schedule.Meeting.Resp."s + c.cls;
+		if (cls == nullptr || want != cls) {
+			fprintf(stderr, "%s %s %s: class %s\n", c.hdr, c.att1,
+			        znul(c.att2), znul(cls));
+			return EXIT_FAILURE;
+		}
+	}
+	return EXIT_SUCCESS;
+}
+
 static bool counter_proposal(const message_content &msg)
 {
 	static const PROPERTY_NAME namelist[] = {
@@ -3369,7 +3441,7 @@ int main()
 		E(select_parts_5), E(select_parts_6), E(select_parts_7),
 		E(ical_export_1), E(ical_export_2), E(ical_reply_identity),
 		E(ical_reply_mail_identity), E(ical_reply_ical_identity),
-		E(ical_response_class),
+		E(ical_response_class), E(ical_reply_partstat_from),
 		E(ical_export_exception), E(ical_export_allday_exception),
 		E(ical_allday_hint), E(ical_allday_date_zone),
 		E(ical_standalone_occurrence),

@@ -2681,6 +2681,8 @@ std::unique_ptr<message_content, mc_delete> oxcmail_converter::inet_to_mapi(cons
 				ical_cvt.alloc = alloc;
 				ical_cvt.get_propids = get_propids;
 				ical_cvt.username_to_entryid = oxcmail_username_to_entryid;
+				ical_cvt.responder = pmsg->proplist.get<char>(
+					PR_SENT_REPRESENTING_SMTP_ADDRESS);
 				pmsg1 = ical_cvt.ical_to_mapi_single(ical);
 				if (pmsg1 == nullptr) {
 					mlog(LV_WARN, "W-2728: oxcmail_import_single returned no object (parse error?); placing ical as attachment instead");

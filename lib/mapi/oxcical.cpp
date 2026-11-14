@@ -3123,14 +3123,33 @@ static bool oxcical_classify_calendar(const ical &pical, uidxevent_list_t &ul) t
 	return false;
 }
 
-static const char *oxcical_get_partstat(const uidxevent_list_t &uid_list)
+/**
+ * Validated on Exchange: the PARTSTAT of a response that came by mail is
+ * the one of the ATTENDEE named like @responder, the From address. Other
+ * ATTENDEEs, Sender and SENT-BY do not count, and without a match the
+ * response is tentative. Without @responder, the first ATTENDEE answers.
+ */
+static const char *oxcical_get_partstat(const uidxevent_list_t &uid_list,
+    const char *responder)
 {
 	if (uid_list.size() == 0)
 		return nullptr;
 	for (const auto &event : uid_list.cbegin()->second) {
-		auto piline = event->get_line("ATTENDEE");
-		if (piline != nullptr)
-			return piline->get_first_paramval("PARTSTAT");
+		if (responder == nullptr) {
+			auto piline = event->get_line("ATTENDEE");
+			if (piline != nullptr)
+				return piline->get_first_paramval("PARTSTAT");
+			continue;
+		}
+		for (const auto &line : event->line_list) {
+			if (strcasecmp(line.m_name.c_str(), "ATTENDEE") != 0)
+				continue;
+			auto addr = line.get_first_subvalue();
+			if (addr != nullptr &&
+			    strncasecmp(addr, "MAILTO:", 7) == 0 &&
+			    strcasecmp(addr + 7, responder) == 0)
+				return line.get_first_paramval("PARTSTAT");
+		}
 	}
 	return nullptr;
 }
@@ -3330,7 +3349,7 @@ ec_error_t oxcical_converter::ical_to_mapi_multi(const ical &pical,
 				return ecInvalidParam;
 			}
 			mclass = partstat_to_resp_class(
-			         oxcical_get_partstat(uid_list));
+			         oxcical_get_partstat(uid_list, responder));
 		} else if (strcasecmp(pvalue, "COUNTER") == 0) {
 			if (uid_list.size() == 0) {
 				errstr = "No event UIDs in ical object";
@@ -3340,7 +3359,7 @@ ec_error_t oxcical_converter::ical_to_mapi_multi(const ical &pical,
 				return ecInvalidParam;
 			}
 			mclass = partstat_to_resp_class(
-			         oxcical_get_partstat(uid_list));
+			         oxcical_get_partstat(uid_list, responder));
 			b_proposal = true;
 		} else if (strcasecmp(pvalue, "CANCEL") == 0) {
 			mclass = "IPM.Schedule.Meeting.Canceled";
