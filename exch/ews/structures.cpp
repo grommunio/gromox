@@ -1854,10 +1854,15 @@ bool sShape::namedProperties(const PROPID_ARRAY& ids)
 			continue;
 		if (nameMeta[index] & FL_RM) {
 			dTags.emplace_back(tag);
-		} else {
-			props.emplace(tag, PropInfo(nameMeta[index], &names[index]));
-			tags.emplace_back(tag);
+			continue;
 		}
+		/* A name can be asked for as field and as extended property */
+		auto [it, added] = props.emplace(tag,
+		                   PropInfo(nameMeta[index], &names[index]));
+		if (added)
+			tags.emplace_back(tag);
+		else
+			it->second.flags |= nameMeta[index];
 	}
 	if (namedCache.size() == namedTags.size()) {
 		for (size_t index = 0; index < namedTags.size(); ++index)
