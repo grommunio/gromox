@@ -93,15 +93,39 @@ static AWUR ec_error_t omv_get_smtp_address(const TPROPVAL_ARRAY &props,
 }
 
 /**
+ * Encapsulate a non-SMTP address the way Exchange does (IMCEA), e.g.
+ * IMCEAEX-_O=ORG_OU=SITE_CN=RECIPIENTS_CN=USER@domain. The slash becomes an
+ * underscore, characters outside [A-Za-z0-9=.-] become "+XX".
+ */
+static std::string imcea_encode(const char *type, const char *addr,
+    const char *domain)
+{
+	std::string out = "IMCEA"s + type + "-";
+	for (auto p = addr; *p != '\0'; ++p) {
+		auto c = static_cast<unsigned char>(*p);
+		if (c == '/')
+			out += '_';
+		else if (HX_isalnum(c) || c == '=' || c == '.' || c == '-')
+			out += c;
+		else
+			out += fmt::format("+{:02X}", c);
+	}
+	out += '@';
+	out += domain != nullptr && *domain != '\0' ? domain : "invalid";
+	return out;
+}
+
+/**
  * Produce a vmime address object from a MAPI object.
  *
  * @mct:      Input MAPI object
  * @ptags:    Tag set that indicates which props to read
  *            (sender/from/recipient).
  * @mb:       Output placeholder.
+ * @imcea:    Domain for an address that does not resolve
  */
 static AWUR ec_error_t omv_export_address(const message_content &mct,
-    const addr_tags &tags, vmime::mailbox &mb)
+    const addr_tags &tags, vmime::mailbox &mb, const char *imcea)
 {
 	auto val = mct.proplist.get<char>(tags.pr_name);
 	if (val != nullptr && *val != '\0')
@@ -109,8 +133,22 @@ static AWUR ec_error_t omv_export_address(const message_content &mct,
 	std::string addr;
 	auto err = omv_get_smtp_address(mct.proplist, &tags, g_oxcmail_org_name,
 	           oxcmail_get_username, addr);
-	if (err == ecSuccess)
+	if (err == ecSuccess) {
 		mb.setEmail(addr);
+		return err;
+	}
+	/*
+	 * Like Exchange, give an originator that is unknown here, e.g. the EX
+	 * address of a mailbox imported from another organization, an IMCEA
+	 * address rather than failing the whole export.
+	 */
+	auto type = mct.proplist.get<const char>(tags.pr_addrtype);
+	auto emaddr = mct.proplist.get<const char>(tags.pr_emaddr);
+	if (err == ecUnknownUser && type != nullptr && *type != '\0' &&
+	    emaddr != nullptr && *emaddr != '\0') {
+		mb.setEmail(imcea_encode(type, emaddr, imcea));
+		return ecSuccess;
+	}
 	return err;
 	/*
 	 * RFC 5322 §3.4's ABNF mandates an address at all times. If we only
@@ -152,7 +190,7 @@ static AWUR ec_error_t omv_export_addresses(const tarray_set &rcpt_list,
  * @vhead: Output vmime object
  */
 static AWUR ec_error_t omv_export_sender(const message_content &mct,
-    vmime::header &vhead)
+    vmime::header &vhead, const char *imcea)
 {
 	auto str  = mct.proplist.get<const char>(PR_SENDER_SMTP_ADDRESS);
 	auto str1 = mct.proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
@@ -160,7 +198,7 @@ static AWUR ec_error_t omv_export_sender(const message_content &mct,
 		if (strcasecmp(str, str1) == 0)
 			return ecSuccess; /* field not needed */
 		auto mb = vmime::make_shared<vmime::mailbox>("");
-		auto err = omv_export_address(mct, tags_sender, *mb);
+		auto err = omv_export_address(mct, tags_sender, *mb, imcea);
 		if (err == ecSuccess)
 			vhead.Sender()->setValue(std::move(mb));
 		return err;
@@ -180,7 +218,7 @@ static AWUR ec_error_t omv_export_sender(const message_content &mct,
 	if (str == nullptr || str1 == nullptr || strcasecmp(str, str1) == 0)
 		return ecSuccess;
 	auto mb  = vmime::make_shared<vmime::mailbox>("");
-	auto err = omv_export_address(mct, tags_sender, *mb);
+	auto err = omv_export_address(mct, tags_sender, *mb, imcea);
 	if (err == ecSuccess)
 		vhead.Sender()->setValue(std::move(mb));
 	return err;
@@ -192,23 +230,23 @@ static AWUR ec_error_t omv_export_sender(const message_content &mct,
  * @vhead: Output vmime object
  */
 static AWUR ec_error_t omv_export_fromsender(const message_content &mct,
-    vmime::header &vhead, bool sched)
+    vmime::header &vhead, bool sched, const char *imcea)
 {
 	auto mb = vmime::make_shared<vmime::mailbox>("");
 	if (sched) {
-		auto err = omv_export_address(mct, tags_sent_repr, *mb);
+		auto err = omv_export_address(mct, tags_sent_repr, *mb, imcea);
 		if (err == ecServerOOM || err == ecMAPIOOM)
 			return err;
 		if (err != ecSuccess) {
 			mb = vmime::make_shared<vmime::mailbox>("");
-			err = omv_export_address(mct, tags_sender, *mb);
+			err = omv_export_address(mct, tags_sender, *mb, imcea);
 		}
 		if (err == ecSuccess)
 			vhead.From()->setValue(std::move(mb));
 		return err;
 	}
 	/* XXX: trace nullo/dstnull */
-	auto err = omv_export_address(mct, tags_sent_repr, *mb);
+	auto err = omv_export_address(mct, tags_sent_repr, *mb, imcea);
 	if (err == ecSuccess) {
 		vhead.From()->setValue(std::move(mb));
 		return ecSuccess;
@@ -216,7 +254,7 @@ static AWUR ec_error_t omv_export_fromsender(const message_content &mct,
 	} else {
 		return err;
 	}
-	err = omv_export_address(mct, tags_sender, *mb);
+	err = omv_export_address(mct, tags_sender, *mb, imcea);
 	if (err == ecSuccess)
 		vhead.Sender()->setValue(std::move(mb));
 	return err;
@@ -295,34 +333,34 @@ static AWUR ec_error_t omv_convert_reply_to(const message_content &mct,
 }
 
 static AWUR ec_error_t omv_export_rrt(const message_content &mct,
-    vmime::header &vhead, bool sched)
+    vmime::header &vhead, bool sched, const char *imcea)
 {
 	auto flag = mct.proplist.get<uint8_t>(PR_ORIGINATOR_DELIVERY_REPORT_REQUESTED);
 	if (flag == nullptr || *flag == 0)
 		return ecSuccess;
 	auto mb = vmime::make_shared<vmime::mailbox>("");
-	auto err = omv_export_address(mct, tags_read_rcpt, *mb);
+	auto err = omv_export_address(mct, tags_read_rcpt, *mb, imcea);
 	if (err == ecNullObject)
-		err = omv_export_address(mct, tags_sender, *mb);
+		err = omv_export_address(mct, tags_sender, *mb, imcea);
 	if (err == ecNullObject && sched)
-		err = omv_export_address(mct, tags_sent_repr, *mb);
+		err = omv_export_address(mct, tags_sent_repr, *mb, imcea);
 	if (err == ecSuccess)
 		vhead.getField("Return-Receipt-To")->setValue(std::move(mb));
 	return err;
 }
 
 static AWUR ec_error_t omv_export_mdnflag(const message_content &mct,
-    vmime::header &vhead, bool sched)
+    vmime::header &vhead, bool sched, const char *imcea)
 {
 	auto flag = mct.proplist.get<uint8_t>(PR_READ_RECEIPT_REQUESTED);
 	if (flag == nullptr || *flag == 0)
 		return ecSuccess;
 	auto mb = vmime::make_shared<vmime::mailbox>("");
-	auto err = omv_export_address(mct, tags_read_rcpt, *mb);
+	auto err = omv_export_address(mct, tags_read_rcpt, *mb, imcea);
 	if (err == ecNullObject)
-		err = omv_export_address(mct, tags_sender, *mb);
+		err = omv_export_address(mct, tags_sender, *mb, imcea);
 	if (err == ecNullObject && !sched)
-		err = omv_export_address(mct, tags_sent_repr, *mb);
+		err = omv_export_address(mct, tags_sent_repr, *mb, imcea);
 	if (err == ecSuccess) {
 		auto mblist = vmime::make_shared<vmime::mailboxList>();
 		mblist->appendMailbox(std::move(mb));
@@ -513,20 +551,21 @@ static std::string tnef_correl_to_vtext(std::string_view sv)
 
 static AWUR ec_error_t omv_export_mail_head(const message_content &mct,
     const mime_skeleton &skel, EXT_BUFFER_ALLOC alloc,
-    GET_PROPIDS get_propids, GET_PROPNAME get_propname, vmime::header &vhead)
+    GET_PROPIDS get_propids, GET_PROPNAME get_propname, vmime::header &vhead,
+    const char *imcea)
 {
 	auto sched = skel.mail_type == oxcmail_type::calendar;
 	vhead.getField("MIME-Version")->setValue("1.0");
-	auto err = omv_export_sender(mct, vhead);
+	auto err = omv_export_sender(mct, vhead, imcea);
 	if (err != ecSuccess && err != ecNullObject)
 		return err;
-	err = omv_export_fromsender(mct, vhead, sched);
+	err = omv_export_fromsender(mct, vhead, sched, imcea);
 	if (err != ecSuccess && err != ecNullObject)
 		return err;
-	err = omv_export_rrt(mct, vhead, sched);
+	err = omv_export_rrt(mct, vhead, sched, imcea);
 	if (err != ecSuccess && err != ecNullObject)
 		return err;
-	err = omv_export_mdnflag(mct, vhead, sched);
+	err = omv_export_mdnflag(mct, vhead, sched, imcea);
 	if (err != ecSuccess && err != ecNullObject)
 		return err;
 	err = omv_export_tocc(mct, skel, vhead);
@@ -1158,7 +1197,7 @@ ec_error_t oxcmail_converter::do_export(const message_content &mct,
 	}
 
 	auto err = omv_export_mail_head(mct, skel, alloc, get_propids,
-	           get_propname, *vhead);
+	           get_propname, *vhead, imcea_domain);
 	if (err != ecSuccess)
 		return err;
 
