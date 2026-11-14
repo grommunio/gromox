@@ -469,27 +469,39 @@ $PLINKARGS = @(
 		"$LinuxUser@$GrommunioServer"
 )
 
+# Quote an argument for the shell on the Linux side.
+#
+function Quote-ShArg
+{
+	Param(
+		[parameter(Mandatory=$True)]
+		$Arg
+	)
+	return "'" + "$Arg".Replace("'", "'\''") + "'"
+}
+
 # Mount the Windows shared folder via CIFS
 #
 function Linux-Mount
 {
 	if ($AutoMount) {
+		$LinuxFolder = Quote-ShArg $LinuxSharedFolder
 		Write-MLog "mkdir -p $LinuxSharedFolder" green
 		if ($PowerShellOld) {
-			.\plink.exe @PLINKARGS "mkdir -p $LinuxSharedFolder"
+			.\plink.exe @PLINKARGS "mkdir -p $LinuxFolder"
 		} else {
-			.\plink.exe @PLINKARGS "mkdir -p $LinuxSharedFolder" 2>&1 | Foreach-Object ToString | Tee-Object -Variable TeeVar
+			.\plink.exe @PLINKARGS "mkdir -p $LinuxFolder" 2>&1 | Foreach-Object ToString | Tee-Object -Variable TeeVar
 			# Save plink output to $LogFile
 			Write-MLog "---" none
 			Add-Content -Path $LogFile -Value $TeeVar
 			Write-MLog "---" none
 		}
-		$WinFolder = $WinSharedFolder.replace('\','/')
+		$WinFolder = Quote-ShArg $WinSharedFolder.replace('\','/')
 		Write-MLog "mount.cifs $LinuxSharedFolder" green
 		if ($PowerShellOld) {
-			.\plink.exe @PLINKARGS "mount.cifs -v '$WinFolder' '$LinuxSharedFolder' -o user='$WindowsUser',password='$WindowsPassword',ro"
+			.\plink.exe @PLINKARGS "mount.cifs -v $WinFolder $LinuxFolder -o user='$WindowsUser',password='$WindowsPassword',ro"
 		} else {
-			.\plink.exe @PLINKARGS "mount.cifs -v '$WinFolder' '$LinuxSharedFolder' -o user='$WindowsUser',password='$WindowsPassword',ro" 2>&1 | Foreach-Object ToString | Tee-Object -Variable TeeVar
+			.\plink.exe @PLINKARGS "mount.cifs -v $WinFolder $LinuxFolder -o user='$WindowsUser',password='$WindowsPassword',ro" 2>&1 | Foreach-Object ToString | Tee-Object -Variable TeeVar
 			# Save plink output to $LogFile
 			Write-MLog "---" none
 			Add-Content -Path $LogFile -Value $TeeVar
@@ -505,10 +517,11 @@ function Linux-Umount
 {
 	if ($AutoMount) {
 		Write-MLog "umount $LinuxSharedFolder" green
+		$LinuxFolder = Quote-ShArg $LinuxSharedFolder
 		if ($PowerShellOld) {
-			.\plink.exe @PLINKARGS "umount $LinuxSharedFolder"
+			.\plink.exe @PLINKARGS "umount $LinuxFolder"
 		} else {
-			.\plink.exe @PLINKARGS "umount $LinuxSharedFolder" 2>&1 | Foreach-Object ToString | Tee-Object -Variable TeeVar
+			.\plink.exe @PLINKARGS "umount $LinuxFolder" 2>&1 | Foreach-Object ToString | Tee-Object -Variable TeeVar
 			# Save plink output to $LogFile
 			Write-MLog "---" none
 			Add-Content -Path $LogFile -Value $TeeVar
@@ -528,11 +541,12 @@ function Test-Share
 	echo $TestFile > $WinSharedFolder\$TestFile
 	#
 	# Test for the existence of the file '$TestFile' on the Linux side.
+	$LinuxFile = Quote-ShArg "$LinuxSharedFolder/$TestFile"
 	if ($PowerShellOld) {
-		.\plink.exe @PLINKARGS "test -f $LinuxSharedFolder/$TestFile"
+		.\plink.exe @PLINKARGS "test -f $LinuxFile"
 		$CMDExitCode = $lastexitcode
 	} else {
-		.\plink.exe @PLINKARGS "test -f $LinuxSharedFolder/$TestFile"  2>&1 | Foreach-Object ToString | Tee-Object -Variable TeeVar
+		.\plink.exe @PLINKARGS "test -f $LinuxFile"  2>&1 | Foreach-Object ToString | Tee-Object -Variable TeeVar
 		$CMDExitCode = $lastexitcode
 		# Save plink output to $LogFile
 		Write-MLog "---" none
@@ -912,11 +926,12 @@ function Step-Create
 
 	if ($CreateGrommunioMailbox) {
 		Write-MLog "Create grommunio mailbox: $MigMBox." green
+		$CreateCmd = "grommunio-admin ldap downsync -l $(Quote-ShArg $MailboxLanguage) $(Quote-ShArg $MigMBox) $Organization"
 		if ($PowerShellOld) {
-			.\plink.exe @PLINKARGS "grommunio-admin ldap downsync -l $MailboxLanguage $MigMBox $Organization" | Out-Host
+			.\plink.exe @PLINKARGS $CreateCmd | Out-Host
 			$CMDExitCode = $lastexitcode
 		} else {
-			.\plink.exe @PLINKARGS "grommunio-admin ldap downsync -l $MailboxLanguage $MigMBox $Organization" 2>&1 | Foreach-Object ToString | Tee-Object -Variable TeeVar | Out-Host
+			.\plink.exe @PLINKARGS $CreateCmd 2>&1 | Foreach-Object ToString | Tee-Object -Variable TeeVar | Out-Host
 			$CMDExitCode = $lastexitcode
 			# Save plink output to $LogFile
 			Write-MLog "---" none
@@ -964,8 +979,8 @@ function Start-Import
 	Write-UserLog ""
 	# The CIFS client may see the lock a little longer than Windows.
 	# Give it up to 60 seconds before the import is started.
-	$LinuxPST = "'$LinuxSharedFolder/$MigMBox.pst'"
-	$ImportCmd = "n=0; until head -c 1 $LinuxPST >/dev/null 2>&1; do [ -e $LinuxPST ] || break; n=`$((n+1)); [ `$n -ge 30 ] && break; sleep 2; done; gromox-e2ghelper -u '$MigMBox' -- -s $LinuxPST 2>&1"
+	$LinuxPST = Quote-ShArg "$LinuxSharedFolder/$MigMBox.pst"
+	$ImportCmd = "n=0; until head -c 1 $LinuxPST >/dev/null 2>&1; do [ -e $LinuxPST ] || break; n=`$((n+1)); [ `$n -ge 30 ] && break; sleep 2; done; gromox-e2ghelper -u $(Quote-ShArg $MigMBox) -- -s $LinuxPST 2>&1"
 	$ArgList = @($PLINKARGS | Where-Object { "$_" -ne "" }) + $ImportCmd
 	$ArgLine = ($ArgList | ForEach-Object { Quote-WinArg "$_" }) -join " "
 	$Job.Try++
