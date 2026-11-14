@@ -3565,7 +3565,8 @@ static int me_psflg(std::span<char *> argv, int sockd) try
 		    &ta, &problems))
 			return MIDB_E_MDB_SETMSGPROPS;
 	}
-	if (set_seen && !exmdb_client->set_message_read_state(argv[1], nullptr,
+	if (set_seen && !(message_flags & MSGFLAG_READ) &&
+	    !exmdb_client->set_message_read_state(argv[1], nullptr,
 	    eid_t(1, message_id), 1, &read_cn))
 		return MIDB_E_MDB_SETMSGRD;
 	if (set_deleted && !(msg_status & MSGSTATUS_DELMARKED)) {
@@ -3723,7 +3724,8 @@ static int me_prflg(std::span<char *> argv, int sockd) try
 		    &ta, &problems))
 			return MIDB_E_MDB_SETMSGPROPS;
 	}
-	if (set_seen && !exmdb_client->set_message_read_state(argv[1], nullptr,
+	if (set_seen && (message_flags & MSGFLAG_READ) &&
+	    !exmdb_client->set_message_read_state(argv[1], nullptr,
 	    eid_t(1, message_id), 0, &read_cn))
 		return MIDB_E_MDB_SETMSGRD;
 	if (set_deleted && msg_status & MSGSTATUS_DELMARKED) {
