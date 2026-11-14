@@ -1581,6 +1581,49 @@ static int ical_response_class()
 	return EXIT_SUCCESS;
 }
 
+/* Validated on Exchange: a stored proposal exports as COUNTER */
+static int ical_counter_export()
+{
+	using namespace std::string_literals;
+	fprintf(stderr, "=== ical_counter_export\n");
+	oxcical_converter cvt;
+	cvt.log_id = "-";
+	cvt.org_name = "x500org";
+	cvt.alloc = g_alloc;
+	cvt.get_propids = ee_get_propids;
+	cvt.username_to_entryid = [](const char *, const char *, BINARY *bin,
+	                          enum display_type *) -> BOOL {
+		bin->cb = 0;
+		return TRUE;
+	};
+	for (auto ps : {"ACCEPTED", "DECLINED", "TENTATIVE"}) {
+		auto data = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\n"
+			"PRODID:-//test//EN\r\nMETHOD:COUNTER\r\n"
+			"BEGIN:VEVENT\r\nUID:ce\r\nDTSTAMP:20261005T100000Z\r\n"
+			"DTSTART:20261030T130000Z\r\nDTEND:20261030T140000Z\r\n"
+			"X-MS-OLK-ORIGINALSTART:20261030T090000Z\r\n"
+			"X-MS-OLK-ORIGINALEND:20261030T100000Z\r\n"
+			"ORGANIZER:mailto:org@example.com\r\n"
+			"ATTENDEE;PARTSTAT="s + ps +
+			":mailto:a1@example.com\r\n"
+			"END:VEVENT\r\nEND:VCALENDAR\r\n";
+		ical ic;
+		assert(ic.load_from_str_move(data.data()));
+		auto msg = cvt.ical_to_mapi_single(ic);
+		assert(msg != nullptr);
+		ical out;
+		assert(cvt.mapi_to_ical(*msg, out));
+		std::string str;
+		assert(out.serialize(str) == ecSuccess);
+		if (str.find("METHOD:COUNTER\r\n") == str.npos ||
+		    str.find("DTSTART:20261030T130000Z\r\n") == str.npos) {
+			fprintf(stderr, "%s: %s\n", ps, str.c_str());
+			return EXIT_FAILURE;
+		}
+	}
+	return EXIT_SUCCESS;
+}
+
 /*
  * Validated on Exchange with a bare iCal REPLY: the ATTENDEE is the
  * representing identity, SENT-BY the sender, else the attendee.
@@ -3442,6 +3485,7 @@ int main()
 		E(ical_export_1), E(ical_export_2), E(ical_reply_identity),
 		E(ical_reply_mail_identity), E(ical_reply_ical_identity),
 		E(ical_response_class), E(ical_reply_partstat_from),
+		E(ical_counter_export),
 		E(ical_export_exception), E(ical_export_allday_exception),
 		E(ical_allday_hint), E(ical_allday_date_zone),
 		E(ical_standalone_occurrence),

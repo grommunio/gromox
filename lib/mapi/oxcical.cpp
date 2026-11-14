@@ -4309,14 +4309,8 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 			method = "REPLY";
 			partstat = "ACCEPTED";
 		} else if (class_match_prefix(str, "IPM.Schedule.Meeting.Resp.Tent") == 0) {
+			method = "REPLY";
 			partstat = "TENTATIVE";
-			auto flag = pmsg->proplist.get<const uint8_t>(PROP_TAG(PT_BOOLEAN, propids[l_counterproposal]));
-			if (flag != nullptr && *flag != 0) {
-				b_proposal = true;
-				method = "COUNTER";
-			} else {
-				method = "REPLY";
-			}
 		} else if (class_match_prefix(str, "IPM.Schedule.Meeting.Resp.Neg") == 0) {
 			method = "REPLY";
 			partstat = "DECLINED";
@@ -4332,6 +4326,13 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 			icaltype = "VJOURNAL";
 		} else {
 			return fmt::format("W-2060: oxcical_export does not handle message class \"{}\"", str);
+		}
+		/* Validated on Exchange: every proposal is a COUNTER */
+		auto flag = pmsg->proplist.get<const uint8_t>(
+		            PROP_TAG(PT_BOOLEAN, propids[l_counterproposal]));
+		if (is_meeting_response(str) && flag != nullptr && *flag != 0) {
+			b_proposal = true;
+			method = "COUNTER";
 		}
 	}
 	auto lnum = pmsg->proplist.get<const uint64_t>(PROP_TAG(PT_SYSTIME,
