@@ -355,6 +355,12 @@ $Exchange_Newer_2016_CU6 = $true
 #$ImportRetries = 3
 #$ReusePST = $false
 #>
+# This construct works only in main. PS v2.0 does not provide $PSScriptRoot.
+#
+if (!$PSScriptRoot) {
+	$PSScriptRoot = Split-Path $MyInvocation.MyCommand.Path -Parent
+}
+
 # Use configuration file named "exchange2grommunio.config.ps1" to override the
 # configuration values above instead of changing the values in this script.
 if (Test-Path $PSScriptRoot/exchange2grommunio.config.ps1) {
@@ -478,6 +484,17 @@ function Quote-ShArg
 		$Arg
 	)
 	return "'" + "$Arg".Replace("'", "'\''") + "'"
+}
+
+# Turn an export report into text. PS v2.0 has no ConvertTo-Json.
+#
+function Format-Report
+{
+	if ($PowerShellOld) {
+		$input | Format-List * | Out-String
+	} else {
+		$input | ConvertTo-Json
+	}
 }
 
 # Mount the Windows shared folder via CIFS
@@ -842,7 +859,7 @@ function Step-Export
 	} elseif (@("AutoSuspended","Failed","Suspended","Missing") -contains $expStatus) {
 		Write-MLog "Error: Export Result of ${MigMBox}: $expStatus" red
 		if ($expRequest) {
-			$expRequest | Get-MailboxExportRequestStatistics -IncludeReport -Diagnostic | ConvertTo-Json | Add-Content -Path ($ExpLogFile + ".diagnostic")
+			$expRequest | Get-MailboxExportRequestStatistics -IncludeReport -Diagnostic | Format-Report | Add-Content -Path ($ExpLogFile + ".diagnostic")
 		}
 	} else {
 		return
@@ -852,7 +869,7 @@ function Step-Export
 
 	# Export
 	if ($expRequest) {
-		$expRequest | Get-MailboxExportRequestStatistics -IncludeReport | ConvertTo-Json | Add-Content -Path $ExpLogFile
+		$expRequest | Get-MailboxExportRequestStatistics -IncludeReport | Format-Report | Add-Content -Path $ExpLogFile
 		$expRequest | Remove-MailboxExportRequest -Confirm:$false
 	}
 	$Duration = [math]::ceiling($(NEW-TIMESPAN -Start $Job.ExportStart -End (GET-DATE)).TotalSeconds)
@@ -1104,12 +1121,6 @@ function Stop-Mailbox
 #
 $PowerShellOld = ($PSVersionTable.PSVersion.Major -eq 2)
 
-# This construct works only in main. PS v2.0 does not provide $PSScriptRoot.
-#
-if (!$PSScriptRoot) {
-	$PSScriptRoot = Split-Path $MyInvocation.MyCommand.Path -Parent
-}
-
 # Test if $WinSharedFolder is a valid path
 #
 if (!( $(Try { Test-Path $WinSharedFolder.trim() } Catch { $false }) )) {  #Returns $false if $null, "" or " "
@@ -1314,8 +1325,8 @@ while ($true) {
 		while (@($Jobs | Where-Object { $_.Slot -eq $Slot }).Count -gt 0) {
 			$Slot++
 		}
-		$ImpLogFile = Join-Path -Path $LogPath -ChildPath ($MigMbox + "." + (Get-Date -Format FileDate) + ".import.log")
-		$ExpLogFile = Join-Path -Path $LogPath -ChildPath ($MigMbox + "." + (Get-Date -Format FileDate) + ".export.json")
+		$ImpLogFile = Join-Path -Path $LogPath -ChildPath ($MigMbox + "." + (Get-Date -Format yyyyMMdd) + ".import.log")
+		$ExpLogFile = Join-Path -Path $LogPath -ChildPath ($MigMbox + "." + (Get-Date -Format yyyyMMdd) + ".export.json")
 		Write-Debug "`nMigMBox: $MigMBox`nImpLogFile: $ImpLogFile`nExpLogFile: $ExpLogFile"
 		$Job = @{
 			Mbox = $MigMBox
