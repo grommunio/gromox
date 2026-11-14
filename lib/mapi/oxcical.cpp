@@ -4114,7 +4114,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 	if (method == nullptr) {
 		b_exceptional = false;
 		if (class_match_prefix(str, "IPM.Appointment") == 0) {
-			method = "PUBLISH";
+			method = "";
 		} else if (class_match_prefix(str, "IPM.Schedule.Meeting.Request") == 0) {
 			method = "REQUEST";
 			partstat = "NEEDS-ACTION";
@@ -4262,7 +4262,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 	auto stateflags = pmsg->proplist.get<const uint32_t>(PROP_TAG(PT_LONG, propids[l_stateflags]));
 	bool meeting = stateflags != nullptr && (*stateflags & asfMeeting);
 	if (strcmp(method, "REQUEST") == 0 || strcmp(method, "CANCEL") == 0 ||
-	    (strcmp(method, "PUBLISH") == 0 && meeting))
+	    (*method == '\0' && meeting))
 		oxcical_export_organizer(*pmsg, *pcomponent, org_name, id2user);
 	else if (strcmp(method, "REPLY") == 0 || strcmp(method, "COUNTER") == 0)
 		oxcical_export_organizer_rcpt(*pmsg, *pcomponent, org_name, id2user);
