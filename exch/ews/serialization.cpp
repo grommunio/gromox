@@ -2337,6 +2337,15 @@ void mGetAppMarketplaceUrlResponse::serialize(tinyxml2::XMLElement *xml) const
 	XMLDUMPM(AppMarketplaceUrl);
 }
 
+void mGetUnifiedGroupsSettingsResponse::serialize(tinyxml2::XMLElement *xml) const
+{
+	mResponseMessageType::serialize(xml);
+	XMLDUMPM(GroupsEnabled);
+	XMLDUMPM(GroupCreationEnabled);
+	XMLDUMPM(IsUnifiedGroupsAddressListPresent);
+	XMLDUMPM(HiddenMembershipGroupsCreationEnabled);
+}
+
 mCreateAttachmentRequest::mCreateAttachmentRequest(const XMLElement *xml) :
 	XMLINIT(ParentItemId)
 {

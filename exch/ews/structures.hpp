@@ -4215,6 +4215,27 @@ struct mGetAppMarketplaceUrlResponse : public mResponseMessageType {
 };
 
 /**
+ * GetUnifiedGroupsSettingsType, not in the published Messages.xsd
+ */
+struct mGetUnifiedGroupsSettingsRequest {
+	explicit inline mGetUnifiedGroupsSettingsRequest(const tinyxml2::XMLElement *) {}
+};
+
+/**
+ * GetUnifiedGroupsSettingsResponseMessage, as Exchange SE sends it
+ */
+struct mGetUnifiedGroupsSettingsResponse : public mResponseMessageType {
+	using mResponseMessageType::mResponseMessageType;
+
+	void serialize(tinyxml2::XMLElement *) const;
+
+	/* Gromox has no Microsoft 365 groups */
+	bool GroupsEnabled = false, GroupCreationEnabled = false;
+	bool IsUnifiedGroupsAddressListPresent = false;
+	bool HiddenMembershipGroupsCreationEnabled = false;
+};
+
+/**
  * Messages.xsd:2204
  */
 struct mGetUserAvailabilityResponse {
