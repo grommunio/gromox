@@ -3788,6 +3788,28 @@ tEmailAddressType::tEmailAddressType(const TPROPVAL_ARRAY& tps)
 		EmailAddress = data;
 		RoutingType = "SMTP";
 	}
+	if (blank(EmailAddress) &&
+	    (data = tps.get<const char>(PR_SMTP_ADDRESS)) != nullptr &&
+	    *data != '\0') {
+		EmailAddress = data;
+		RoutingType = "SMTP";
+	}
+	unresolved();
+}
+
+/**
+ * @brief      Present a recipient without address like Exchange
+ *
+ * exmdb fills in PR_ADDRTYPE "NONE" and an empty PR_EMAIL_ADDRESS.
+ */
+void tEmailAddressType::unresolved()
+{
+	if (addressable() || !RoutingType ||
+	    strcasecmp(RoutingType->c_str(), "NONE") != 0)
+		return;
+	EmailAddress.reset();
+	RoutingType.reset();
+	MailboxType.emplace("OneOff");
 }
 
 /**
@@ -3800,8 +3822,17 @@ void tEmailAddressType::mkRecipient(TPROPVAL_ARRAY* rcpt, uint32_t type) const
 {
 	if (rcpt == nullptr)
 		throw EWSError::NotEnoughMemory(E3289);
-	if (!EmailAddress)
-		throw EWSError::InvalidRecipients(E3290);
+	if (!addressable()) {
+		/* An unresolved recipient keeps only its name */
+		if (empty())
+			throw EWSError::InvalidRecipients(E3290);
+		auto name = Name->c_str();
+		if (rcpt->set(PR_DISPLAY_NAME, name) == ecServerOOM ||
+		    rcpt->set(PR_TRANSMITABLE_DISPLAY_NAME, name) == ecServerOOM ||
+		    rcpt->set(PR_RECIPIENT_TYPE, &type) == ecServerOOM)
+			throw EWSError::NotEnoughMemory(E3291);
+		return;
+	}
 	auto displayname = Name ? Name->c_str() : EmailAddress->c_str();
 	if (rcpt->set(PR_DISPLAY_NAME, displayname) == ecServerOOM ||
 	    rcpt->set(PR_TRANSMITABLE_DISPLAY_NAME, displayname) == ecServerOOM ||
@@ -3826,6 +3857,13 @@ tAttendee::tAttendee(const TPROPVAL_ARRAY& tps)
 		Mailbox.EmailAddress = data;
 		Mailbox.RoutingType = "SMTP";
 	}
+	if (tEmailAddressType::blank(Mailbox.EmailAddress) &&
+	    (data = tps.get<const char>(PR_SMTP_ADDRESS)) != nullptr &&
+	    *data != '\0') {
+		Mailbox.EmailAddress = data;
+		Mailbox.RoutingType = "SMTP";
+	}
+	Mailbox.unresolved();
 	auto trackStatus = tps.get<const uint32_t>(PR_RECIPIENT_TRACKSTATUS);
 	if (trackStatus)
 		ResponseType.emplace(respstatus_to_resptype(*trackStatus));

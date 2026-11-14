@@ -688,6 +688,7 @@ E(3614, "invalid merged free/busy interval");
 E(3615, "free/busy window longer than 62 days");
 E(3616, "failed to update the attendees of an exception");
 E(3617, "out of memory updating the attendees of an exception");
+inline std::string E3618(std::string_view name) {return fmt::format("E-3618: recipient \"{}\" is not resolved", name);}
 
 #undef E
 }

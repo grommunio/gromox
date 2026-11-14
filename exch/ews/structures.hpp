@@ -806,6 +806,14 @@ struct tEmailAddressType : public NS_EWS_Types {
 	explicit tEmailAddressType(const tinyxml2::XMLElement *);
 	explicit tEmailAddressType(const TPROPVAL_ARRAY&);
 
+	/* A usable address, or neither address nor name */
+	bool addressable() const { return !blank(EmailAddress); }
+	bool empty() const { return blank(EmailAddress) && blank(Name); }
+	void unresolved();
+	static bool blank(const std::optional<std::string> &s)
+	{
+		return !s || s->find_first_not_of(" \t") == s->npos;
+	}
 	void mkRecipient(TPROPVAL_ARRAY*, uint32_t) const;
 
 	void serialize(tinyxml2::XMLElement *) const;
@@ -1668,11 +1676,7 @@ struct tAttendee : public NS_EWS_Types {
 	std::optional<time_point> LastResponseTime{}, ProposedStart{}, ProposedEnd{};
 
 	void serialize(tinyxml2::XMLElement *) const;
-	bool addressable() const
-	{
-		auto &a = Mailbox.EmailAddress;
-		return a && a->find_first_not_of(" \t") != a->npos;
-	}
+	bool addressable() const { return Mailbox.addressable(); }
 
 	tAttendee() = default;
 	explicit tAttendee(const TPROPVAL_ARRAY&);
