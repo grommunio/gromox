@@ -343,6 +343,19 @@ http_status http_write_request(http_context *phttp)
  CHUNK_BEGIN:
 	if (rq.chunk_size == rq.chunk_offset) {
 		size = phttp->stream_in.peek_buffer(tmp_buff, 1024);
+		if (rq.chunk_size != 0) {
+			/* The chunk data is followed by CRLF */
+			if (size < 2)
+				return http_status::ok;
+			if (strncmp(tmp_buff, "\r\n", 2) != 0) {
+				phttp->log(LV_DEBUG, "failed to "
+					"parse chunked block for hpm_processor");
+				return http_status::bad_request;
+			}
+			phttp->stream_in.fwd_read_ptr(2);
+			rq.chunk_size = rq.chunk_offset = 0;
+			size = phttp->stream_in.peek_buffer(tmp_buff, 1024);
+		}
 		if (size < 5)
 			return http_status::ok;
 		if (0 == strncmp("0\r\n\r\n", tmp_buff, 5)) {

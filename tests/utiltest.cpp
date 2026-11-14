@@ -25,6 +25,7 @@
 #include <gromox/propval.hpp>
 #include <gromox/resource_pool.hpp>
 #include <gromox/rop_util.hpp>
+#include <gromox/stream.hpp>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 #include "../tools/staticnpmap.cpp"
@@ -1084,6 +1085,32 @@ static int t_array_growth()
 	return EXIT_SUCCESS;
 }
 
+static int t_stream_skip()
+{
+	/* Skip and peek past the first block, see http request bodies over 64 KiB */
+	STREAM st;
+	std::string data(4 * STREAM_BLOCK_SIZE + 100, '\0');
+	for (size_t i = 0; i < data.size(); ++i)
+		data[i] = 'a' + i % 23;
+	assert(st.write(data.data(), data.size()) == STREAM_WRITE_OK);
+	size_t pos = 0;
+	for (unsigned int skip : {68885U, 1U, STREAM_BLOCK_SIZE - 1U, STREAM_BLOCK_SIZE + 0U}) {
+		assert(st.fwd_read_ptr(skip) == skip);
+		pos += skip;
+		unsigned int len = 1;
+		auto p = static_cast<const char *>(st.get_read_buf(&len));
+		assert(p != nullptr && len == 1 && *p == data[pos]);
+		++pos;
+		char peek[8];
+		assert(st.peek_buffer(peek, sizeof(peek)) == sizeof(peek));
+		assert(memcmp(peek, &data[pos], sizeof(peek)) == 0);
+	}
+	assert(st.fwd_read_ptr(UINT_MAX) == data.size() - pos);
+	unsigned int len = 1;
+	assert(st.get_read_buf(&len) == nullptr);
+	return EXIT_SUCCESS;
+}
+
 static int runner()
 {
 	if (t_cookie_jar() != 0)
@@ -1102,7 +1129,7 @@ static int runner()
 		t_cmp_binary, t_cmp_guid, t_cmp_svreid, t_cmp_icaltime,
 		t_wildcard, t_utf8_prefix, t_eidcvt, t_bin2cstr, t_log_escape,
 		t_string, t_unfold, t_time, t_tzdef, t_floating_dt, t_essdn, t_fb_recur,
-		t_res_mvprop, t_srchkey_words, t_array_growth,
+		t_res_mvprop, t_srchkey_words, t_array_growth, t_stream_skip,
 	};
 	for (auto f : fct) {
 		auto ret = f();
