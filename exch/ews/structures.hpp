@@ -117,6 +117,7 @@ struct tTentativelyAcceptItem;
 struct tDeclineItem;
 struct tSuppressReadReceipt;
 struct tCancelCalendarItem;
+struct tRemoveItem;
 struct tReplyToItem;
 struct tReplyAllToItem;
 struct tForwardItem;
@@ -305,7 +306,7 @@ using sFolderChangeDescription = std::variant<tAppendToFolderField, tSetFolderFi
 using sItem = std::variant<tItem, tMessage, tMeetingMessage, tMeetingRequestMessage,
 	tMeetingResponseMessage, tMeetingCancellationMessage, tCalendarItem, tContact,
 	tTask, tAcceptItem, tTentativelyAcceptItem, tDeclineItem, tSuppressReadReceipt,
-	tCancelCalendarItem>;
+	tCancelCalendarItem, tRemoveItem>;
 
 /**
  * Superset of sItem used only for CreateItem's request body: adds the
@@ -317,7 +318,7 @@ using sItem = std::variant<tItem, tMessage, tMeetingMessage, tMeetingRequestMess
 using sCreateItem = std::variant<tItem, tMessage, tMeetingMessage, tMeetingRequestMessage,
 	tMeetingResponseMessage, tMeetingCancellationMessage, tCalendarItem, tContact,
 	tTask, tAcceptItem, tTentativelyAcceptItem, tDeclineItem, tSuppressReadReceipt,
-	tCancelCalendarItem, tReplyToItem, tReplyAllToItem, tForwardItem>;
+	tCancelCalendarItem, tRemoveItem, tReplyToItem, tReplyAllToItem, tForwardItem>;
 
 /**
  * c.f. Types.xsd:1502
@@ -2913,6 +2914,20 @@ struct tCancelCalendarItem : public tMessage {
 	using tMessage::tMessage;
 
 	tCancelCalendarItem(const tinyxml2::XMLElement *);
+	void serialize(tinyxml2::XMLElement *) const;
+
+	std::optional<tItemId> ReferenceItemId;
+};
+
+/**
+ * Types.xsd:3925
+ */
+struct tRemoveItem : public tMessage {
+	static constexpr char NAME[] = "RemoveItem";
+
+	using tMessage::tMessage;
+
+	tRemoveItem(const tinyxml2::XMLElement *);
 	void serialize(tinyxml2::XMLElement *) const;
 
 	std::optional<tItemId> ReferenceItemId;
