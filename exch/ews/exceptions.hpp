@@ -72,6 +72,7 @@ class EWSError : public DispatchError {
 	ERR(CannotFindUser) ///< Not officially documented, used to signal user or domain resolution error
 	ERR(CannotUseFolderIdForItemId) ///< Used folder id where item id was expected
 	ERR(CannotUseItemIdForFolderId) ///< Used item id where folder id was expected
+	ERR(ChangeKeyRequiredForWriteOperations) ///< Write without a change key
 	ERR(CorruptData) ///< Generic error for corrupt input data
 	ERR(CrossMailboxMoveCopy) ///< Attempted move or copy operation across different stores
 	ERR(DeleteDistinguishedFolder) ///< Attempt to delete distinguished folder (Wait. That's illegal.)
@@ -690,6 +691,7 @@ E(3615, "free/busy window longer than 62 days");
 E(3616, "failed to update the attendees of an exception");
 E(3617, "out of memory updating the attendees of an exception");
 inline std::string E3618(std::string_view name) {return fmt::format("E-3618: recipient \"{}\" is not resolved", name);}
+E(3619, "a change key is needed unless ConflictResolution is AlwaysOverwrite");
 E(3620, "the item changed since the change key was issued");
 
 #undef E

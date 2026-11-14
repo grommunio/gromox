@@ -13,6 +13,13 @@ The following directives are recognized when they appear in
 The following directives are recognized when they appear in
 /etc/gromox/ews.cfg.
 .TP
+\fBews_lenient_change_keys\fP
+Like Exchange, UpdateItem refuses to write without the current change key of
+the item unless ConflictResolution is AlwaysOverwrite. Setting this to "yes"
+accepts such writes, for clients that do not keep their change keys up to date.
+.br
+Default: \fIno\fP
+.TP
 \fBews_log_filter\fP
 Default: \fI!\fP
 .TP
