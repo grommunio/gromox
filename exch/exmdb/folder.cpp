@@ -1955,7 +1955,7 @@ static bool sf_criteria_unchanged(db_conn &db, uint64_t fid_val,
 		old_scope.push_back(pstmt.col_uint64(0));
 	if (old_scope.size() != pfolder_ids.size())
 		return false;
-	return std::all_of(pfolder_ids.cbegin(), pfolder_ids.cend(),
+	return std::all_of(pfolder_ids.begin(), pfolder_ids.end(),
 	       [&](eid_t f) { return ct_contains(old_scope, f.gcv()); });
 }
 
