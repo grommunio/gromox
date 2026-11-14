@@ -1433,6 +1433,82 @@ static int ical_reply_mail_identity()
 	return EXIT_SUCCESS;
 }
 
+static bool counter_proposal(const message_content &msg)
+{
+	static const PROPERTY_NAME namelist[] = {
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentCounterProposal},
+	};
+	PROPNAME_ARRAY na = {1, deconst(namelist)};
+	PROPID_ARRAY pids;
+	if (!ee_get_propids(&na, &pids))
+		return false;
+	auto v = msg.proplist.get<const uint8_t>(PROP_TAG(PT_BOOLEAN, pids[0]));
+	return v != nullptr && *v != 0;
+}
+
+/* Without mail headers, the first ATTENDEE answers */
+static int ical_response_class()
+{
+	using namespace std::string_literals;
+	/* @ps nullptr: no ATTENDEE, "": no PARTSTAT */
+	static constexpr struct {
+		const char *method, *ps, *cls;
+		bool decline_first;
+	} cases[] = {
+		{"REPLY", "ACCEPTED", "Pos"}, {"REPLY", "DECLINED", "Neg"},
+		{"REPLY", "TENTATIVE", "Tent"},
+		{"REPLY", "NEEDS-ACTION", "Tent"},
+		{"REPLY", "DELEGATED", "Tent"}, {"REPLY", "", "Tent"},
+		{"REPLY", nullptr, "Tent"}, {"REPLY", "ACCEPTED", "Neg", true},
+		{"COUNTER", "ACCEPTED", "Pos"}, {"COUNTER", "DECLINED", "Neg"},
+		{"COUNTER", "TENTATIVE", "Tent"},
+		{"COUNTER", "NEEDS-ACTION", "Tent"}, {"COUNTER", "", "Tent"},
+	};
+	fprintf(stderr, "=== ical_response_class\n");
+	oxcical_converter cvt;
+	cvt.log_id = "-";
+	cvt.alloc = g_alloc;
+	cvt.get_propids = ee_get_propids;
+	cvt.username_to_entryid = [](const char *, const char *, BINARY *bin,
+	                          enum display_type *) -> BOOL {
+		bin->cb = 0;
+		return TRUE;
+	};
+	for (const auto &c : cases) {
+		std::string att;
+		if (c.decline_first)
+			att = "ATTENDEE;PARTSTAT=DECLINED:"
+			      "mailto:a2@example.com\r\n";
+		if (c.ps != nullptr && *c.ps == '\0')
+			att += "ATTENDEE:mailto:a1@example.com\r\n";
+		else if (c.ps != nullptr)
+			att += "ATTENDEE;PARTSTAT="s + c.ps +
+			       ":mailto:a1@example.com\r\n";
+		auto data = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\n"
+			"PRODID:-//test//EN\r\nMETHOD:"s + c.method +
+			"\r\nBEGIN:VEVENT\r\nUID:rc\r\n"
+			"DTSTAMP:20261005T100000Z\r\n"
+			"DTSTART:20261030T090000Z\r\nDTEND:20261030T100000Z\r\n"
+			"ORGANIZER:mailto:org@example.com\r\n" + att +
+			"END:VEVENT\r\nEND:VCALENDAR\r\n";
+		ical ic;
+		assert(ic.load_from_str_move(data.data()));
+		auto msg = cvt.ical_to_mapi_single(ic);
+		assert(msg != nullptr);
+		auto cls = msg->proplist.get<const char>(PR_MESSAGE_CLASS);
+		auto want = "IPM.Schedule.Meeting.Resp."s + c.cls;
+		bool counter = strcmp(c.method, "COUNTER") == 0;
+		if (cls == nullptr || want != cls ||
+		    counter_proposal(*msg) != counter) {
+			fprintf(stderr, "%s %s: class %s, proposal %d\n",
+			        c.method, znul(c.ps), znul(cls),
+			        counter_proposal(*msg));
+			return EXIT_FAILURE;
+		}
+	}
+	return EXIT_SUCCESS;
+}
+
 /*
  * Validated on Exchange with a bare iCal REPLY: the ATTENDEE is the
  * representing identity, SENT-BY the sender, else the attendee.
@@ -3293,6 +3369,7 @@ int main()
 		E(select_parts_5), E(select_parts_6), E(select_parts_7),
 		E(ical_export_1), E(ical_export_2), E(ical_reply_identity),
 		E(ical_reply_mail_identity), E(ical_reply_ical_identity),
+		E(ical_response_class),
 		E(ical_export_exception), E(ical_export_allday_exception),
 		E(ical_allday_hint), E(ical_allday_date_zone),
 		E(ical_standalone_occurrence),

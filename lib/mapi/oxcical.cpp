@@ -3135,6 +3135,20 @@ static const char *oxcical_get_partstat(const uidxevent_list_t &uid_list)
 	return nullptr;
 }
 
+/**
+ * Validated on Exchange: ACCEPTED and DECLINED make a positive or negative
+ * response, any other PARTSTAT or none a tentative one, for REPLY and
+ * COUNTER alike.
+ */
+static const char *partstat_to_resp_class(const char *partstat)
+{
+	if (partstat != nullptr && strcasecmp(partstat, "ACCEPTED") == 0)
+		return "IPM.Schedule.Meeting.Resp.Pos";
+	if (partstat != nullptr && strcasecmp(partstat, "DECLINED") == 0)
+		return "IPM.Schedule.Meeting.Resp.Neg";
+	return "IPM.Schedule.Meeting.Resp.Tent";
+}
+
 static constexpr std::pair<enum calendar_scale, const char *> cal_scale_names[] = {
 	/* keep ordered by CAL value */
 	{CAL_GREGORIAN, "Gregorian"},
@@ -3229,7 +3243,7 @@ ec_error_t oxcical_converter::ical_to_mapi_multi(const ical &pical,
     std::vector<message_ptr> &finalvec, std::string &errstr) try
 {
 	bool b_proposal;
-	const char *pvalue = nullptr, *pvalue1 = nullptr;
+	const char *pvalue = nullptr;
 
 	b_proposal = false;
 	auto piline = pical.get_line("X-MICROSOFT-CALSCALE");
@@ -3315,15 +3329,8 @@ ec_error_t oxcical_converter::ical_to_mapi_multi(const ical &pical,
 				errstr = "iCal/iTIP REPLY file with multiple UIDs not supported by gromox-oxcical";
 				return ecInvalidParam;
 			}
-			pvalue1 = oxcical_get_partstat(uid_list);
-			if (pvalue1 != nullptr) {
-				if (strcasecmp(pvalue1, "ACCEPTED") == 0)
-					mclass = "IPM.Schedule.Meeting.Resp.Pos";
-				else if (strcasecmp(pvalue1, "TENTATIVE") == 0)
-					mclass = "IPM.Schedule.Meeting.Resp.Tent";
-				else if (strcasecmp(pvalue1, "DECLINED") == 0)
-					mclass = "IPM.Schedule.Meeting.Resp.Neg";
-			}
+			mclass = partstat_to_resp_class(
+			         oxcical_get_partstat(uid_list));
 		} else if (strcasecmp(pvalue, "COUNTER") == 0) {
 			if (uid_list.size() == 0) {
 				errstr = "No event UIDs in ical object";
@@ -3332,11 +3339,9 @@ ec_error_t oxcical_converter::ical_to_mapi_multi(const ical &pical,
 				errstr = "iCal/iTIP COUNTER file with multiple UIDs not supported by gromox-oxcical";
 				return ecInvalidParam;
 			}
-			pvalue1 = oxcical_get_partstat(uid_list);
-			if (pvalue1 != nullptr && strcasecmp(pvalue1, "TENTATIVE") == 0) {
-				mclass = "IPM.Schedule.Meeting.Resp.Tent";
-				b_proposal = true;
-			}
+			mclass = partstat_to_resp_class(
+			         oxcical_get_partstat(uid_list));
+			b_proposal = true;
 		} else if (strcasecmp(pvalue, "CANCEL") == 0) {
 			mclass = "IPM.Schedule.Meeting.Canceled";
 		}
