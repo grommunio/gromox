@@ -1216,13 +1216,19 @@ Write-MLog "" none
 #
 Test-Plink
 if ($UsePageant) {
-	if (Test-Pageant) {
-		.\pageant.exe  $LinuxUserSSHKey
+	# A running pageant.exe takes the key over
+	if ($LinuxUserSSHKey -or !(Get-Process -ErrorAction SilentlyContinue pageant)) {
+		Test-Pageant
+		if ($LinuxUserSSHKey) {
+			& "$PSScriptRoot\pageant.exe" $LinuxUserSSHKey
+		} else {
+			& "$PSScriptRoot\pageant.exe"
+		}
+		Start-Sleep -Seconds 1
 	}
-	Start-Sleep -Seconds 1
 	# is pageant.exe running?
-	if (!(Get-Process -ErrorAction ignore pageant)) {
-		Write-MLog "Error: pageant.exe not running/couldn't be started, either set \$LinuxUserPWD or start pageant.exe manually and import the key." red
+	if (!(Get-Process -ErrorAction SilentlyContinue pageant)) {
+		Write-MLog "Error: pageant.exe not running/couldn't be started, either set `$LinuxUserPWD or start pageant.exe manually and import the key." red
 		exit 1
 	}
 }
