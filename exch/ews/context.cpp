@@ -2991,6 +2991,8 @@ void EWSContext::loadOccurrenceInstances(const std::string &dir,
 	PROPID_ARRAY namedids = getNamedPropIds(dir, propnames, true);
 	auto ex_replace_time_tag = PROP_TAG(PT_SYSTIME, namedids[0]);
 	s.excTags = shape.proptags_vec();
+	/* UpdateItem checks an occurrence against the key of its series */
+	std::erase(s.excTags, PR_CHANGE_KEY);
 	s.excTags.emplace_back(ex_replace_time_tag);
 
 	/* Exceptions carry no MimeContent, see materializeOccurrence() */
