@@ -9,6 +9,7 @@
 #include <vmime/contentTypeField.hpp>
 #include <vmime/mailboxList.hpp>
 #include <vmime/messageIdSequence.hpp>
+#include <vmime/utility/outputStreamStringAdapter.hpp>
 #include <gromox/element_data.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/ical.hpp>
@@ -2722,14 +2723,19 @@ static int hdr_long_values()
 	auto vmail = vmime::make_shared<vmime::message>();
 	assert(cvt.mapi_to_inet(*mct, vmail) == ecSuccess);
 	auto eml = vmail_to_string(*vmail);
-	if (vmail_default_genctx().getWrapMessageId())
-		assert(hf_longest(eml) <= 998);
+	assert(hf_longest(eml) <= 998);
 	assert(hf_longest_ew(eml) <= 75);
 	assert(eml.find("filename=\"quote\\\"back\\\\slash.txt\"") != eml.npos);
+	/* References folds between the ids although Content-ID does not wrap */
 	auto v = vmail->getHeader()->References();
-	assert(v != nullptr && v->getValue()->generate() == exp_refs);
-	if (vmail_default_genctx().getWrapMessageId())
-		assert(hf_longest("References: " + v->generate()) <= 78);
+	assert(v != nullptr);
+	std::string rv;
+	vmime::utility::outputStreamStringAdapter rvs(rv);
+	v->generate(vmail_default_genctx(), rvs);
+	assert(hf_longest(rv) <= 78);
+	for (size_t p; (p = rv.find("\r\n ")) != rv.npos; )
+		rv.replace(p, 3, " ");
+	assert(rv == "References: " + exp_refs);
 
 	MAIL back;
 	assert(back.refonly_parse(eml.c_str(), eml.size()));
