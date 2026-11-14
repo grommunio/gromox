@@ -1444,6 +1444,7 @@ static int envelope_from_fallback()
 		{"From: frm@example.com\r\n", "env@example.com",
 		 "frm@example.com"},
 		{"From: \r\n", "env@example.com", nullptr},
+		{"From: <>\r\n", "env@example.com", nullptr},
 		{"", "", nullptr},
 	};
 	fprintf(stderr, "=== envelope_from_fallback\n");
