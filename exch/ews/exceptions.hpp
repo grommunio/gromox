@@ -91,6 +91,7 @@ class EWSError : public DispatchError {
 	ERR(InvalidFreeBusyViewType) ///< Requested free busy view type is invalid
 	ERR(InvalidId) ///< ItemId or ChangeKey malformed
 	ERR(InvalidIdNotAnItemAttachmentId) ///< Attachment id expected, but got something else
+	ERR(InvalidItemForOperationRemoveItem) ///< RemoveItem not on a cancellation
 	ERR(InvalidMergedFreeBusyInterval) ///< Bad MergedFreeBusyIntervalInMinutes
 	ERR(InvalidExtendedPropertyValue) ///< Value of extended property does not match its type
 	ERR(InvalidOccurrenceId) ///< Cannot deserialize occurrence ID
@@ -592,6 +593,7 @@ E(3446, "failed to write updated message content");
 E(3447, "failed to delete user configuration message");
 E(3448, "failed to append read change number to sync state");
 E(3449, "failed to set message id on updated content");
+E(3450, "referenced item is not a meeting cancellation");
 E(3453, "GetItem batch exceeds ews_max_get_items; resend in smaller batches");
 E(3454, "subscription event backlog exceeded ews_max_pending_events; re-subscribe and resync");
 E(3455, "failed to allocate the recipient set while updating attendees");
