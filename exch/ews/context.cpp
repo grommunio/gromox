@@ -3246,27 +3246,6 @@ void EWSContext::checkOccurrence(const std::string &dir, uint64_t mid,
 		throw EWSError::CalendarOccurrenceIsDeletedFromRecurrence(E3488);
 }
 
-static std::optional<uint32_t> goid_instance_basedate(const BINARY *goid_bin)
-{
-	if (goid_bin == nullptr || goid_bin->cb == 0)
-		return std::nullopt;
-	GLOBALOBJECTID goid{};
-	EXT_PULL ep;
-	ep.init(goid_bin->pb, goid_bin->cb, EWSContext::alloc, 0);
-	if (ep.g_goid(&goid) != pack_result::ok)
-		return std::nullopt;
-	if (goid.year == 0 || goid.month == 0 || goid.day == 0)
-		return std::nullopt;
-	struct tm date{};
-	date.tm_year = goid.year - 1900;
-	date.tm_mon  = goid.month - 1;
-	date.tm_mday = goid.day;
-	auto when = timegm(&date);
-	if (when == static_cast<time_t>(-1))
-		return std::nullopt;
-	return rop_util_unix_to_rtime(when) / 1440 * 1440;
-}
-
 /**
  * @brief      Remove a cancelled meeting from the calendar
  *
@@ -3282,8 +3261,6 @@ void EWSContext::removeMeetingCancellation(const tItemId &refId) const
 	sFolderSpec cancellationFolder = resolveFolder(cancellationId);
 	std::string dir = getDir(cancellationFolder);
 	validate(dir, cancellationId);
-	if (!(permissions(dir, cancellationFolder.folderId) & frightsDeleteAny))
-		throw EWSError::AccessDenied(E3131);
 	const char *username = effectiveUser(cancellationFolder);
 
 	MESSAGE_CONTENT *cancellation = nullptr;
@@ -3296,42 +3273,62 @@ void EWSContext::removeMeetingCancellation(const tItemId &refId) const
 	if (messageClass == nullptr ||
 	    class_match_prefix(messageClass,
 	    "IPM.Schedule.Meeting.Canceled") != 0)
-		throw EWSError::InvalidId(E3450);
-
-	sFolderSpec calendarFolder;
-	calendarFolder.folderId = eid_t(1, PRIVATE_FID_CALENDAR);
-	calendarFolder.location = sFolderSpec::PRIVATE;
-	calendarFolder.target = cancellationFolder.target ?
-	    cancellationFolder.target :
-	    std::optional<std::string>(m_auth_info.username);
-	std::string calendarDir = getDir(calendarFolder);
-	auto pidGoid = getNamedPropId(dir, NtGlobalObjectId);
-	auto occurrence = goid_instance_basedate(
-		cancellation->proplist.get<const BINARY>(PROP_TAG(PT_BINARY, pidGoid)));
-	auto calendarMid = findExistingByGoid(calendarFolder, calendarDir,
-	    *cancellation);
-	if (calendarMid &&
-	    !(permissions(calendarDir, calendarFolder.folderId) & frightsDeleteAny))
+		throw EWSError::InvalidItemForOperationRemoveItem(E3450);
+	if (!(permissions(dir, cancellationFolder.folderId) & frightsDeleteAny))
 		throw EWSError::AccessDenied(E3131);
-	if (calendarMid) {
-		/* getItemProp throws on a missing property, a single item has none */
-		auto recurTag = PROP_TAG(PT_BINARY,
-		                getNamedPropId(calendarDir, NtAppointmentRecur));
-		auto recurProps = getItemProps(calendarDir, *calendarMid,
-		                  proptag_cspan{&recurTag, 1});
-		bool recurring = recurProps.get<const BINARY>(recurTag) != nullptr;
-		if (occurrence && recurring)
-			deleteOccurrence(calendarDir, calendarFolder.folderId, *calendarMid, *occurrence);
-		else if (!occurrence) {
-			eid_t eid{*calendarMid};
-			EID_ARRAY eids{1, &eid};
-			BOOL partial = false;
-			if (!m_plugin.exmdb.delete_messages(calendarDir.c_str(), CP_ACP,
-			    effectiveUser(calendarFolder), calendarFolder.folderId, eids,
-			    TRUE, &partial) || partial)
-				throw EWSError::CannotDeleteObject(E3134);
+
+	/* The meeting is in the mailbox of the cancellation */
+	auto calFid = eid_t(1, PRIVATE_FID_CALENDAR);
+	auto goidTag  = PROP_TAG(PT_BINARY, getNamedPropId(dir, NtGlobalObjectId));
+	auto cgoidTag = PROP_TAG(PT_BINARY, getNamedPropId(dir, NtCleanGlobalObjectId));
+	auto recurTag = PROP_TAG(PT_BINARY, getNamedPropId(dir, NtAppointmentRecur));
+	auto goid  = cancellation->proplist.get<const BINARY>(goidTag);
+	auto cgoid = cancellation->proplist.get<const BINARY>(cgoidTag);
+	auto occurrence = goid_basedate(goid);
+	std::vector<std::pair<uint64_t, bool>> items; /* mid, exact GOID match */
+	uint64_t master = 0;
+	if (cgoid != nullptr && cgoid->cb > 0 && PROP_ID(cgoidTag) != 0) {
+		const RESTRICTION_PROPERTY rprop = {RELOP_EQ, cgoidTag, {cgoidTag, deconst(cgoid)}};
+		const RESTRICTION rst = {RES_PROPERTY, {deconst(&rprop)}};
+		uint32_t table_id = 0, row_count = 0;
+		if (!m_plugin.exmdb.load_content_table(dir.c_str(), CP_ACP,
+		    calFid, nullptr, TABLE_FLAG_NONOTIFICATIONS, &rst, nullptr,
+		    &table_id, &row_count))
+			throw EWSError::ItemNotFound(E3143);
+		auto cl_tbl = HX::make_scope_exit([&]() {
+			m_plugin.exmdb.unload_table(dir.c_str(), table_id);
+		});
+		const proptag_t cols[] = {PidTagMid, goidTag, recurTag};
+		TARRAY_SET rows{};
+		if (row_count > 0 && !m_plugin.exmdb.query_table(dir.c_str(),
+		    nullptr, CP_ACP, table_id, proptag_cspan{cols}, 0, row_count,
+		    &rows))
+			throw EWSError::ItemNotFound(E3143);
+		for (const auto &row : rows) {
+			auto mid = row.get<const uint64_t>(PidTagMid);
+			if (mid == nullptr)
+				continue;
+			auto g = row.get<const BINARY>(goidTag);
+			bool exact = g != nullptr && goid != nullptr && *g == *goid;
+			if (row.get<const BINARY>(recurTag) != nullptr)
+				master = *mid;
+			items.emplace_back(*mid, exact);
 		}
-		m_plugin.unloadMessageInstance(calendarDir, *calendarMid);
+	}
+	if (!items.empty() && !(permissions(dir, calFid) & frightsDeleteAny))
+		throw EWSError::AccessDenied(E3131);
+	for (const auto &[mid, exact] : items) {
+		if (occurrence != 0 && (mid == master || !exact))
+			continue;
+		auto eid = getItemEntryId(dir, mid);
+		auto bin = static_cast<const BINARY *>(eid.pvalue);
+		moveCopyItem(dir, sMessageEntryId(bin->pb, bin->cb),
+		             eid_t(1, PRIVATE_FID_DELETED_ITEMS), false);
+		m_plugin.unloadMessageInstance(dir, mid);
+	}
+	if (occurrence != 0 && master != 0) {
+		deleteOccurrence(dir, calFid, master, occurrence);
+		m_plugin.unloadMessageInstance(dir, master);
 	}
 
 	sFolderSpec deletedItems =

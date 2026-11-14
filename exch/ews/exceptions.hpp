@@ -91,6 +91,7 @@ class EWSError : public DispatchError {
 	ERR(InvalidFreeBusyViewType) ///< Requested free busy view type is invalid
 	ERR(InvalidId) ///< ItemId or ChangeKey malformed
 	ERR(InvalidIdNotAnItemAttachmentId) ///< Attachment id expected, but got something else
+	ERR(InvalidItemForOperationRemoveItem) ///< RemoveItem not on a cancellation
 	ERR(InvalidMergedFreeBusyInterval) ///< Bad MergedFreeBusyIntervalInMinutes
 	ERR(InvalidExtendedPropertyValue) ///< Value of extended property does not match its type
 	ERR(InvalidOccurrenceId) ///< Cannot deserialize occurrence ID
