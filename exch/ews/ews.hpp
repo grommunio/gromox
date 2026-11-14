@@ -433,6 +433,8 @@ class EWSContext {
 	template<typename T> static T* alloc(size_t=1);
 	template<typename T, typename... Args> static T* construct(Args&&...);
 	static void addAttachment(MESSAGE_CONTENT &, const Structures::tFileAttachment &);
+	static void writeFlag(const Structures::tFlagType &,
+	                      Structures::sShape &, const char *, bool, bool);
 	static char *cpystr(const std::string_view);
 
 	static void assertIdType(Structures::tBaseItemId::IdType, Structures::tBaseItemId::IdType);

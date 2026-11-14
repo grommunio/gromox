@@ -3391,15 +3391,10 @@ void tChangeDescription::convPercentComplete(const XMLElement *v, sShape &shape)
 		shape.write(TAGGED_PROPVAL{tag, EWSContext::construct<double>(pc / 100.0)});
 }
 
+/* Written by upd_flag, which needs the stored item */
 void tChangeDescription::convFlag(const XMLElement *v, sShape &shape)
 {
-	auto fs = v->FirstChildElement("FlagStatus");
-	if (!fs || !fs->GetText())
-		return;
-	auto idx = Enum::FlagStatusType(fs->GetText()).index();
-	uint32_t val = idx == 2 ? followupComplete :
-	               idx == 1 ? followupFlagged : 0;
-	shape.write(mkProp(PR_FLAG_STATUS, val));
+	shape.flag = v;
 }
 
 void tChangeDescription::convSensitivity(const XMLElement *v, sShape &shape)
