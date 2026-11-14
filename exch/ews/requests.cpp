@@ -1286,7 +1286,10 @@ static void refresh_changekey(const EWSContext &ctx, const std::string &dir,
 				i.ItemId->ChangeKey.emplace(ck);
 	}, item);
 } catch (const DispatchError &) {
-	/* The mails are out, so keep the older ChangeKey rather than fail */
+	/*
+	 * The mails are out, so keep the older ChangeKey rather than fail.
+	 * The client then needs to fetch the item again before an update.
+	 */
 }
 
 static void updateRef(const EWSContext &ctx, const tItemId &refId,
@@ -4950,6 +4953,28 @@ static bool read_flag_only(const tItemChange &change)
 }
 
 /**
+ * @brief      Refuse a write without the current change key
+ *
+ * Like Exchange, only AlwaysOverwrite writes without it. A key that
+ * cannot be an XID is not compared, as in Exchange.
+ */
+static void upd_check_change_key(const EWSContext &ctx, const std::string &dir,
+    uint64_t mid, const std::optional<sBase64Binary> &key)
+{
+	if (!key || key->empty())
+		throw EWSError::ChangeKeyRequiredForWriteOperations(E3619);
+	/* A GUID and a counter of 1 to 8 bytes */
+	if (key->size() < 17 || key->size() > 24)
+		return;
+	static constexpr proptag_t tags[] = {PR_CHANGE_KEY};
+	auto props = ctx.getItemProps(dir, mid, proptag_cspan{tags});
+	auto cur = props.get<const BINARY>(PR_CHANGE_KEY);
+	if (cur != nullptr && (cur->cb != key->size() ||
+	    memcmp(cur->pb, key->data(), cur->cb) != 0))
+		throw EWSError::IrresolvableConflict(E3620);
+}
+
+/**
  * @brief      Refuse an UpdateItem whose send would fail
  *
  * Exchange rejects the whole request, the update included, when a
@@ -5201,6 +5226,9 @@ void process(mUpdateItemRequest &&request, XMLElement *response, const EWSContex
 		    upd_is_organizer_copy(ctx, dir, mid.messageId());
 		if (orgCopy)
 			ctx.validate_sendas_perms(ctx.storeOwner(dir));
+		if (!ctx.plugin().lenient_change_keys &&
+		    request.ConflictResolution.value_or("") != "AlwaysOverwrite")
+			upd_check_change_key(ctx, dir, mid.messageId(), itemId.ChangeKey);
 		std::vector<proptag_t> hlTags;
 		TPROPVAL_ARRAY hlBefore{};
 		if (orgCopy && !change.ItemId.isOccurrence()) {
