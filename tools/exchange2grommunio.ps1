@@ -498,10 +498,15 @@ function Linux-Mount
 		}
 		$WinFolder = Quote-ShArg $WinSharedFolder.replace('\','/')
 		Write-MLog "mount.cifs $LinuxSharedFolder" green
+		# The password goes through the SSH channel and not on a command line.
+		# PowerShell ends the line with CR LF, mount.cifs would take that for
+		# a part of the password.
+		$MountCmd = "tr -d '\r\n' | PASSWD_FD=0 mount.cifs -v $WinFolder $LinuxFolder -o user=$(Quote-ShArg $WindowsUser),ro"
+		$OutputEncoding = New-Object System.Text.UTF8Encoding $false
 		if ($PowerShellOld) {
-			.\plink.exe @PLINKARGS "mount.cifs -v $WinFolder $LinuxFolder -o user='$WindowsUser',password='$WindowsPassword',ro"
+			$WindowsPassword | .\plink.exe @PLINKARGS $MountCmd
 		} else {
-			.\plink.exe @PLINKARGS "mount.cifs -v $WinFolder $LinuxFolder -o user='$WindowsUser',password='$WindowsPassword',ro" 2>&1 | Foreach-Object ToString | Tee-Object -Variable TeeVar
+			$WindowsPassword | .\plink.exe @PLINKARGS $MountCmd 2>&1 | Foreach-Object ToString | Tee-Object -Variable TeeVar
 			# Save plink output to $LogFile
 			Write-MLog "---" none
 			Add-Content -Path $LogFile -Value $TeeVar
