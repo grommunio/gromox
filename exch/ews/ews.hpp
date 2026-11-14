@@ -338,6 +338,8 @@ class EWSContext {
 	Structures::sItem loadOccurrence(const std::string&, uint64_t, uint64_t, uint32_t, Structures::sShape&) const;
 	std::vector<Structures::sItem> expandOccurrences(const std::string &, uint64_t, uint64_t, time_t, time_t, Structures::sShape &) const;
 	uint32_t resolveOccurrenceIndex(const std::string &, uint64_t, uint32_t) const;
+	std::pair<uint64_t, uint64_t> occurrenceTimes(const std::string &, uint64_t, uint32_t) const;
+	std::pair<std::optional<TZDEF>, std::optional<TZDEF>> occurrenceZones(const std::string &, uint64_t, uint64_t, uint32_t) const;
 	void checkOccurrence(const std::string &, uint64_t, uint32_t) const;
 	void deleteOccurrence(const std::string &, uint64_t, uint64_t, uint32_t) const;
 	void updateOccurrence(const std::string &, uint64_t, uint64_t, uint32_t, const TPROPVAL_ARRAY &, const proptag_cspan &) const;
