@@ -6260,6 +6260,8 @@ tResponseObjects::tResponseObjects(const sShape &shape)
 	uint32_t apptstate = v32 != nullptr ? *v32 : 0;
 	if (cls == nullptr)
 		cls = "IPM.Note";
+	if (class_match_prefix(cls, "IPM.Schedule.Meeting.Canceled") == 0)
+		Objects.emplace_back(tRemoveItem::NAME);
 	bool attendee = class_match_prefix(cls, "IPM.Schedule.Meeting.Request") == 0 ||
 	                (class_match_prefix(cls, "IPM.Appointment") == 0 &&
 	                (apptstate & (asfMeeting | asfReceived | asfCanceled)) == (asfMeeting | asfReceived));
