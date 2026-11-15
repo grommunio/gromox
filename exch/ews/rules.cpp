@@ -825,7 +825,9 @@ std::optional<Address> reader::srchkey_addr(const RESTRICTION &r, proptag_t tag)
 			auto &pv = cmt->ppropval[i];
 			if (PROP_ID(pv.proptag) != 0x0001 || pv_str(pv) == nullptr)
 				continue;
-			std::string_view d = pv_str(pv);
+			std::string_view d;
+			if (auto v = pv_str(pv))
+				d = v;
 			auto lt = d.rfind('<');
 			if (lt != d.npos && d.back() == '>') {
 				auto addr = d.substr(lt + 1, d.size() - lt - 2);
