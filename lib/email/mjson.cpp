@@ -311,6 +311,19 @@ int MJSON::fetch_structure(mjson_io &io, const char *cset, bool b_ext,
 }
 
 /**
+ * MIME::get_filename and vmail_to_digest store the name as UTF-8. A digest
+ * written before gromox-3.3-181 can still hold the raw bytes of the
+ * header, which only the old charset label decodes, when there is one.
+ */
+static std::string mjson_name_word(const std::string &name,
+    const char *email_charset, const char *charset)
+{
+	auto cs = utf8_valid(name.c_str()) ? "utf-8" :
+	          *email_charset != '\0' ? email_charset : charset;
+	return "=?"s + cs + "?b?" + base64_encode(name) + "?=";
+}
+
+/**
  * @self: key of the message the MIMEs belong to, or nullptr when the
  *        extraction cache is not in play
  */
@@ -357,9 +370,9 @@ static int mjson_fetch_mime_structure(mjson_io &io, const MJSON_MIME *pmime,
 					       mjson_add_backslash(pmime->filename.c_str()) +
 					       "\"";
 				else
-					buf += fmt::format("\"NAME\" \"=?{}?b?{}?=\"",
-					       *email_charset != '\0' ? email_charset : charset,
-					       base64_encode(pmime->filename));
+					buf += "\"NAME\" \"" + mjson_name_word(
+					       pmime->filename, email_charset,
+					       charset) + "\"";
 			}
 			buf += ')';
 		} else {
