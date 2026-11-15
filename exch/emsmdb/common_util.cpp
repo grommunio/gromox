@@ -1317,12 +1317,6 @@ BOOL common_util_convert_rule_actions(BOOL to_unicode, RULE_ACTIONS *pactions)
 	return TRUE;
 }
 
-ec_error_t ems_send_mail(MAIL *m, const char *sender, const std::vector<std::string> &rcpts)
-{
-	m->set_header("X-Mailer", EMSMDB_UA);
-	return cu_send_mail(*m, g_smtp_url.c_str(), sender, rcpts);
-}
-
 ec_error_t ems_send_vmail(vmime::shared_ptr<vmime::message> m,
     const char *sender, const std::vector<std::string> &rcpts)
 {
@@ -1346,7 +1340,7 @@ void common_util_notify_receipt(const char *username, int type,
 		return;
 	auto ret = ems_send_vmail(std::move(imail), username, rcpt_list);
 	if (ret != ecSuccess)
-		mlog2(LV_ERR, "E-1189: ems_send_mail: %s", mapi_strerror(ret));
+		mlog2(LV_ERR, "E-1189: ems_send_vmail: %s", mapi_strerror(ret));
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
 }

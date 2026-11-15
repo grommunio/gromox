@@ -44,7 +44,6 @@ struct db_conn;
 
 namespace exmdb {
 
-extern ec_error_t (*ems_send_mail)(MAIL *, const char *sender, const std::vector<std::string> &rcpts);
 extern ec_error_t (*ems_send_vmail)(vmime::shared_ptr<vmime::message>, const char *sender, const std::vector<std::string> &rcpts);
 extern const GUID *(*common_util_get_handle)();
 
