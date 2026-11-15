@@ -23,6 +23,7 @@
 #include <gromox/config_file.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
+#include <gromox/paths.h>
 #include <gromox/process.hpp>
 #include <gromox/svc_common.h>
 #include <gromox/util.hpp>
@@ -104,7 +105,7 @@ bool SVC_event_stub(enum plugin_op reason, const struct dlfuncs &ppdata)
 		}
 
 		str_value = pfile->get_value("EVENT_HOST");
-		gx_strlcpy(g_event_ip, str_value != nullptr ? str_value : "unix:/run/gromox/event.sock",
+		gx_strlcpy(g_event_ip, str_value != nullptr ? str_value : "unix:" PKGRUNDIR "/event.sock",
 		           std::size(g_event_ip));
 		str_value = pfile->get_value("EVENT_PORT");
 		if (NULL == str_value) {
