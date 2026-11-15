@@ -1,5 +1,5 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2021-2022 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2021-2026 grommunio GmbH
 .TH gromox\-pff2mt 8 "" "Gromox" "Gromox admin reference"
 .SH Name
 gromox\-pff2mt \(em Utility for analysis/import of PFF/PST/OST files
@@ -7,10 +7,9 @@ gromox\-pff2mt \(em Utility for analysis/import of PFF/PST/OST files
 \fBgromox\-pff2mt\fP [\fB\-pst\fP] [...] \fIinput.pst\fP
 .SH Description
 gromox\-pff2mt reads a file that conforms to the Personal Folder File (PFF) and
-the Offline Folder File (OFF) format and re-exports the data in a
-Gromox-specific mailbox transfer format to stdout for consumption by pipe by
-the gromox\-import(8) program. Optionally, pff2mt can print a tree summary of
-the PFF. The PFF format is used in several file types:
+the Offline Folder File (OFF) format and re-exports the data into a streamable
+(pipeable) command stream for immediate consumption by the gromox\-import(8)
+program. The PFF format is used in several file types:
 .IP \(bu 4
 PAB (Personal Address Book)
 .IP \(bu 4
