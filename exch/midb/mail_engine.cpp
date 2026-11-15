@@ -2196,7 +2196,7 @@ static void me_drain_resync_queue()
 	{
 		std::lock_guard rl(g_resync_lock);
 		while (!g_resync_list.empty() && batch.size() < MAX_PER_TICK)
-			batch.push_back(std::move(g_resync_list.extract(g_resync_list.begin()).value()));
+			batch.emplace_back(std::move(g_resync_list.extract(g_resync_list.begin()).value()));
 	}
 	for (auto &dir : batch) {
 		uint32_t old_sub = 0;
