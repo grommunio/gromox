@@ -135,7 +135,7 @@ static bool list_file_read_midb(const char *filename) try
 		strcpy(pserver->ip_addr, "::1");
 		pserver->port = 5555;
 		for (decltype(g_conn_num) j = 0; j < g_conn_num; ++j)
-			g_lost_list.push_back(BACK_CONN{-1, 0, pserver});
+			g_lost_list.emplace_back(-1, 0, pserver);
 		return true;
 	}
 	for (decltype(list_num) i = 0; i < list_num; ++i) {
@@ -436,7 +436,7 @@ int list_mail(const char *path, const std::string &folder,
 					MSG_UNIT msg{std::move(parts[1])};
 					msg.size = strtoul(parts[4].c_str(), nullptr, 0);
 					auto msg_size = msg.size;
-					parray.push_back(std::move(msg));
+					parray.emplace_back(std::move(msg));
 					*psize += msg_size;
 				} catch (...) {
 					b_fail = TRUE;
@@ -574,9 +574,9 @@ static int search_common(const char *cmd, const char *path,
 	std::string crit;
 	for (const auto &elem : argv) {
 		crit.append(elem);
-		crit.push_back('\0');
+		crit += '\0';
 	}
-	crit.push_back('\0');
+	crit += '\0';
 
 	auto req = fmt::format("{} {} {} {} {}\r\n", cmd, path, folder,
 	           charset, base64_encode(crit));

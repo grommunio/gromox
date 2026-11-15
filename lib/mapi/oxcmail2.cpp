@@ -76,16 +76,16 @@ void select_parts(const MIME *part, MIME_ENUM_PARAM &info, unsigned int level) t
 	if (part->mime_type == mime_type::single) {
 		if (strcasecmp(part->content_type, "text/plain") == 0) {
 			info.pplain = part;
-			info.hjoin.push_back(part);
+			info.hjoin.emplace_back(part);
 		} else if (strcasecmp(part->content_type, "text/html") == 0) {
-			info.htmls.push_back(part);
-			info.hjoin.push_back(part);
+			info.htmls.emplace_back(part);
+			info.hjoin.emplace_back(part);
 		} else if (strcasecmp(part->content_type, "text/enriched") == 0) {
 			info.penriched = part;
 		} else if (strcasecmp(part->content_type, "text/calendar") == 0) {
 			info.pcalendar = part;
 		} else if (strncasecmp(part->content_type, "image/", 6) == 0) {
-			info.hjoin.push_back(part);
+			info.hjoin.emplace_back(part);
 		}
 		return;
 	}

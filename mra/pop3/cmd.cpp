@@ -388,7 +388,7 @@ int cmdh_dele(std::vector<std::string> &&argv, pop3_context *pcontext)
 	auto punit = sa_get_item(pcontext->msg_array, n - 1);
 	if (!punit->b_deleted) try {
 		punit->b_deleted = TRUE;
-		pcontext->delmsg_list.push_back(punit);
+		pcontext->delmsg_list.emplace_back(punit);
 	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "E-1961: ENOMEM");
 		return 1915;

@@ -359,7 +359,7 @@ static errno_t do_vcard(const char *file, std::vector<message_ptr> &mv)
 			fprintf(stderr, "Failed to convert IM %s to MAPI\n", file);
 			return EIO;
 		}
-		mv.push_back(std::move(mc));
+		mv.emplace_back(std::move(mc));
 	}
 	return 0;
 }

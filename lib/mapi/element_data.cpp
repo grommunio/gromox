@@ -176,7 +176,7 @@ std::unique_ptr<folder_content> folder_content_init() try
 bool folder_content::append_subfolder_internal(folder_content &&psubfld) try
 {
 	auto pfldctnt = this;
-	pfldctnt->psubflds.push_back(std::move(psubfld));
+	pfldctnt->psubflds.emplace_back(std::move(psubfld));
 	return TRUE;
 } catch (const std::bad_alloc &) {
 	return false;

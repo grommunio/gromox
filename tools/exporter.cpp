@@ -211,13 +211,13 @@ static void get_all_nptags(const message_content &ctnt, std::vector<propid_t> &t
 {
 	for (const auto &p : ctnt.proplist)
 		if (is_nameprop_id(PROP_ID(p.proptag)))
-			tags.push_back(PROP_ID(p.proptag));
+			tags.emplace_back(PROP_ID(p.proptag));
 	if (ctnt.children.pattachments == nullptr)
 		return;
 	for (const auto &at : *ctnt.children.pattachments) {
 		for (const auto &p : at.proplist)
 			if (is_nameprop_id(PROP_ID(p.proptag)))
-				tags.push_back(PROP_ID(p.proptag));
+				tags.emplace_back(PROP_ID(p.proptag));
 		if (at.pembedded != nullptr)
 			get_all_nptags(*at.pembedded, tags);
 	}

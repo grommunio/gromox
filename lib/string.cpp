@@ -1437,7 +1437,7 @@ int XARRAY::append(MITEM &&ptr, unsigned int tag) try
 		return -1;
 	m_hash.emplace(tag, m_vec.size());
 	try {
-		m_vec.push_back(std::move(ptr));
+		m_vec.emplace_back(std::move(ptr));
 	} catch (const std::bad_alloc &) {
 		m_hash.erase(tag);
 		return -1;

@@ -59,7 +59,7 @@ static void cid_read_dir(const char *dir, std::vector<std::string> &files)
 		struct stat sb;
 		if (lstat(path.c_str(), &sb) != 0 || !S_ISREG(sb.st_mode))
 			continue;
-		files.push_back(std::move(path));
+		files.emplace_back(std::move(path));
 	}
 }
 
@@ -83,7 +83,7 @@ static std::vector<std::string> cid_read_args(int argc, const char *const *argv)
 			mlog(LV_ERR, "%s: Filename does not look like a content file", *argv);
 			continue;
 		}
-		files.push_back(*argv);
+		files.emplace_back(*argv);
 	}
 	return files;
 }

@@ -122,7 +122,7 @@ int threads_pool_run(const char *hint) try
 		sp->nid = i;
 		{
 			std::lock_guard tpd_hold(g_threads_pool_data_lock);
-			g_threads_data_list.push_back(sp);
+			g_threads_data_list.emplace_back(sp);
 		}
 		ret = pthread_create4(&sp->thr_id, nullptr, tpol_thrwork, up.get());
 		if (ret != 0) {
@@ -309,13 +309,13 @@ static void *tpol_scanwork(void *pparam)
 		auto sp = up->sp = std::make_shared<THR_DATA>();
 		{
 			std::lock_guard tpd_hold(g_threads_pool_data_lock);
-			g_threads_data_list.push_back(sp);
+			g_threads_data_list.emplace_back(sp);
 		}
 		auto ret = pthread_create4(&sp->thr_id, nullptr, tpol_thrwork, up.get());
 		if (ret != 0) {
 			mlog(LV_WARN, "W-1445: failed to increase pool threads: %s", strerror(ret));
 			/*
-			 * Roll back the push_back. Only tpol_thrwork removes
+			 * Roll back the emplace_back. Only tpol_thrwork removes
 			 * its own entry from the list on exit, and it never
 			 * ran. Without this, every pthread_create failure
 			 * (typically from a transient TasksMax / RLIMIT_NPROC

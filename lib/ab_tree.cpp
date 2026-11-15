@@ -660,7 +660,7 @@ ec_error_t ab_base::proplist(minid mid, std::vector<proptag_t> &tags) const
 	if (!user)
 		return ecNotFound;
 	for (auto &entry : user->propvals)
-		tags.push_back(entry.first);
+		tags.emplace_back(entry.first);
 	return ecSuccess;
 }
 

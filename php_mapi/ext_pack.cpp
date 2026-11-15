@@ -40,10 +40,10 @@ void palloc_tls_free()
  */
 void *ext_pack_alloc(size_t z) try
 {
-	g_allocs.push_back(nullptr);
+	auto &pos = g_allocs.emplace_back(nullptr);
 	auto p = ecalloc(1, z);
 	if (p != nullptr)
-		g_allocs.back() = p;
+		pos = p;
 	return p;
 } catch (const std::bad_alloc &) {
 	return nullptr;
@@ -57,8 +57,7 @@ static void *ext_pack_realloc(void *p, size_t z)
 	auto q = erealloc(p, z);
 	if (q == nullptr)
 		return nullptr;
-	g_allocs.push_back(q);
-	return q;
+	return g_allocs.emplace_back(q);
 }
 
 void ext_pack_free(void *p)

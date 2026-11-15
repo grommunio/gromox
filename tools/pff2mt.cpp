@@ -138,7 +138,7 @@ static size_t g_msg_count;
 
 static void cb_only_obj(const HXoptcb *cb)
 {
-	g_only_objs.push_back(cb->data_long);
+	g_only_objs.emplace_back(cb->data_long);
 }
 
 static constexpr HXoption g_options_table[] = {

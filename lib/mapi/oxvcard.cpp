@@ -182,7 +182,7 @@ static std::vector<std::string> vcard_types(const vcard_line &line)
 			for (auto s : p.m_paramvals) {
 				std::erase(s, '"');
 				if (!s.empty())
-					v.push_back(std::move(s));
+					v.emplace_back(std::move(s));
 			}
 		} else if (p.m_paramvals.empty()) {
 			v.emplace_back(p.name());
@@ -647,7 +647,7 @@ oxvcard_converter::vcard_to_mapi(const vcard &vcard) try
 			for (const auto &sv : pvvalue->m_subvals) {
 				if (sv.empty())
 					continue;
-				ptrs.push_back(deconst(sv.c_str()));
+				ptrs.emplace_back(deconst(sv.c_str()));
 				if (ptrs.size() >= 128)
 					break;
 			}
@@ -861,7 +861,7 @@ oxvcard_converter::vcard_to_mapi(const vcard &vcard) try
 	if (child_strings.size() > 0) {
 		std::vector<const char *> ptrs;
 		for (const auto &s : child_strings)
-			ptrs.push_back(s.c_str());
+			ptrs.emplace_back(s.c_str());
 		STRING_ARRAY sa;
 		sa.count = ptrs.size();
 		sa.ppstr = const_cast<char **>(ptrs.data());

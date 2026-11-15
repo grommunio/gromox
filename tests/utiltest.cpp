@@ -804,7 +804,7 @@ static std::vector<time_t> fb_starts(const APPOINTMENT_RECUR_PAT &apr,
 	if (!fb_recur_times(nullptr, start_whole, apr, start, end, ev))
 		return {-1};
 	for (const auto &e : ev)
-		out.push_back(e.start_time);
+		out.emplace_back(e.start_time);
 	std::sort(out.begin(), out.end());
 	return out;
 }
@@ -838,8 +838,8 @@ static int t_fb_recur()
 
 	/* The 11-06 occurrence moved to 10:00 to 11:00 */
 	auto nov6 = rop_util_unix_to_rtime(nov2 + 4 * day);
-	rp.pdeletedinstancedates.push_back(nov6);
-	rp.pmodifiedinstancedates.push_back(nov6);
+	rp.pdeletedinstancedates.emplace_back(nov6);
+	rp.pmodifiedinstancedates.emplace_back(nov6);
 	auto &ei = apr.pexceptioninfo.emplace_back();
 	ei.startdatetime = nov6 + 600;
 	ei.enddatetime = nov6 + 660;
@@ -1171,7 +1171,7 @@ static int t_lang_charset()
 		std::vector<fs::path> names;
 		auto ascii = set.path() / "ascii";
 		for (const auto &t : fs::directory_iterator(ascii))
-			names.push_back(t.path().filename());
+			names.emplace_back(t.path().filename());
 		for (const auto &cs : fs::directory_iterator(set.path())) {
 			if (!cs.is_directory())
 				continue;

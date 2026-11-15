@@ -206,9 +206,8 @@ int transporter_run()
 		mlog(LV_ERR, "transporter: failed to allocate memory for free list");
         return -3;
 	}
-	for (size_t i = 0; i < g_free_num; ++i) {
-		g_free_list.push_back(&g_free_ptr[i]);
-	}
+	for (size_t i = 0; i < g_free_num; ++i)
+		g_free_list.emplace_back(&g_free_ptr[i]);
 
 	for (const auto &i : g_plugin_names) {
 		int ret = transporter_load_library(i);
@@ -495,7 +494,7 @@ int transporter_load_library(const generic_module &mod) try
 	hook_plug_entity plug;
 	plug.lib_main = mod.lib_main;
 	plug.file_name = mod.file_name;
-	g_lib_list.push_back(std::move(plug));
+	g_lib_list.emplace_back(std::move(plug));
 	g_cur_lib = &g_lib_list.back();
     /* invoke the plugin's main function with the parameter of PLUGIN_INIT */
 	if (!g_cur_lib->lib_main(PLUGIN_INIT, mda_funcs)) {
@@ -547,7 +546,7 @@ static void transporter_insert_ctx(MESSAGE_CONTEXT *pcontext)
 	pcontext->ctrl.from[0] = '\0';
 	pcontext->mail.clear();
 	std::lock_guard ctx_hold(g_context_lock);
-	g_free_list.push_back(pcontext);
+	g_free_list.emplace_back(pcontext);
 }
 
 /*
@@ -565,7 +564,7 @@ static void transporter_enqueue_context(MESSAGE_CONTEXT *pcontext)
 	}
 	{
 		std::unique_lock q_hold(g_workitem_mutex);
-		g_queue_list.push_back(pcontext); /* reserved, so should not throw */
+		g_queue_list.emplace_back(pcontext); /* reserved, so should not throw */
 	}
 	/* wake up one thread */
 	g_waken_cond.notify_one();
@@ -625,7 +624,7 @@ static bool transporter_throw_context(MESSAGE_CONTEXT *pcontext)
         return FALSE;
 	}
 	try {
-		pthr_data->anti_loop.push_back(pthr_data->last_hook);
+		pthr_data->anti_loop.emplace_back(pthr_data->last_hook);
 	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "transporter: exceed the maximum depth that one thread "
 			"can throw");
@@ -668,7 +667,7 @@ static bool transporter_register_hook(HOOK_FUNCTION func)
 		return false;
     /* check if there's empty hook in the list */
 	g_cur_lib->list_hook.emplace_back(hook_entry{func, g_cur_lib});
-	g_hook_list.push_back(&g_cur_lib->list_hook.back());
+	g_hook_list.emplace_back(&g_cur_lib->list_hook.back());
     return TRUE;
 }
 

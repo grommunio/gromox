@@ -166,8 +166,8 @@ static int do_folder(eid_t fid, std::map<std::string, int> &cache, unsigned int 
 		}
 		printf("Folder 0x%llx: %s%s\n", LLU{rop_util_get_gc_value(fid)},
 		       g_dry_run ? "" : "removing ", name);
-		vals.push_back({PR_MEMBER_ID, deconst(mid)});
-		rows.push_back({ROW_REMOVE, {1, &vals.back()}});
+		vals.emplace_back(PR_MEMBER_ID, deconst(mid));
+		rows.emplace_back(ROW_REMOVE, TPROPVAL_ARRAY{1, &vals.back()});
 	}
 	total += rows.size();
 	if (g_dry_run || rows.empty())

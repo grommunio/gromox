@@ -376,7 +376,7 @@ static uint32_t idset_decode_globset(const BINARY *pbin, repl_node::range_list_t
 			for (int i = 0; i < 8; ++i) {
 				if (!(bitmask & (1U << i))) {
 					if (prange_node.has_value()) {
-						globset.vec().push_back(std::move(*prange_node));
+						globset.vec().emplace_back(std::move(*prange_node));
 						prange_node.reset();
 					}
 				} else if (!prange_node.has_value()) {
@@ -387,7 +387,7 @@ static uint32_t idset_decode_globset(const BINARY *pbin, repl_node::range_list_t
 				}
 			}
 			if (prange_node.has_value()) {
-				globset.vec().push_back(std::move(*prange_node));
+				globset.vec().emplace_back(std::move(*prange_node));
 				//prange_node.reset();
 			}
 			break;
@@ -474,7 +474,7 @@ BOOL idset::deserialize(const BINARY &bin) try
 		if (length == 0)
 			return FALSE;
 		offset += length;
-		repl_list.push_back(std::move(repl_node));
+		repl_list.emplace_back(std::move(repl_node));
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
@@ -504,7 +504,7 @@ BOOL idset::convert() try
 			repl_node repl_node;
 			repl_node.replid = replid;
 			repl_node.range_list = replguid_node.range_list;
-			temp_list.push_back(std::move(repl_node));
+			temp_list.emplace_back(std::move(repl_node));
 		}
 		repl_list = std::move(temp_list);
 		pset->repl_type = idset::type::guid_loose;

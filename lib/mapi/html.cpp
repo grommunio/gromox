@@ -288,7 +288,7 @@ static void html_set_fonttable(RTF_WRITER *w, const char *name) try
 	auto tp = w->pfont_hash.emplace(name, w->pfont_hash.size());
 	assert(tp.second);
 	try {
-		w->fonts_ordered.push_back(name);
+		w->fonts_ordered.emplace_back(name);
 	} catch (const std::bad_alloc &) {
 		w->pfont_hash.erase(tp.first);
 	}
@@ -312,7 +312,7 @@ static void html_set_colortable(RTF_WRITER *w, rgb_t color) try
 	auto tp = w->pcolor_hash.emplace(color, w->pcolor_hash.size());
 	assert(tp.second);
 	try {
-		w->colors_ordered.push_back(color);
+		w->colors_ordered.emplace_back(color);
 	} catch (const std::bad_alloc &) {
 		w->pcolor_hash.erase(tp.first);
 	}

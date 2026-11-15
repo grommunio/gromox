@@ -333,7 +333,7 @@ static size_t rx_npid_transform(TPROPVAL_ARRAY &props,
 			continue;
 		auto it = ct_find(src, PROP_ID(pv.proptag));
 		if (it != src.end() && dst[it - src.begin()] == 0)
-			drop.push_back(pv.proptag);
+			drop.emplace_back(pv.proptag);
 	}
 	for (auto tag : drop)
 		props.erase(tag);
@@ -378,7 +378,7 @@ static ec_error_t rx_npid_replace(rxparam &par, MESSAGE_CONTENT &ctnt,
 	if (src_id_set.size() == 0)
 		return ecSuccess;
 	for (auto id : src_id_set)
-		src_id_vec.push_back(id);
+		src_id_vec.emplace_back(id);
 	PROPNAME_ARRAY src_name_arr{};
 	auto cl_0 = HX::make_scope_exit([&]() { rx_delete_local(src_name_arr); });
 	/* @ctnt was read before any rule ran, so it uses orig_dir's ids */
@@ -475,7 +475,7 @@ ec_error_t rxparam::load_std_rules(bool oof,
 		rule.provider = znul(row->get<const char>(PR_RULE_PROVIDER));
 		rule.cond = row->get<RESTRICTION>(PR_RULE_CONDITION);
 		rule.act = row->get<RULE_ACTIONS>(PR_RULE_ACTIONS);
-		rule_list.push_back(std::move(rule));
+		rule_list.emplace_back(std::move(rule));
 	}
 	return ecSuccess;
 }
@@ -1925,8 +1925,8 @@ static ec_error_t op_reply2(rxparam &par, uint8_t act_type, uint32_t flavor,
 			if (pv.proptag != PR_ASSOCIATED && pv.proptag != PidTagMid &&
 			    pv.proptag != PR_BODY && pv.proptag != PR_BODY_A &&
 			    pv.proptag != PR_HTML && pv.proptag != PR_RTF_COMPRESSED)
-				stock_props.push_back(pv);
-		stock_props.push_back({PR_BODY, body.data()});
+				stock_props.emplace_back(pv);
+		stock_props.emplace_back(PR_BODY, body.data());
 		tprops.count    = static_cast<uint16_t>(stock_props.size());
 		tprops.ppropval = stock_props.data();
 	}
@@ -2280,7 +2280,7 @@ static ec_error_t op_switch(rxparam &par, const rule_node &rule,
 		par.del = true;
 		return ecSuccess;
 	case OP_DEFER_ACTION:
-		par.dams.push_back({&rule, &act});
+		par.dams.emplace_back(&rule, &act);
 		return ecSuccess;
 	case OP_REPLY:
 	case OP_OOF_REPLY:
@@ -3315,7 +3315,7 @@ static ec_error_t mr_info_update(rxparam &par, const PROPID_ARRAY &propids,
 	/* MS-OXOCAL v22.1 §2.2.6.5 */
 	uint32_t mtg_type = ch & (BIT_CH_REQATT | BIT_CH_OPTATT) ? mtgFull : mtgInfo;
 	if (propids[l_meeting_type] != 0)
-		rqvals.push_back({PROP_TAG(PT_LONG, propids[l_meeting_type]), &mtg_type});
+		rqvals.emplace_back(PROP_TAG(PT_LONG, propids[l_meeting_type]), &mtg_type);
 	if (!par.del) {
 		err = rx_set_props(par.cur, rqvals.data(), rqvals.size());
 		if (err != ecSuccess)
@@ -4928,10 +4928,10 @@ void rxparam::make_dams() try
 			    provider.c_str()) != 0)
 				continue;
 			done[j] = true;
-			blocks.push_back(*dams[j].blk);
+			blocks.emplace_back(*dams[j].blk);
 			if (std::find(ids.begin(), ids.end(),
 			    dams[j].rule->rule_id) == ids.end())
-				ids.push_back(dams[j].rule->rule_id);
+				ids.emplace_back(dams[j].rule->rule_id);
 		}
 		const RULE_ACTIONS actions = {static_cast<uint16_t>(blocks.size()), blocks.data()};
 		EXT_PUSH acp, idp;

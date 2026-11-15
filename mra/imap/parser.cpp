@@ -342,7 +342,7 @@ static tproc_status ps_stat_notifying(imap_context &ctx)
 	auto pcontext = &ctx;
 	imap_parser_echo_modify(pcontext, nullptr);
 	std::unique_lock ll_hold(g_list_lock);
-	g_sleeping_list.push_back(pcontext);
+	g_sleeping_list.emplace_back(pcontext);
 	pcontext->sched_stat = isched_stat::idling;
 	return tproc_status::sleeping;
 }
@@ -377,7 +377,7 @@ static tproc_status ps_stat_rdcmd(imap_context &ctx)
 			return tproc_status::polling_rdonly;
 		if (pcontext->is_authed()) {
 			std::unique_lock ll_hold(g_list_lock);
-			g_sleeping_list.push_back(pcontext);
+			g_sleeping_list.emplace_back(pcontext);
 			return tproc_status::sleeping;
 		}
 		/* IMAP_CODE_2180011: BAD timeout */
@@ -744,7 +744,7 @@ static tproc_status ps_cmd_processing(imap_context &ctx)
 	if (pcontext->sched_stat != isched_stat::idling)
 		return tproc_status::cont;
 	std::unique_lock ll_hold(g_list_lock);
-	g_sleeping_list.push_back(pcontext);
+	g_sleeping_list.emplace_back(pcontext);
 	return tproc_status::sleeping;
 }
 
@@ -1415,7 +1415,7 @@ static void imap_parser_echo_expunges(imap_context &ctx, STREAM *stream,
 		auto item = ctx.contents.get_itemx(uid);
 		if (item == nullptr)
 			continue;
-		seqid_list.push_back(item->id);
+		seqid_list.emplace_back(item->id);
 	}
 	sort_unique(seqid_list);
 	size_t elem = seqid_list.size();
@@ -1766,7 +1766,7 @@ static void *imps_thrwork(void *argp)
 					contexts_pool_wakeup_context(pcontext, sctx_status::turning);
 				} else {
 					ll_hold.lock();
-					g_sleeping_list.push_back(pcontext);
+					g_sleeping_list.emplace_back(pcontext);
 					ll_hold.unlock();
 				}
 			} else {
@@ -1831,13 +1831,13 @@ void imap_parser_add_select(imap_context *pcontext)
 		if (g_select_hash.size() <= g_context_num) {
 			auto xpair = g_select_hash.emplace(temp_string, std::vector<imap_context *>());
 			auto &list = xpair.first->second;
-			list.push_back(pcontext);
+			list.emplace_back(pcontext);
 		}
 	} else {
 		/* Ensure the memory block pointed to by pcontext is not going by accidents */
 		static_assert(!std::is_move_constructible_v<imap_context>);
 		static_assert(!std::is_move_assignable_v<imap_context>);
-		plist->push_back(pcontext);
+		plist->emplace_back(pcontext);
 	}
 	hl_hold.unlock();
 	system_services_broadcast_select(pcontext->username, pcontext->selected_folder);

@@ -41,7 +41,7 @@ struct GX_EXPORT alloc_context {
 	NOMOVE(alloc_context);
 	void *alloc(size_t z) try {
 		auto p = std::make_unique<char[]>(z);
-		m_ptrs.push_back(std::move(p));
+		m_ptrs.emplace_back(std::move(p));
 		m_total_size += z;
 		return m_ptrs.back().get();
 	} catch (const std::bad_alloc &) {

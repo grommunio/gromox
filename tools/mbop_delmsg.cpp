@@ -56,7 +56,7 @@ int main(int argc, char **argv)
 			mbop_fprintf(stderr, "Not recognized/found: \"%s\"\n", result.uarg[uidx]);
 			return EXIT_FAILURE;
 		}
-		eids.push_back(eid);
+		eids.emplace_back(eid);
 	}
 	BOOL partial = false;
 	uint32_t prev_delc, prev_fldc, curr_delc, curr_fldc;

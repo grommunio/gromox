@@ -453,7 +453,7 @@ static errno_t clear_rwz()
 	for (unsigned int i = 0; i < rowset.count; ++i) {
 		auto mid = rowset.pparray[i]->get<const eid_t>(PidTagMid);
 		if (mid != nullptr)
-			ids.push_back(*mid);
+			ids.emplace_back(*mid);
 	}
 
 	BOOL partial = false;
@@ -545,7 +545,7 @@ static int parens_parser(int argc, char **argv)
 			--qcount;
 			if (qcount == 0) {
 				std::vector<char *> args(&argv[start], &argv[scanpos]);
-				args.push_back(nullptr);
+				args.emplace_back(nullptr);
 				auto ret = cmd_parser(std::min(static_cast<size_t>(INT_MAX), args.size() - 1), &args[0]);
 				if (ret != EXIT_SUCCESS && !g_continuous_mode)
 					return ret;

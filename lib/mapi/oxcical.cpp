@@ -1887,7 +1887,7 @@ static bool oxcical_fetch_propname(MESSAGE_CONTENT *pmsg, namemap &phash,
 	if (propnames.ppropname == nullptr)
 		return false;
 	for (const auto &pair : phash) {
-		propids.push_back(pair.first);
+		propids.emplace_back(pair.first);
 		propnames.ppropname[propnames.count++] = pair.second;
 	}
 	if (!get_propids(&propnames, &propids1) ||
@@ -2761,7 +2761,7 @@ static ec_error_t oxcical_import_internal(const char *method,
 				return err;
 
 			event_list_t tmp_list;
-			tmp_list.push_back(event);
+			tmp_list.emplace_back(event);
 			EXCEPTIONINFO ei_new;
 			EXTENDEDEXCEPTION ee_new;
 			err = oxcical_import_internal(method, false,
@@ -2926,7 +2926,7 @@ static ec_error_t oxcical_import_events(uint16_t calendartype,
 			errstr.clear();
 			return ecServerOOM;
 		}
-		msgvec.push_back(std::move(msg));
+		msgvec.emplace_back(std::move(msg));
 		auto pembedded = msgvec.back().get();
 		auto err = pembedded->proplist.set(PR_MESSAGE_CLASS, "IPM.Appointment");
 		if (err != ecSuccess) {
@@ -3115,7 +3115,7 @@ static bool oxcical_classify_calendar(const ical &pical, uidxevent_list_t &ul) t
 		auto piline = pcomponent->get_line("UID");
 		auto puid = piline != nullptr ? piline->get_first_subvalue() : nullptr;
 		if (puid != nullptr)
-			ul[puid].push_back(pcomponent);
+			ul[puid].emplace_back(pcomponent);
 	}
 	return true;
 } catch (const std::bad_alloc &) {
@@ -3281,7 +3281,7 @@ ec_error_t oxcical_converter::ical_to_mapi_multi(const ical &pical,
 		message_ptr msg(message_content_init());
 		if (msg == nullptr)
 			return ecMAPIOOM;
-		msgvec.push_back(std::move(msg));
+		msgvec.emplace_back(std::move(msg));
 		auto pmsg = msgvec.back().get();
 		if (pmsg->proplist.set(PR_MESSAGE_CLASS, "IPM.Task") != ecSuccess)
 			return ecError;
@@ -3295,7 +3295,7 @@ ec_error_t oxcical_converter::ical_to_mapi_multi(const ical &pical,
 		message_ptr msg(message_content_init());
 		if (msg == nullptr)
 			return ecMAPIOOM;
-		msgvec.push_back(std::move(msg));
+		msgvec.emplace_back(std::move(msg));
 		auto pmsg = msgvec.back().get();
 		if (pmsg->proplist.set(PR_MESSAGE_CLASS, "IPM.Activity") != ecSuccess)
 			return ecError;
@@ -3369,7 +3369,7 @@ ec_error_t oxcical_converter::ical_to_mapi_multi(const ical &pical,
 	message_ptr msg(message_content_init());
 	if (msg == nullptr)
 		return ecMAPIOOM;
-	msgvec.push_back(std::move(msg));
+	msgvec.emplace_back(std::move(msg));
 	auto pmsg = msgvec.back().get();
 	auto err = pmsg->proplist.set(PR_MESSAGE_CLASS, mclass);
 	if (err != ecSuccess)

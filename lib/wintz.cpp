@@ -140,7 +140,7 @@ std::vector<std::string_view> wintz_all_tzdefs()
 		return out;
 	for (const auto &[name, data] : tzd_archive.list())
 		if (class_match_suffix(name.c_str(), ".tzd") == 0)
-			out.push_back(data);
+			out.emplace_back(data);
 	return out;
 }
 

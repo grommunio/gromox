@@ -1553,7 +1553,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 		if (!tnef_convert_to_propname(name,
 		    propnames.ppropname + propnames.count, alloc))
 			return NULL;
-		propids.push_back(propid);
+		propids.emplace_back(propid);
 		propnames.count ++;
 	}
 	phash.clear();

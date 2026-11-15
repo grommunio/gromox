@@ -166,7 +166,7 @@ void svc_mgr::insert_library(const generic_module &mod)
 	SVC_PLUG_ENTITY plug;
 	plug.lib_main = mod.lib_main;
 	plug.file_name = mod.file_name;
-	g_list_plug.push_back(std::move(plug));
+	g_list_plug.emplace_back(std::move(plug));
 }
 
 /**

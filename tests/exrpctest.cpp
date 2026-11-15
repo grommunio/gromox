@@ -39,7 +39,7 @@ static int t_2209(const char *dir)
 			problems.emplace_back(i, pv.proptag, ecAccessDenied);
 		} else {
 			qvals.ppropval[qvals.count++] = pv;
-			original_indices.push_back(i);
+			original_indices.emplace_back(i);
 		}
 	}
 	qvals.emplace_back(PidTagChangeNumber, &v_zero);

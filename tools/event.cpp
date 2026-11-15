@@ -275,7 +275,7 @@ int main(int argc, char **argv)
 		char buf[32];
 		snprintf(buf, sizeof(buf), "enqueue/%u", i);
 		pthread_setname_np(tid, buf);
-		tidlist.push_back(tid);
+		tidlist.emplace_back(tid);
 
 		ret = pthread_create4(&tid, nullptr, ev_deqwork, nullptr);
 		if (ret != 0) {
@@ -285,7 +285,7 @@ int main(int argc, char **argv)
 		}
 		snprintf(buf, sizeof(buf), "dequeue/%u", i);
 		pthread_setname_np(tid, buf);
-		tidlist.push_back(tid);
+		tidlist.emplace_back(tid);
 	}
 
 	auto hosts_allow = pconfig->get_value("event_hosts_allow");
@@ -455,14 +455,14 @@ static int q_listen(eq_iter_t eq_node)
 	}
 	phost->last_time = time(nullptr);
 	try {
-		phost->list.push_back(pdequeue);
+		phost->list.emplace_back(pdequeue);
 	} catch (const std::bad_alloc &) {
 		pdequeue->sk_write("FALSE\r\n");
 		return 0;
 	}
 	try {
 		std::lock_guard dq_hold(g_dequeue_lock);
-		g_dequeue_list1.push_back(pdequeue);
+		g_dequeue_list1.emplace_back(pdequeue);
 	} catch (const std::bad_alloc &) {
 		phost->list.pop_back();
 		pdequeue->sk_write("FALSE\r\n");
@@ -597,7 +597,7 @@ static void q_else(eq_iter_t eq_node)
 			dl_hold.unlock();
 			if (b_result)
 				pdequeue->waken_cond.notify_one();
-			phost->list.push_back(std::move(pdequeue));
+			phost->list.emplace_back(std::move(pdequeue));
 		}
 	}
 	hl_hold.unlock();

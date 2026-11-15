@@ -633,7 +633,7 @@ static int exm_packet(const void *buf, size_t bufsize)
 			if (ep.g_permission_data(&d) != pack_result::ok)
 				throw YError("PG-1129");
 			if (d.flags == ROW_ADD)
-				perms.push_back(std::move(d));
+				perms.emplace_back(std::move(d));
 			else
 				fprintf(stderr, "ACE not of type ROW_ADD, ignoring\n");
 		}

@@ -155,8 +155,9 @@ static std::vector<uint32_t> g_only_objs;
 static kdb_user_map g_user_map;
 static uint32_t g_proptag_stubbed;
 
-static void cb_only_obj(const HXoptcb *cb) {
-		g_only_objs.push_back(cb->data_long);
+static void cb_only_obj(const HXoptcb *cb)
+{
+	g_only_objs.emplace_back(cb->data_long);
 }
 
 static int acl_cb(const char *s)
@@ -282,7 +283,7 @@ errno_t ace_list::emplace(std::string &&s, uint32_t r)
 	tpropval_array_ptr props(tpropval_array_init());
 	if (props == nullptr)
 		return ENOMEM;
-	m_strs.push_back(std::move(s));
+	m_strs.emplace_back(std::move(s));
 	auto err = props->set(PR_SMTP_ADDRESS, m_strs.back().c_str());
 	if (err != ecSuccess) {
 		fprintf(stderr, "error ACL: %xh\n", static_cast<unsigned int>(err));
@@ -936,7 +937,7 @@ std::unique_ptr<kdb_item> kdb_item::load_hid_base(driver &drv, uint32_t hid)
 		if (xflag & KC_MSGFLAG_DELETED)
 			/* Skip over softdeletes */
 			continue;
-		yi->m_sub_hids.push_back({xid, xtype});
+		yi->m_sub_hids.emplace_back(xid, xtype);
 	}
 	if (yi->m_hid != hid)
 		return nullptr;

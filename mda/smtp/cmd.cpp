@@ -232,7 +232,7 @@ int cmdh_rcpt(std::string_view cmd_line, smtp_context &ctx) try
 			strerror(err));
 		return DISPATCH_CONTINUE;
 	}
-	pcontext->menv.rcpt_to.push_back(buff);
+	pcontext->menv.rcpt_to.emplace_back(buff);
 	pcontext->last_cmd = T_RCPT_CMD;
 	return 205; /* 250 OK */
 } catch (const std::bad_alloc &) {

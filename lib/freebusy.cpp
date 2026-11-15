@@ -268,7 +268,7 @@ bool gromox::fb_recur_times(const ical_component *tzcom,
 		};
 		if (std::any_of(apr.pexceptioninfo.cbegin(), apr.pexceptioninfo.cend(), time_test))
 			continue;
-		evlist.push_back(fb_instance{ut, ut + duration});
+		evlist.emplace_back(fb_instance{ut, ut + duration});
 		if (end_time < 0)
 			break;
 	} while (irrule.iterate());
@@ -295,7 +295,7 @@ bool gromox::fb_recur_times(const ical_component *tzcom,
 			event.orig_start = ut;
 		event.ei = &apr.pexceptioninfo[i];
 		event.xe = &apr.pextendedexception[i];
-		evlist.push_back(std::move(event));
+		evlist.emplace_back(std::move(event));
 	}
 	return true;
 }
@@ -624,7 +624,7 @@ ec_error_t get_freebusy(const char *username, const char *dir, const char *org,
 		// non-recurring appointments
 		using FBE = freebusy_event;
 		if (flag == nullptr || *flag == 0) {
-			fb_data.push_back(FBE{
+			fb_data.emplace_back(FBE{
 				.start_time = start_whole, .end_time = end_whole,
 				.id = id, .subject = FBE::optnul(subject),
 				.location = FBE::optnul(location),
@@ -664,7 +664,7 @@ ec_error_t get_freebusy(const char *username, const char *dir, const char *org,
 
 		for (const auto &event : event_list) {
 			if (event.ei == nullptr || event.xe == nullptr) {
-				fb_data.push_back(FBE{
+				fb_data.emplace_back(FBE{
 					.start_time = event.start_time,
 					.end_time = event.end_time,
 					.id = id, .subject = FBE::optnul(subject),
@@ -694,7 +694,7 @@ ec_error_t get_freebusy(const char *username, const char *dir, const char *org,
 			else if (!ov_withhold && location != nullptr)
 				ov_loc = location;
 
-			fb_data.push_back(FBE{
+			fb_data.emplace_back(FBE{
 				.start_time = event.start_time, .end_time = event.end_time,
 				.id = ov_withhold ? std::nullopt : id,
 				.subject = std::move(ov_subj),

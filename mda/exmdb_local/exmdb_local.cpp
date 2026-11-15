@@ -296,7 +296,7 @@ static bool rcpt_directly_addressed(const char *envelope_to,
 		if (strcasecmp(addr, envelope_to) == 0 ||
 		    strcasecmp(addr, username) == 0)
 			return true;
-		hdr_addrs.push_back(addr);
+		hdr_addrs.emplace_back(addr);
 	}
 	if (hdr_addrs.empty())
 		return false;

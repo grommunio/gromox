@@ -44,8 +44,7 @@
 	inline const value_type &operator[](size_t i) const { return (memb)[i]; } \
 	inline value_type &operator[](size_t i) { return (memb)[i]; } \
 	inline size_t size() const { return (count); } \
-	inline bool empty() const { return (count) == 0; } \
-	inline void push_back(const value_type &v) { (memb)[(count)++] = v; }
+	inline bool empty() const { return (count) == 0; }
 
 #include <gromox/mapierr.hpp>
 

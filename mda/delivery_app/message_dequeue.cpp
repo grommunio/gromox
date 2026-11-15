@@ -169,9 +169,8 @@ int message_dequeue_run()
 	g_free_list.reserve(g_message_units);
 	g_used_list.reserve(g_message_units);
 	/* append rest of message node into free list */
-	for (size_t i = 0; i < g_message_units; ++i) {
-		g_free_list.push_back(&g_message_ptr[i]);
-	}
+	for (size_t i = 0; i < g_message_units; ++i)
+		g_free_list.emplace_back(&g_message_ptr[i]);
 	auto ret = pthread_create4(&g_thread_id, nullptr, mdq_thrwork, nullptr);
 	if (ret != 0) {
 		mlog(LV_ERR, "mdq: failed to create message dequeue thread: %s", strerror(ret));
@@ -301,7 +300,7 @@ static void message_dequeue_put_to_free(MESSAGE *pmessage)
 		g_current_mem -= pmessage->size;
 	}
 	std::unique_lock h(g_free_mutex);
-	g_free_list.push_back(pmessage);
+	g_free_list.emplace_back(pmessage);
 }
 
 /*
@@ -313,7 +312,7 @@ static void message_dequeue_put_to_used(MESSAGE *pmessage)
 {
 	{
 		std::lock_guard h(g_workitem_mutex);
-		g_used_list.push_back(pmessage);
+		g_used_list.emplace_back(pmessage);
 	}
 	/* send a signal to threads pool in transporter */
 	g_waken_cond.notify_one();

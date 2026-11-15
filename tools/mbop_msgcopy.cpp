@@ -227,7 +227,7 @@ static int do_clear(int argc, char **argv)
 	std::vector<proptag_t> tags;
 	for (auto t : tag)
 		if (t != 0)
-			tags.push_back(t);
+			tags.emplace_back(t);
 	if (!tags.empty() &&
 	    !exmdb_client->remove_store_properties(g_storedir, tags)) {
 		mbop_fprintf(stderr, "remove_store_prop RPC unsuccessful\n");

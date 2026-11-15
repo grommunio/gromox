@@ -2242,7 +2242,7 @@ static bool icp_parse_list_opts(const std::string &tok, bool is_return,
 				while (k < sp.size() && sp[k] != ' ')
 					++k;
 				if (k > ks)
-					status_items.push_back(sp.substr(ks, k - ks));
+					status_items.emplace_back(sp.substr(ks, k - ks));
 			}
 			continue;
 		}
@@ -2942,7 +2942,7 @@ int icp_expunge(std::span<std::string> argv, imap_context &ctx) try
 		auto ct_item = pcontext->contents.get_itemx(pitem->uid);
 		if (ct_item == nullptr)
 			continue;
-		exp_list.push_back(pitem);
+		exp_list.emplace_back(pitem);
 	}
 	ssr = midb_agent::remove_mail(pcontext->maildir,
 	      pcontext->selected_folder, exp_list, &errnum);
@@ -3078,7 +3078,7 @@ static std::string icp_esearch_line(const char *tag, bool uid_mode,
 		auto v = strtoul(p, &end, 10);
 		if (end == p)
 			break;
-		ids.push_back(v);
+		ids.emplace_back(v);
 		p = end;
 	}
 	sort_unique(ids);
@@ -3227,7 +3227,7 @@ int icp_search(std::span<std::string> argv, imap_context &ctx)
 		for (auto seq : icp_parse_idlist(buff)) {
 			auto it = ctx.contents.get_item(seq - 1);
 			if (it != nullptr)
-				ctx.saved_uids.push_back(it->uid);
+				ctx.saved_uids.emplace_back(it->uid);
 		}
 	}
 	std::string resp = esearch ?
@@ -3538,7 +3538,7 @@ static void icp_expunge_flagged(imap_context &ctx, XARRAY &xarray) try
 		if (pitem->uid == 0 ||
 		    ctx.contents.get_itemx(pitem->uid) == nullptr)
 			continue;
-		exp_list.push_back(pitem);
+		exp_list.emplace_back(pitem);
 	}
 	if (exp_list.empty())
 		return;
@@ -3679,7 +3679,7 @@ int icp_copy(std::span<std::string> argv, imap_context &ctx) try
 			auto pitem = xarray.get_item(i - 1);
 			if (pitem->uid == 0)
 				continue;
-			exp_list.push_back(pitem);
+			exp_list.emplace_back(pitem);
 		}
 		midb_agent::remove_mail(pcontext->maildir,
 			sys_name, exp_list, &errnum);
@@ -3939,7 +3939,7 @@ int icp_uid_copy(std::span<std::string> argv, imap_context &ctx) try
 			auto pitem = xarray.get_item(i - 1);
 			if (pitem->uid == 0)
 				continue;
-			exp_list.push_back(pitem);
+			exp_list.emplace_back(pitem);
 		}
 		midb_agent::remove_mail(pcontext->maildir,
 			sys_name, exp_list, &errnum);
@@ -4023,7 +4023,7 @@ int icp_move(std::span<std::string> argv, imap_context &ctx) try
 			b_copied = FALSE;
 			break;
 		}
-		moved.push_back(xi);
+		moved.emplace_back(xi);
 		if (uidvalidity == 0)
 			continue;
 		unsigned int j;
@@ -4052,7 +4052,7 @@ int icp_move(std::span<std::string> argv, imap_context &ctx) try
 		while (i > 0) {
 			auto pitem = xarray.get_item(--i);
 			if (pitem->uid != 0)
-				exp_list.push_back(pitem);
+				exp_list.emplace_back(pitem);
 		}
 		midb_agent::remove_mail(ctx.maildir, sys_name, exp_list, &errnum);
 		ctx.stream.clear();
@@ -4137,7 +4137,7 @@ int icp_uid_move(std::span<std::string> argv, imap_context &ctx) try
 			b_copied = FALSE;
 			break;
 		}
-		moved.push_back(pitem);
+		moved.emplace_back(pitem);
 		if (uidvalidity == 0)
 			continue;
 		for (j = 0; j < 10; j++) {
@@ -4162,7 +4162,7 @@ int icp_uid_move(std::span<std::string> argv, imap_context &ctx) try
 			auto pitem = xarray.get_item(i - 1);
 			if (pitem->uid == 0)
 				continue;
-			exp_list.push_back(pitem);
+			exp_list.emplace_back(pitem);
 		}
 		midb_agent::remove_mail(pcontext->maildir, sys_name, exp_list, &errnum);
 		pcontext->stream.clear();
@@ -4239,7 +4239,7 @@ int icp_uid_expunge(std::span<std::string> argv, imap_context &ctx) try
 		if (zero_uid_bit(*pitem) ||
 		    !iseq_contains(list_seq, pitem->uid, max_uid))
 			continue;
-		exp_list.push_back(pitem);
+		exp_list.emplace_back(pitem);
 	}
 	ssr = midb_agent::remove_mail(pcontext->maildir,
 	      pcontext->selected_folder, exp_list, &errnum);
@@ -4343,7 +4343,7 @@ void icp_clsfld(imap_context &ctx) try
 		auto pitem = xarray.get_item(i);
 		if (zero_uid_bit(*pitem))
 			continue;
-		exp_list.push_back(pitem);
+		exp_list.emplace_back(pitem);
 	}
 	result = midb_agent::remove_mail(pcontext->maildir,
 	         prev_selected, exp_list, &errnum);

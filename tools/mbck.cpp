@@ -34,7 +34,7 @@ static ssize_t ck_allocated_eids(sqlite3 *db)
 		auto objid = stm.col_int64(0);
 		printf(" f%llu", LLU(objid));
 		if (g_do_repair)
-			eids.push_back(objid);
+			eids.emplace_back(objid);
 	}
 
 	stm = gx_sql_prep(db, "SELECT m.message_id FROM messages AS m "
@@ -47,7 +47,7 @@ static ssize_t ck_allocated_eids(sqlite3 *db)
 		auto objid = stm.col_int64(0);
 		printf(" m%llu", LLU(objid));
 		if (g_do_repair)
-			eids.push_back(objid);
+			eids.emplace_back(objid);
 	}
 	printf(" [%zu issues]", probs);
 	if (!g_do_repair) {

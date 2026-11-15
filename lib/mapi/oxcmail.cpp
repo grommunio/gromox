@@ -1664,7 +1664,7 @@ static BOOL oxcmail_fetch_propname(MESSAGE_CONTENT *pmsg, namemap &phash,
 	if (propnames.ppropname == nullptr)
 		return FALSE;
 	for (const auto &pair : phash) {
-		propids.push_back(pair.first);
+		propids.emplace_back(pair.first);
 		propnames.ppropname[propnames.count++] = pair.second;
 	}
 	if (!get_propids(&propnames, &propids1) ||
