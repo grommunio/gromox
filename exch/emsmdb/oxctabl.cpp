@@ -957,7 +957,7 @@ ec_error_t rop_updatedeferredactionmessages(const BINARY *pserver_entry_id,
 	if (username != nullptr) {
 		if (!exmdb_client->get_folder_perm(dir,
 		    fid_deferred, username, &permission))
-			return ecError;
+			return ecRpcFailed;
 		if (!(permission & frightsEditAny))
 			return ecAccessDenied;
 	}
@@ -971,12 +971,12 @@ ec_error_t rop_updatedeferredactionmessages(const BINARY *pserver_entry_id,
 	if (!exmdb_client->load_content_table(dir, CP_ACP, fid_deferred,
 	    nullptr, TABLE_FLAG_NONOTIFICATIONS, &restriction, nullptr,
 	    &table_id, &row_count))
-		return ecError;
+		return ecRpcFailed;
 
 	static constexpr proptag_t tmp_proptag = PidTagMid;
 	if (!exmdb_client->query_table(dir, nullptr, CP_ACP,
 	    table_id, {&tmp_proptag, 1}, 0, row_count, &tmp_set))
-		return ecError;
+		return ecRpcFailed;
 	exmdb_client->unload_table(dir, table_id);
 
 	propvals.count = 2;
