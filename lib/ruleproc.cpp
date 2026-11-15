@@ -4328,10 +4328,25 @@ static ec_error_t mr_update_occurrence(rxparam &par, const PROPID_ARRAY &propids
 			rp.sort_dels();
 		}
 	} else {
-		/* The new start day replaces the old one, §3.1.4.6.2 */
-		auto day = apr.pexceptioninfo[exi].startdatetime / 1440 * 1440;
+		/*
+		 * The new start day replaces the old one, §3.1.4.6.2. Compare
+		 * by day, iCal imports used to store the time of day as well.
+		 * Older EWS keyed the entry by the original day, which
+		 * remove_instance also accepts.
+		 */
+		auto day = apr.pexceptioninfo[exi].startdatetime / 1440;
 		auto &mods = rp.pmodifiedinstancedates;
-		auto it = std::find(mods.begin(), mods.end(), day);
+		auto it = std::find_if(mods.begin(), mods.end(),
+		          [=](uint32_t m) { return m / 1440 == day; });
+		auto bday = basedate / 1440;
+		auto starts_bday = [=](const EXCEPTIONINFO &e) {
+			return e.startdatetime / 1440 == bday;
+		};
+		if (it == mods.end() &&
+		    std::none_of(apr.pexceptioninfo.cbegin(),
+		    apr.pexceptioninfo.cend(), starts_bday))
+			it = std::find_if(mods.begin(), mods.end(),
+			     [=](uint32_t m) { return m / 1440 == bday; });
 		if (it != mods.end())
 			mods.erase(it);
 	}
