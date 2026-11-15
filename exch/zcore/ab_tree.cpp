@@ -453,7 +453,7 @@ bool ab_tree_resolvename(const ab_tree::ab_base* base, const char *pstr,
 		if (node.hidden() & AB_HIDE_RESOLVE ||
 		    !ab_tree_resolve_node(node, pstr))
 			continue;
-		result_list.push_back(*it);
+		result_list.emplace_back(*it);
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
@@ -546,7 +546,7 @@ BOOL ab_tree_match_minids(const ab_tree::ab_base *pbase, uint32_t container_id,
 			if (node.hidden() & AB_HIDE_FROM_GAL ||
 			    !ab_tree_match_node(node, pfilter))
 				continue;
-			tlist.push_back(*it);
+			tlist.emplace_back(*it);
 		}
 	} else {
 		ab_tree::ab_node node(pbase, container_id);
@@ -561,7 +561,7 @@ BOOL ab_tree_match_minids(const ab_tree::ab_base *pbase, uint32_t container_id,
 			    child.hidden() & AB_HIDE_FROM_AL ||
 			    !ab_tree_match_node(child, pfilter))
 				continue;
-			tlist.push_back(mid);
+			tlist.emplace_back(mid);
 		}
 	}
 	pminids->count = uint32_t(tlist.size());

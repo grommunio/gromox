@@ -1414,7 +1414,7 @@ http_status OxdiscoPlugin::resp_soap(int ctx_id, const char *actor,
 			break;
 		}
 		auto mbox = soap_child(u, "Mailbox");
-		users.push_back(mbox != nullptr ? mbox->GetText() : nullptr);
+		users.emplace_back(mbox != nullptr ? mbox->GetText() : nullptr);
 	}
 
 	XMLDocument rdoc;

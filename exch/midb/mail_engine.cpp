@@ -491,10 +491,10 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 	Json::Value digest;
 	
 #define PUSH_MATCH(TREE, NODE, CONJUNCTION, RESULT) do { \
-	trees.push_back(TREE); \
-	nodes.push_back(NODE); \
-	conjunctions.push_back(CONJUNCTION); \
-	results.push_back(RESULT); \
+	trees.emplace_back(TREE); \
+	nodes.emplace_back(NODE); \
+	conjunctions.emplace_back(CONJUNCTION); \
+	results.emplace_back(RESULT); \
 	++sp; \
 } while (false);
 	
@@ -1161,7 +1161,7 @@ static std::optional<CONDITION_TREE> me_ct_build_internal(const char *charset,
 			ptree_node->condition = midb_cond::id;
 			ptree_node->ct_seq = std::move(r);
 		}
-		plist->push_back(std::move(ctn));
+		plist->emplace_back(std::move(ctn));
 	}
 	return plist;
 } catch (const std::bad_alloc &) {
@@ -1238,7 +1238,7 @@ static std::optional<std::vector<int>> me_ct_match(const char *charset,
 		uid = sqlite3_column_int64(pstmt, 1);
 		if (me_ct_match_mail(psqlite, charset, pstmt_message,
 		    mid_string, i, total_mail, uidnext, ptree))
-			presult->push_back(b_uid ? uid : i);
+			presult->emplace_back(b_uid ? uid : i);
 	}
 	return presult;
 } catch (const std::bad_alloc &) {
@@ -1708,7 +1708,7 @@ static bool me_sync_contents(IDB_ITEM *pidb, uint64_t folder_id,
 	while (pstmt.step() == SQLITE_ROW) {
 		uint64_t message_id = sqlite3_column_int64(pstmt, 0);
 		if (syncmessagelist.find(message_id) == syncmessagelist.cend())
-			temp_list.push_back(message_id);
+			temp_list.emplace_back(message_id);
 	}
 	pstmt.finalize();
 	if (temp_list.size() > 0) {
@@ -1966,7 +1966,7 @@ static BOOL me_sync_mailbox(IDB_ITEM *pidb, bool force_resync = false) try
 	while (pstmt.step() == SQLITE_ROW) {
 		uint64_t folder_id = sqlite3_column_int64(pstmt, 0);
 		if (syncfolderlist.find(folder_id) == syncfolderlist.cend())
-			temp_list.push_back(folder_id);
+			temp_list.emplace_back(folder_id);
 	}
 	pstmt.finalize();
 	if (temp_list.size() > 0) {
@@ -3100,7 +3100,7 @@ static int simu_query(IDB_ITEM *pidb, const char *sql_string,
 		sn.flags += ')';
 		sn.size = pstmt.col_uint64(10);
 		sn.keywords = znul(pstmt.col_text(11));
-		temp_list.push_back(std::move(sn));
+		temp_list.emplace_back(std::move(sn));
 	}
 	return 0;
 } catch (const std::bad_alloc &) {
@@ -3761,7 +3761,7 @@ static int me_set_categories(const char *dir, uint64_t msg_id,
 
 	std::vector<char *> ptrs;
 	for (auto &k : vec)
-		ptrs.push_back(k.data());
+		ptrs.emplace_back(k.data());
 	STRING_ARRAY sa = {static_cast<uint32_t>(ptrs.size()), ptrs.data()};
 	const TAGGED_PROPVAL tp[] = {{tags[0], deconst(&sa)}};
 	const TPROPVAL_ARRAY ta = {std::size(tp), deconst(tp)};
@@ -3971,7 +3971,7 @@ static int me_pkwls(std::span<char *> argv, int sockd) try
 			if (sp > pos) {
 				std::string tok(row.substr(pos, sp - pos));
 				if (!ct_contains(kwset, tok))
-					kwset.push_back(std::move(tok));
+					kwset.emplace_back(std::move(tok));
 			}
 			pos = sp + 1;
 		}

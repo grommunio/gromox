@@ -508,7 +508,7 @@ ec_error_t rop_querynamedproperties(uint8_t query_flags, const GUID *pguid,
 	for (const auto tag : proptags) {
 		auto propid = PROP_ID(tag);
 		if (is_nameprop_id(propid))
-			propids.push_back(propid);
+			propids.emplace_back(propid);
 	}
 	if (propids.empty()) {
 		ppropidnames->count = 0;
@@ -611,7 +611,7 @@ ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 			}
 			if (copy_flags & MAPI_NOREPLACE && proptags1.has(tag))
 				continue;
-			poriginal_indices.push_back(i);
+			poriginal_indices.emplace_back(i);
 			proptags.emplace_back(tag);
 		}
 		auto err = fldsrc->get_props(proptags, &propvals);
@@ -666,7 +666,7 @@ ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 			}
 			if (copy_flags & MAPI_NOREPLACE && proptags1.has(tag))
 				continue;
-			poriginal_indices.push_back(i);
+			poriginal_indices.emplace_back(i);
 			proptags.emplace_back(tag);
 		}
 		auto err = msgsrc->get_props(0, proptags, &propvals);
@@ -704,7 +704,7 @@ ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 			}
 			if (copy_flags & MAPI_NOREPLACE && proptags1.has(tag))
 				continue;
-			poriginal_indices.push_back(i);
+			poriginal_indices.emplace_back(i);
 			proptags.emplace_back(tag);
 		}
 		auto err = atsrc->get_props(0, proptags, &propvals);

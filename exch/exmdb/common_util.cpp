@@ -513,8 +513,8 @@ bool cu_get_proptags(mapi_object_type table_type, uint64_t id, sqlite3 *psqlite,
 	switch (table_type) {
 	case MAPI_STORE:
 		gx_strlcpy(sql_string, "SELECT proptag FROM store_properties", std::size(sql_string));
-		tags.push_back(PR_INTERNET_ARTICLE_NUMBER);
-		tags.push_back(PidTagSerializedReplidGuidMap);
+		tags.emplace_back(PR_INTERNET_ARTICLE_NUMBER);
+		tags.emplace_back(PidTagSerializedReplidGuidMap);
 		break;
 	case MAPI_FOLDER:
 		snprintf(sql_string, std::size(sql_string), "SELECT proptag FROM "
@@ -534,7 +534,7 @@ bool cu_get_proptags(mapi_object_type table_type, uint64_t id, sqlite3 *psqlite,
 	case MAPI_ATTACH:
 		snprintf(sql_string, std::size(sql_string), "SELECT proptag FROM "
 		        "attachment_properties WHERE attachment_id=%llu", LLU{id});
-		tags.push_back(PR_RECORD_KEY);
+		tags.emplace_back(PR_RECORD_KEY);
 		break;
 	default:
 		assert(!"Unknown table_type");
@@ -549,23 +549,23 @@ bool cu_get_proptags(mapi_object_type table_type, uint64_t id, sqlite3 *psqlite,
 		if (PROP_ID(tag) == PROP_ID(PR_NULL))
 			continue;
 		if (table_type == MAPI_MESSAGE && tag == PR_SENDER_EMAIL_ADDRESS)
-			tags.push_back(PR_SENDER_ADDRTYPE);
+			tags.emplace_back(PR_SENDER_ADDRTYPE);
 		if (table_type == MAPI_MESSAGE && tag == PR_SENT_REPRESENTING_EMAIL_ADDRESS)
-			tags.push_back(PR_SENT_REPRESENTING_ADDRTYPE);
+			tags.emplace_back(PR_SENT_REPRESENTING_ADDRTYPE);
 		if (table_type == MAPI_MESSAGE && !b_subject) {
 			if (tag == PR_NORMALIZED_SUBJECT ||
 			    tag == PR_SUBJECT_PREFIX) {
 				b_subject = TRUE;
-				tags.push_back(tag);
+				tags.emplace_back(tag);
 				tag = PR_SUBJECT;
 			} else if (tag == PR_NORMALIZED_SUBJECT_A ||
 			    tag == PR_SUBJECT_PREFIX_A) {
 				b_subject = TRUE;
-				tags.push_back(tag);
+				tags.emplace_back(tag);
 				tag = PR_SUBJECT_A;
 			}
 		}
-		tags.push_back(tag);
+		tags.emplace_back(tag);
 	}
 	pstmt.finalize();
 	std::sort(tags.begin(), tags.end());

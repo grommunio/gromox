@@ -616,7 +616,7 @@ ec_error_t message_object::append_stream_obj(stream_object *pstream) try
 		sort_unique(changed_proptags);
 		erase_first(removed_proptags, u_tag);
 	}
-	stream_list.push_back(pstream);
+	stream_list.emplace_back(pstream);
 	pmessage->b_touched = TRUE;
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
@@ -996,7 +996,7 @@ static ec_error_t message_object_set_properties_internal(message_object *pmessag
 			}
 		}
 		tmp_propvals.ppropval[tmp_propvals.count++] = pv;
-		poriginal_indices.push_back(i);
+		poriginal_indices.emplace_back(i);
 	}
 	if (tmp_propvals.count == 0)
 		return ecSuccess;
@@ -1068,7 +1068,7 @@ ec_error_t message_object::remove_props(proptag_cspan pproptags,
 				tag, static_cast<unsigned long long>(message_id), instance_id);
 			continue;
 		default:
-			poriginal_indices.push_back(i);
+			poriginal_indices.emplace_back(i);
 			tmp_proptags.emplace_back(tag);
 			break;
 		}

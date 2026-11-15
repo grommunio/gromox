@@ -842,7 +842,7 @@ static ec_error_t message_object_set_properties_internal(message_object *pmessag
 			}
 		}
 		tmp_propvals.ppropval[tmp_propvals.count++] = pv;
-		poriginal_indices.push_back(i);
+		poriginal_indices.emplace_back(i);
 	}
 	if (tmp_propvals.count == 0)
 		return ecSuccess;
@@ -907,7 +907,7 @@ ec_error_t message_object::remove_properties(proptag_cspan pproptags) try
 			continue;
 		}
 		tmp_proptags.emplace_back(tag);
-		poriginal_indices.push_back(i);
+		poriginal_indices.emplace_back(i);
 	}
 	if (tmp_proptags.count == 0)
 		return ecSuccess;

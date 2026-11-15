@@ -157,15 +157,15 @@ static int mod_fastcgi_defaults()
 	node.suffix = "php";
 	node.index = "index.php";
 	node.sock_path = FPMSOCKDIR "/php-grommunio-sync-fpm.sock";
-	g_fastcgi_list.push_back(node);
+	g_fastcgi_list.emplace_back(node);
 	node.path = "/web";
 	node.dir = DATADIR "/grommunio-web";
 	node.sock_path = FPMSOCKDIR "/php-grommunio-web-fpm.sock";
-	g_fastcgi_list.push_back(node);
+	g_fastcgi_list.emplace_back(node);
 	node.path = "/dav";
 	node.dir = DATADIR "/grommunio-dav/server.php";
 	node.sock_path = FPMSOCKDIR "/php-grommunio-dav-fpm.sock";
-	g_fastcgi_list.push_back(std::move(node));
+	g_fastcgi_list.emplace_back(std::move(node));
 	return 0;
 }
 
@@ -198,7 +198,7 @@ static int mod_fastcgi_read_txt() try
 		node.index = pitem[i].index;
 		node.header_list = gx_split(pitem[i].extra_headers, '|');
 		node.sock_path = pitem[i].sock_path;
-		g_fastcgi_list.push_back(std::move(node));
+		g_fastcgi_list.emplace_back(std::move(node));
 	}
 	return 0;
 } catch (const std::bad_alloc &) {

@@ -265,7 +265,7 @@ int rpc_parser_run() try
 		char buf[32];
 		snprintf(buf, sizeof(buf), "rpc/%u", i);
 		pthread_setname_np(tid, buf);
-		g_thread_ids.push_back(tid);
+		g_thread_ids.emplace_back(tid);
 	}
 	return 0;
 } catch (const std::bad_alloc &) {

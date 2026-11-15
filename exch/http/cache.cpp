@@ -402,7 +402,7 @@ static http_status mod_cache_parse_range_value(char *value,
 			r.begin = last_bpos;
 			r.end   = first_bpos;
 		}
-		pcontext->range.push_back(std::move(r));
+		pcontext->range.emplace_back(std::move(r));
 		plast_token = ptoken + 1;
 	}
 	if (pcontext->range.size() == 0)

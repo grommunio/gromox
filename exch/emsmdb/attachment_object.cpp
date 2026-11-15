@@ -123,7 +123,7 @@ ec_error_t attachment_object::append_stream_obj(stream_object *pstream) try
 	for (auto so : stream_list)
 		if (so == pstream)
 			return ecSuccess;
-	stream_list.push_back(pstream);
+	stream_list.emplace_back(pstream);
 	pattachment->b_touched = TRUE;
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
@@ -338,7 +338,7 @@ ec_error_t attachment_object::set_props(const TPROPVAL_ARRAY *ppropvals,
 			continue;
 		}
 		tmp_propvals.ppropval[tmp_propvals.count++] = pv;
-		poriginal_indices.push_back(i);
+		poriginal_indices.emplace_back(i);
 	}
 	if (tmp_propvals.count == 0)
 		return ecSuccess;
@@ -385,7 +385,7 @@ ec_error_t attachment_object::remove_props(proptag_cspan pproptags,
 			pproblems->emplace_back(i, tag, ecAccessDenied);
 			continue;
 		}
-		poriginal_indices.push_back(i);
+		poriginal_indices.emplace_back(i);
 		tmp_proptags.emplace_back(tag);
 	}
 	if (tmp_proptags.count == 0)

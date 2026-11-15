@@ -492,7 +492,7 @@ ec_error_t folder_object::set_props(const TPROPVAL_ARRAY *ppropvals,
 			pproblems->emplace_back(i, pv.proptag, ecAccessDenied);
 		} else {
 			tmp_propvals.ppropval[tmp_propvals.count++] = pv;
-			poriginal_indices.push_back(i);
+			poriginal_indices.emplace_back(i);
 		}
 	}
 	if (tmp_propvals.count == 0)

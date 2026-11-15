@@ -221,7 +221,7 @@ ec_error_t user_object::load_list_members(const RESTRICTION *res) try
 		    !ab_tree_match_minids(base.get(), mid, res, &unused))
 			continue;
 		free(unused.pl);
-		m_members.push_back(mid);
+		m_members.emplace_back(mid);
 	}
 	return ecSuccess;
 } catch (const std::bad_alloc &) {

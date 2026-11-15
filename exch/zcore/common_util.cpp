@@ -2095,7 +2095,7 @@ ec_error_t cu_vcf_to_message2(store_object &store, char *vcf_data,
 		auto mc = cvt.vcard_to_mapi(vcard);
 		if (mc == nullptr)
 			return ecError;
-		msgvec.push_back(std::move(mc));
+		msgvec.emplace_back(std::move(mc));
 	}
 	return ecSuccess;
 } catch (const std::bad_alloc &) {

@@ -526,7 +526,7 @@ BOOL exmdb_server::get_folder_all_proptags(const char *dir, uint64_t folder_id,
 	sql_transact.commit();
 	pdb.reset();
 	if (!ct_contains(tags, PR_SOURCE_KEY))
-		tags.push_back(PR_SOURCE_KEY);
+		tags.emplace_back(PR_SOURCE_KEY);
 	pproptags->pproptag = cu_alloc<proptag_t>(tags.size());
 	if (pproptags->pproptag == nullptr)
 		return FALSE;
@@ -1952,7 +1952,7 @@ static bool sf_criteria_unchanged(db_conn &db, uint64_t fid_val,
 		return false;
 	std::vector<uint64_t> old_scope;
 	while (pstmt.step() == SQLITE_ROW)
-		old_scope.push_back(pstmt.col_uint64(0));
+		old_scope.emplace_back(pstmt.col_uint64(0));
 	if (old_scope.size() != pfolder_ids.size())
 		return false;
 	return std::all_of(pfolder_ids.begin(), pfolder_ids.end(),

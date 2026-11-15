@@ -513,7 +513,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	nl_hold.lock();
 	iter = g_notify_table.find(tmp_buff);
 	if (iter != g_notify_table.end())
-		iter->second.notify_list.push_back(std::move(zn));
+		iter->second.notify_list.emplace_back(std::move(zn));
 } catch (const std::bad_alloc &) {
 }
 

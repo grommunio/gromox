@@ -145,7 +145,7 @@ ec_error_t logon_object::get_named_propnames(const PROPID_ARRAY &propids,
 			pindex_map[i] = i;
 			ppropnames->ppropname[i] = static_cast<PROPERTY_NAME>(iter->second);
 		} else {
-			tmp_propids.push_back(propids[i]);
+			tmp_propids.emplace_back(propids[i]);
 			pindex_map[i] = -static_cast<int>(tmp_propids.size());
 		}
 	}
@@ -644,7 +644,7 @@ ec_error_t logon_object::set_props(const TPROPVAL_ARRAY *ppropvals,
 			pproblems->emplace_back(i, pv.proptag, ecAccessDenied);
 		} else {
 			tmp_propvals.ppropval[tmp_propvals.count++] = pv;
-			poriginal_indices.push_back(i);
+			poriginal_indices.emplace_back(i);
 		}
 	}
 	if (tmp_propvals.count == 0)

@@ -901,7 +901,7 @@ bool mysql_plugin::get_mlist_memb(const char *username, const char *from,
 		mysql_data_seek(pmyres.get(), 0);
 		for (i = 0; i < rows; i++) {
 			myrow = pmyres.fetch_row();
-			pfile.push_back(myrow[0]);
+			pfile.emplace_back(myrow[0]);
 		}
 		*presult = MLIST_RESULT_OK;
 		return true;
@@ -949,7 +949,7 @@ bool mysql_plugin::get_mlist_memb(const char *username, const char *from,
 			if (myrow[1] != nullptr)
 				dtypx = static_cast<enum display_type>(strtoul(myrow[1], nullptr, 0));
 			if (dtypx == DT_MAILUSER)
-				pfile.push_back(myrow[0]);
+				pfile.emplace_back(myrow[0]);
 		}
 		*presult = MLIST_RESULT_OK;
 		return true;

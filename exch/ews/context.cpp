@@ -703,7 +703,7 @@ occurrenceDatesInRange(const APPOINTMENT_RECUR_PAT &apr, const TZDEF *tz,
 		}
 		/* Overlap, matching the semantics of tCalendarView::datefilter */
 		if (occ_end >= start && occ_start <= end)
-			out.push_back(date);
+			out.emplace_back(date);
 		return false;
 	});
 	return out;
@@ -1171,7 +1171,7 @@ static bool attachment_nums(const EWSPlugin &plugin, const std::string &dir,
 	for (uint32_t i = 0; i < rows.count; ++i) {
 		auto num = rows.pparray[i]->get<const uint32_t>(PR_ATTACH_NUM);
 		if (num != nullptr)
-			nums.push_back(*num);
+			nums.emplace_back(*num);
 	}
 	return true;
 }
@@ -1283,13 +1283,13 @@ void EWSContext::remapNamedProps(const std::string &src, const std::string &dst,
 		return;
 	std::vector<TPROPVAL_ARRAY *> lists;
 	auto walk = [&](auto &&self, MESSAGE_CONTENT &m) -> void {
-		lists.push_back(&m.proplist);
+		lists.emplace_back(&m.proplist);
 		if (m.children.prcpts != nullptr)
 			for (auto &row : *m.children.prcpts)
-				lists.push_back(&row);
+				lists.emplace_back(&row);
 		if (m.children.pattachments != nullptr)
 			for (auto &at : *m.children.pattachments) {
-				lists.push_back(&at.proplist);
+				lists.emplace_back(&at.proplist);
 				if (at.pembedded != nullptr)
 					self(self, *at.pembedded);
 			}
@@ -1299,7 +1299,7 @@ void EWSContext::remapNamedProps(const std::string &src, const std::string &dst,
 	for (auto pl : lists)
 		for (unsigned int i = 0; i < pl->count; ++i)
 			if (is_nameprop_id(PROP_ID(pl->ppropval[i].proptag)))
-				ids.push_back(PROP_ID(pl->ppropval[i].proptag));
+				ids.emplace_back(PROP_ID(pl->ppropval[i].proptag));
 	std::sort(ids.begin(), ids.end());
 	ids.erase(std::unique(ids.begin(), ids.end()), ids.end());
 	if (ids.empty())
@@ -1319,7 +1319,7 @@ void EWSContext::remapNamedProps(const std::string &src, const std::string &dst,
 				continue;
 			auto k = std::lower_bound(ids.begin(), ids.end(), PROP_ID(tag)) - ids.begin();
 			if (nids[k] == 0)
-				drop.push_back(tag);
+				drop.emplace_back(tag);
 			else
 				tag = PROP_TAG(PROP_TYPE(tag), nids[k]);
 		}
@@ -1413,7 +1413,7 @@ std::optional<uint64_t> EWSContext::acceptOccurrence(const sFolderSpec &cal,
 	auto copy = [&](proptag_t from, proptag_t to) {
 		auto v = req.getval(from);
 		if (v != nullptr)
-			vals.push_back({to, deconst(v)});
+			vals.emplace_back(to, deconst(v));
 	};
 	auto start = tag(NtAppointmentStartWhole, PT_SYSTIME);
 	auto end   = tag(NtAppointmentEndWhole, PT_SYSTIME);
@@ -1426,12 +1426,12 @@ std::optional<uint64_t> EWSContext::acceptOccurrence(const sFolderSpec &cal,
 	copy(reply, reply);
 	uint32_t busy = response == respAccepted ? olBusy :
 	                response == respTentative ? olTentative : olFree;
-	vals.push_back({tag(NtBusyStatus, PT_LONG), construct<uint32_t>(busy)});
-	vals.push_back({tag(NtResponseStatus, PT_LONG), construct<uint32_t>(response)});
-	vals.push_back({tag(NtAppointmentReplyTime, PT_SYSTIME),
-		construct<uint64_t>(rop_util_current_nttime())});
-	vals.push_back({tag(NtAppointmentStateFlags, PT_LONG),
-		construct<uint32_t>(asfMeeting | asfReceived)});
+	vals.emplace_back(tag(NtBusyStatus, PT_LONG), construct<uint32_t>(busy));
+	vals.emplace_back(tag(NtResponseStatus, PT_LONG), construct<uint32_t>(response));
+	vals.emplace_back(tag(NtAppointmentReplyTime, PT_SYSTIME),
+		construct<uint64_t>(rop_util_current_nttime()));
+	vals.emplace_back(tag(NtAppointmentStateFlags, PT_LONG),
+		construct<uint32_t>(asfMeeting | asfReceived));
 	const TPROPVAL_ARRAY occ{static_cast<uint16_t>(vals.size()), vals.data()};
 	updateOccurrence(calDir, cal.folderId, *series, basedate, occ, {});
 	return series;
@@ -3710,9 +3710,9 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 		};
 
 		if (has_start)
-			afix_vec.push_back({PR_EXCEPTION_STARTTIME, &upd_start_nt});
+			afix_vec.emplace_back(PR_EXCEPTION_STARTTIME, &upd_start_nt);
 		if (has_end)
-			afix_vec.push_back({PR_EXCEPTION_ENDTIME, &upd_end_nt});
+			afix_vec.emplace_back(PR_EXCEPTION_ENDTIME, &upd_end_nt);
 		const TPROPVAL_ARRAY afix_arr = {static_cast<uint16_t>(afix_vec.size()), afix_vec.data()};
 		if (!exmdb.set_instance_properties(dir.c_str(),
 		    aInst->instanceId, &afix_arr, &problems))
@@ -3867,11 +3867,11 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 		if (!disp_name && tag == PR_SUBJECT)
 			disp_name = static_cast<const char *>(
 				master_props.ppropval[j].pvalue);
-		emb_props.push_back(master_props.ppropval[j]);
+		emb_props.emplace_back(master_props.ppropval[j]);
 	}
 
 	if (disp_name)
-		att_pvec.push_back({PR_DISPLAY_NAME, deconst(disp_name)});
+		att_pvec.emplace_back(PR_DISPLAY_NAME, deconst(disp_name));
 	TPROPVAL_ARRAY att_list = {static_cast<uint16_t>(att_pvec.size()),
 	                           att_pvec.data()};
 
@@ -3880,7 +3880,7 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 		auto tag = props.ppropval[j].proptag;
 		/* Remove any existing prop with same tag */
 		std::erase_if(emb_props, [tag](const TAGGED_PROPVAL &p) { return p.proptag == tag; });
-		emb_props.push_back(props.ppropval[j]);
+		emb_props.emplace_back(props.ppropval[j]);
 	}
 
 	/*
@@ -3917,32 +3917,32 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 	/* Re-add body formats from the update */
 	if (body_changed) {
 		if (upd_html != nullptr)
-			emb_props.push_back({PR_HTML, deconst(upd_html)});
+			emb_props.emplace_back(PR_HTML, deconst(upd_html));
 		if (upd_text != nullptr)
-			emb_props.push_back({PR_BODY, deconst(upd_text)});
+			emb_props.emplace_back(PR_BODY, deconst(upd_text));
 		if (upd_html != nullptr && upd_text == nullptr) {
 			std::string plain;
 			if (html_to_plain(*upd_html, CP_UTF8, plain) >= 0)
-				emb_props.push_back({PR_BODY, cpystr(plain)});
+				emb_props.emplace_back(PR_BODY, cpystr(plain));
 		} else if (upd_text != nullptr && upd_html == nullptr) {
 			std::string html;
 			if (plain_to_html(upd_text, html) == ecSuccess) {
 				auto bin = construct<BINARY>(BINARY{static_cast<uint32_t>(html.size()), {cpystr(html)}});
-				emb_props.push_back({PR_HTML, bin});
+				emb_props.emplace_back(PR_HTML, bin);
 			}
 		}
-		emb_props.push_back({PR_RTF_IN_SYNC, construct<uint8_t>(0)});
+		emb_props.emplace_back(PR_RTF_IN_SYNC, construct<uint8_t>(0));
 	}
 
 	/* Set exception-specific properties */
-	emb_props.push_back({recurring_tag, construct<uint8_t>(0)});
-	emb_props.push_back({PR_MESSAGE_CLASS, deconst(IPM_Appointment_Exception)});
-	emb_props.push_back({PR_START_DATE, occ_start_nt});
-	emb_props.push_back({PR_END_DATE, occ_end_nt});
-	emb_props.push_back({common_start_tag, occ_start_nt});
-	emb_props.push_back({common_end_tag, occ_end_nt});
-	emb_props.push_back({appt_start_tag, occ_start_nt});
-	emb_props.push_back({appt_end_tag, occ_end_nt});
+	emb_props.emplace_back(recurring_tag, construct<uint8_t>(0));
+	emb_props.emplace_back(PR_MESSAGE_CLASS, deconst(IPM_Appointment_Exception));
+	emb_props.emplace_back(PR_START_DATE, occ_start_nt);
+	emb_props.emplace_back(PR_END_DATE, occ_end_nt);
+	emb_props.emplace_back(common_start_tag, occ_start_nt);
+	emb_props.emplace_back(common_end_tag, occ_end_nt);
+	emb_props.emplace_back(appt_start_tag, occ_start_nt);
+	emb_props.emplace_back(appt_end_tag, occ_end_nt);
 
 	/*
 	 * Set PidLidExceptionReplaceTime to the original start time. This must
@@ -3951,7 +3951,7 @@ void EWSContext::updateOccurrence(const std::string &dir, uint64_t fid,
 	 */
 	auto orig_time = construct<uint64_t>(rop_util_unix_to_nttime(
 	                 series.occurrenceTimes(basedate).orig_start));
-	emb_props.push_back({ex_replace_tag, orig_time});
+	emb_props.emplace_back(ex_replace_tag, orig_time);
 
 	content.proplist.count = emb_props.size();
 	content.proplist.ppropval = emb_props.data();
@@ -5255,12 +5255,12 @@ std::vector<TAGGED_PROPVAL> EWSContext::submitIdentity(const std::string &dir,
 	             proptag_t eidTag, proptag_t skeyTag) {
 		auto addr = copyStr(who);
 		auto name = dispName(who);
-		out.push_back({nameTag, name != nullptr ? name : addr});
-		out.push_back({typeTag, deconst("SMTP")});
-		out.push_back({addrTag, addr});
-		out.push_back({smtpTag, addr});
-		drop.push_back(eidTag);
-		drop.push_back(skeyTag);
+		out.emplace_back(nameTag, name != nullptr ? name : addr);
+		out.emplace_back(typeTag, deconst("SMTP"));
+		out.emplace_back(addrTag, addr);
+		out.emplace_back(smtpTag, addr);
+		drop.emplace_back(eidTag);
+		drop.emplace_back(skeyTag);
 	};
 	auto repr = smtpOf(PR_SENT_REPRESENTING_SMTP_ADDRESS,
 	            PR_SENT_REPRESENTING_ADDRTYPE,
@@ -5274,7 +5274,7 @@ std::vector<TAGGED_PROPVAL> EWSContext::submitIdentity(const std::string &dir,
 	} else if (!repr.empty() && !props.has(PR_SENT_REPRESENTING_NAME)) {
 		auto name = dispName(repr);
 		if (name != nullptr)
-			out.push_back({PR_SENT_REPRESENTING_NAME, name});
+			out.emplace_back(PR_SENT_REPRESENTING_NAME, name);
 	}
 	std::string sender = user;
 	if (!repr.empty() && strcasecmp(repr.c_str(), user) != 0 && sendAs(repr))
@@ -5536,12 +5536,12 @@ void EWSContext::send(const std::string &dir, uint64_t log_msg_id,
 	std::vector<proptag_t> drop;
 	auto ident = submitIdentity(dir, msg.proplist, drop);
 	for (const auto &prop : ident)
-		drop.push_back(prop.proptag);
+		drop.emplace_back(prop.proptag);
 	std::vector<TAGGED_PROPVAL> props;
 	props.reserve(msg.proplist.count + ident.size());
 	for (const auto &prop : msg.proplist)
 		if (std::find(drop.begin(), drop.end(), prop.proptag) == drop.end())
-			props.push_back(prop);
+			props.emplace_back(prop);
 	props.insert(props.end(), ident.begin(), ident.end());
 	auto content = msg;
 	content.proplist = {static_cast<uint16_t>(props.size()), props.data()};
@@ -5551,7 +5551,7 @@ void EWSContext::send(const std::string &dir, uint64_t log_msg_id,
 	if (meeting) {
 		for (auto &rcpt : *msg.children.prcpts)
 			if (is_organizer(rcpt) || addressable(rcpt))
-				rows.push_back(deconst(&rcpt));
+				rows.emplace_back(deconst(&rcpt));
 		rcptset = {static_cast<uint32_t>(rows.size()), rows.data()};
 		content.children.prcpts = &rcptset;
 	}
@@ -5976,8 +5976,8 @@ void EWSContext::sendMeetingCancellation(const std::string &dir, const sMessageE
 	uint32_t newseq = nextSequence(dir, parent, meid.messageId(), true, now);
 	/* RFC 5546 §3.2.5: every VEVENT of the CANCEL needs these */
 	auto excProps = ident;
-	excProps.push_back({seq_tag, &newseq});
-	excProps.push_back({crit_tag, &now});
+	excProps.emplace_back(seq_tag, &newseq);
+	excProps.emplace_back(crit_tag, &now);
 	if (saveCopy) {
 		sFolderSpec sentitems = resolveFolder(tDistinguishedFolderId(Enum::sentitems));
 		uint64_t newMid = 0;
@@ -6177,8 +6177,8 @@ void EWSContext::cancelRemovedAttendees(const std::string &dir,
 	props.erase(PR_SENDER_SEARCH_KEY);
 	props.erase(PR_SENT_REPRESENTING_SEARCH_KEY);
 	/* RFC 5546 §3.2.5: every VEVENT of the CANCEL needs these */
-	ident.push_back({seq_tag, &newseq});
-	ident.push_back({PROP_TAG(PT_SYSTIME, ids[5]), &now});
+	ident.emplace_back(seq_tag, &newseq);
+	ident.emplace_back(PROP_TAG(PT_SYSTIME, ids[5]), &now);
 	/* The exceptions no longer list the removed attendees */
 	if (!stamp_exceptions(*cancel, ident, true))
 		throw EWSError::NotEnoughMemory(E3406);
@@ -6241,11 +6241,11 @@ uint32_t EWSContext::nextSequence(const std::string &dir,
 	               last != nullptr ? *last : 0) + 1;
 	std::vector<TAGGED_PROPVAL> vals{{tags[1], &val}};
 	if (toAll) {
-		vals.push_back({tags[0], &val});
-		vals.push_back({tags[2], &critical});
-		vals.push_back({tags[3], &critical});
+		vals.emplace_back(tags[0], &val);
+		vals.emplace_back(tags[2], &critical);
+		vals.emplace_back(tags[3], &critical);
 	} else if (seqtime == nullptr && owncrit != nullptr) {
-		vals.push_back({tags[2], deconst(owncrit)});
+		vals.emplace_back(tags[2], deconst(owncrit));
 	}
 	const TPROPVAL_ARRAY list = {static_cast<uint16_t>(vals.size()),
 	                            vals.data()};
@@ -6388,7 +6388,7 @@ void EWSContext::sendMeetingUpdate(const std::string &dir,
 			f &= ~recipSendable;
 			if (row.set(PR_RECIPIENT_FLAGS, &f) != ecSuccess)
 				throw EWSError::NotEnoughMemory(E3408);
-			unsendable.push_back(&row);
+			unsendable.emplace_back(&row);
 		}
 	}
 	if (std::none_of(rcpts->begin(), rcpts->end(),
@@ -6438,8 +6438,8 @@ void EWSContext::sendMeetingUpdate(const std::string &dir,
 	props.erase(PR_SENDER_SEARCH_KEY);
 	props.erase(PR_SENT_REPRESENTING_SEARCH_KEY);
 	/* RFC 5546 §3.2.2: every VEVENT of the REQUEST needs these */
-	ident.push_back({PROP_TAG(PT_LONG, ids[0]), &seq});
-	ident.push_back({PROP_TAG(PT_SYSTIME, ids[1]), &now});
+	ident.emplace_back(PROP_TAG(PT_LONG, ids[0]), &seq);
+	ident.emplace_back(PROP_TAG(PT_SYSTIME, ids[1]), &now);
 	if (!stamp_exceptions(*req, ident))
 		throw EWSError::NotEnoughMemory(E3408);
 	send(dir, mid, *req);
@@ -6940,9 +6940,9 @@ void EWSContext::addAttachment(MESSAGE_CONTENT &content,
 	static constexpr uint32_t rendpos = UINT32_MAX;
 	auto now = construct<mapitime_t>(rop_util_current_nttime());
 	auto props = file.props();
-	props.push_back({PR_RENDERING_POSITION, deconst(&rendpos)});
-	props.push_back({PR_CREATION_TIME, now});
-	props.push_back({PR_LAST_MODIFICATION_TIME, now});
+	props.emplace_back(PR_RENDERING_POSITION, deconst(&rendpos));
+	props.emplace_back(PR_CREATION_TIME, now);
+	props.emplace_back(PR_LAST_MODIFICATION_TIME, now);
 	for (const auto &prop : props)
 		if (ac->proplist.set(prop) != ecSuccess)
 			throw EWSError::NotEnoughMemory(E3570);

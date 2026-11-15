@@ -832,7 +832,7 @@ ec_error_t table_object::create_bookmark(uint32_t *pindex) try
 		return ecRpcFailed;
 	bn.index = ptable->bookmark_index++;
 	bn.position = ptable->position;
-	bookmark_list.push_back(std::move(bn));
+	bookmark_list.emplace_back(std::move(bn));
 	*pindex = bookmark_list.back().index;
 	return ecSuccess;
 } catch (const std::bad_alloc &) {

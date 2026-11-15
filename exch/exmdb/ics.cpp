@@ -661,7 +661,7 @@ static BOOL ics_load_folder_changes(sqlite3 *psqlite, uint64_t folder_id,
 			if (!(permission & (frightsReadAny | frightsVisible | frightsOwner)))
 				continue;
 		}
-		recurse_list.push_back(fid_val);
+		recurse_list.emplace_back(fid_val);
 		sqlite3_reset(stm_insert_exist);
 		sqlite3_bind_int64(stm_insert_exist, 1, fid_val);
 		if (gx_sql_step(stm_insert_exist) != SQLITE_DONE)
@@ -787,7 +787,7 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 			       t == PR_NORMAL_MESSAGE_SIZE || t == PR_LOCAL_COMMIT_TIME_MAX ||
 			       t == PR_HIERARCHY_CHANGE_NUM;
 		});
-		tags.push_back(PidTagParentFolderId);
+		tags.emplace_back(PidTagParentFolderId);
 		if (!cu_get_properties(MAPI_FOLDER, fid_val1, CP_ACP,
 		    *pdb, tags, &pfldchgs->pfldchgs[i]))
 			return FALSE;

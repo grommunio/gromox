@@ -1030,7 +1030,7 @@ static void emsi_scanwork(std::any &)
 		std::unique_lock gl_hold(g_lock);
 		for (const auto &[guid, phandle] : g_handle_hash) {
 			if (cur_time - phandle->last_time.load(std::memory_order::relaxed) > HANDLE_VALID_INTERVAL) try {
-				temp_list.push_back(guid);
+				temp_list.emplace_back(guid);
 			} catch (const std::bad_alloc &) {
 				mlog(LV_ERR, "%s: ENOMEM", __func__);
 				continue;

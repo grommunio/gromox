@@ -60,7 +60,7 @@ BOOL exmdb_server::get_all_named_propids(const char *dir,
 	if (pstmt == nullptr)
 		return FALSE;
 	while (pstmt.step() == SQLITE_ROW)
-		ppropids->push_back(pstmt.col_int64(0));
+		ppropids->emplace_back(pstmt.col_uint64(0));
 	return TRUE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
@@ -409,7 +409,7 @@ BOOL exmdb_server::subscribe_notification(const char *dir,
 	}
 	pnsub->message_id = message_id == 0 ? 0 :
 	                    rop_util_get_gc_value(message_id);
-	dbase->nsub_list.push_back(std::move(sub));
+	dbase->nsub_list.emplace_back(std::move(sub));
 	*psub_id = last_id + 1;
 	return TRUE;
 } catch (const std::bad_alloc &) {
@@ -454,7 +454,7 @@ static BOOL table_check_address_in_contact_folder(
 	sqlite3_reset(pstmt_subfolder);
 	sqlite3_bind_int64(pstmt_subfolder, 1, folder_id);
 	while (gx_sql_step(pstmt_subfolder) == SQLITE_ROW)
-		folder_list.push_back(sqlite3_column_int64(pstmt_subfolder, 0));
+		folder_list.emplace_back(sqlite3_column_int64(pstmt_subfolder, 0));
 	for (auto fid : folder_list) {
 		if (!table_check_address_in_contact_folder(pstmt_subfolder,
 		    pstmt_search, fid, paddress, pb_found))

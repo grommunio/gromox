@@ -202,7 +202,7 @@ static int hpm_processor_load_library(const generic_module &mod)
 
 	plug.lib_main = mod.lib_main;
 	plug.file_name = mod.file_name;
-	g_plugin_list.push_back(std::move(plug));
+	g_plugin_list.emplace_back(std::move(plug));
 	g_cur_plugin = &g_plugin_list.back();
     /* invoke the plugin's main function with the parameter of PLUGIN_INIT */
 	g_cur_plugin->init_state = generic_module::state::init_start;

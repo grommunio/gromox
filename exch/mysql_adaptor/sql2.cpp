@@ -266,8 +266,7 @@ aliasmap_extract(aliasmap_t &amap, const char *username)
 	auto stop = amap.upper_bound(username);
 	for (auto it = amap.lower_bound(username); it != stop; ) {
 		auto next = std::next(it);
-		auto node = amap.extract(it);
-		v.push_back(std::move(node.mapped()));
+		v.emplace_back(std::move(amap.extract(it).mapped()));
 		it = next;
 	}
 	return v;
@@ -356,7 +355,7 @@ static ssize_t userlist_parse(sqlconn &conn, const char *query,
 			u.list_type = static_cast<enum mlist_type>(strtoul(znul(row[5]), nullptr, 0));
 			u.list_priv = strtoul(znul(row[6]), nullptr, 0);
 		}
-		pfile.push_back(std::move(u));
+		pfile.emplace_back(std::move(u));
 	}
 	return pfile.size();
 }
@@ -421,7 +420,7 @@ errno_t mysql_plugin::scndstore_hints(unsigned int pri,
 		u.maildir = znul(row[2]);
 		if (row[3] != nullptr)
 			u.propvals.emplace(PR_DISPLAY_NAME, row[3]);
-		hints.push_back(std::move(u));
+		hints.emplace_back(std::move(u));
 	}
 	return 0;
 } catch (const std::bad_alloc &) {

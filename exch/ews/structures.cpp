@@ -1996,7 +1996,7 @@ void sShape::restrict(uint32_t folderRights, const PROPID_ARRAY &ids,
 	recurId = ids[1];
 	for (size_t i = 1; i < ids.size(); ++i)
 		if (ids[i] != 0)
-			fbIds.push_back(ids[i]);
+			fbIds.emplace_back(ids[i]);
 }
 
 /**
@@ -5068,27 +5068,27 @@ std::vector<TAGGED_PROPVAL> tFileAttachment::props() const
 	std::vector<TAGGED_PROPVAL> props;
 	if (Name) {
 		auto name = EWSContext::cpystr(*Name);
-		props.push_back({PR_ATTACH_LONG_FILENAME, name});
-		props.push_back({PR_ATTACH_FILENAME, name});
-		props.push_back({PR_DISPLAY_NAME, name});
+		props.emplace_back(PR_ATTACH_LONG_FILENAME, name);
+		props.emplace_back(PR_ATTACH_FILENAME, name);
+		props.emplace_back(PR_DISPLAY_NAME, name);
 	}
 	if (ContentType)
-		props.push_back({PR_ATTACH_MIME_TAG, EWSContext::cpystr(*ContentType)});
+		props.emplace_back(PR_ATTACH_MIME_TAG, EWSContext::cpystr(*ContentType));
 	if (ContentId)
-		props.push_back({PR_ATTACH_CONTENT_ID, EWSContext::cpystr(*ContentId)});
+		props.emplace_back(PR_ATTACH_CONTENT_ID, EWSContext::cpystr(*ContentId));
 	static constexpr uint32_t method = ATTACH_BY_VALUE;
-	props.push_back({PR_ATTACH_METHOD, deconst(&method)});
+	props.emplace_back(PR_ATTACH_METHOD, deconst(&method));
 	if (IsInline && *IsInline) {
 		static constexpr uint32_t flags = ATT_MHTML_REF;
-		props.push_back({PR_ATTACH_FLAGS, deconst(&flags)});
+		props.emplace_back(PR_ATTACH_FLAGS, deconst(&flags));
 	}
 	if (IsContactPhoto && *IsContactPhoto)
-		props.push_back({PR_ATTACHMENT_CONTACTPHOTO, deconst(&byte_value_one)});
+		props.emplace_back(PR_ATTACHMENT_CONTACTPHOTO, deconst(&byte_value_one));
 	if (Content) {
 		auto bin = EWSContext::construct<BINARY>(BINARY{static_cast<uint32_t>(Content->size()), {EWSContext::alloc<char>(Content->size())}});
 		memcpy(bin->pc, Content->data(), bin->cb);
-		props.push_back({PR_ATTACH_DATA_BIN, bin});
-		props.push_back({PR_ATTACH_SIZE, EWSContext::construct<int32_t>(bin->cb)});
+		props.emplace_back(PR_ATTACH_DATA_BIN, bin);
+		props.emplace_back(PR_ATTACH_SIZE, EWSContext::construct<int32_t>(bin->cb));
 	}
 	return props;
 }

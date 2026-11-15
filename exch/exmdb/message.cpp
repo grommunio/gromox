@@ -448,7 +448,7 @@ BOOL exmdb_server::movecopy_messages(const char *dir, cpid_t cpid, BOOL b_guest,
 		cu_get_property(MAPI_MESSAGE, tmp_val, cpid, *pdb, PR_SUBJECT, &pv_subject);
 		auto subject = static_cast<const char *>(pv_subject);
 		try {
-			audit_subjects.push_back(subject);
+			audit_subjects.emplace_back(subject);
 		} catch (...) {
 		}
 		if (b_copy) {
@@ -688,7 +688,7 @@ BOOL exmdb_server::delete_messages(const char *dir, cpid_t cpid,
 			b_hard ? "hard" : "soft", dir, LLU{src_val}, LLU{tmp_val},
 			username != nullptr ? username : "owner");
 		try {
-			audit_subjects.push_back(subject);
+			audit_subjects.emplace_back(subject);
 		} catch (...) {
 		}
 
@@ -834,7 +834,7 @@ static bool message_get_message_rcpts(const db_conn &db, uint64_t message_id,
 			return false;
 		/* Nudge cu_get_properties allocation to make extra room. */
 		for (size_t i = 0; i < 5; ++i)
-			tags.push_back(PR_NULL);
+			tags.emplace_back(PR_NULL);
 		pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
 		if (pset->pparray[pset->count] == nullptr ||
 		    !cu_get_properties(MAPI_MAILUSER, rcpt_id, CP_ACP,
@@ -1774,7 +1774,7 @@ static bool message_read_message(const db_conn &db, cpid_t cpid,
 		auto pattachment = cu_alloc<ATTACHMENT_CONTENT>();
 		if (pattachment == nullptr)
 			return FALSE;
-		atags.push_back(PR_ATTACH_NUM);
+		atags.emplace_back(PR_ATTACH_NUM);
 		if (!cu_get_properties(MAPI_ATTACH, attachment_id, cpid,
 		    db, atags, &pattachment->proplist))
 			return FALSE;

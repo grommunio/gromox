@@ -147,7 +147,7 @@ static void db_engine_load_dynamic_list(db_base *dbase, sqlite3* psqlite) try
 		if (!cu_load_search_scopes(psqlite,
 		    pdynamic->folder_id, dn.scope_list))
 			continue;
-		dbase->dynamic_list.push_back(std::move(dn));
+		dbase->dynamic_list.emplace_back(std::move(dn));
 	}
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
@@ -1011,7 +1011,7 @@ static db_conn::ID_ARRAYS db_engine_classify_id_array(const db_base &db,
 		if (sub.b_whole || (sub.folder_id == folder_id &&
 		    sub.message_id == message_id)) {
 			auto rid = sub.remote_id.has_value() ? sub.remote_id->c_str() : nullptr;
-			out[rid].push_back(sub.sub_id);
+			out[rid].emplace_back(sub.sub_id);
 		}
 	}
 	return out;
@@ -1132,7 +1132,7 @@ static void *sf_popul_thread(void *param)
 		for (const auto &t : dbase->tables.table_list)
 			if (t.type == table_type::content &&
 			    psearch->folder_id == t.folder_id)
-				table_ids.push_back(t.table_id);
+				table_ids.emplace_back(t.table_id);
 		dbase.reset();
 		pdb.reset();
 		/*
@@ -1192,7 +1192,7 @@ int db_engine_run()
 		char buf[32];
 		snprintf(buf, sizeof(buf), "sfpop/%u", i);
 		pthread_setname_np(tid, buf);
-		g_sfpop_thrids.push_back(tid);
+		g_sfpop_thrids.emplace_back(tid);
 	}
 	return 0;
 }
@@ -1317,7 +1317,7 @@ void db_conn::update_dynamic(uint64_t folder_id, uint32_t search_flags,
 	auto i = std::find_if(dbase.dynamic_list.begin(), dbase.dynamic_list.end(),
 	         [=](const dynamic_node &n) { return n.folder_id == folder_id; });
 	if (i == dbase.dynamic_list.end())
-		dbase.dynamic_list.push_back(std::move(dn));
+		dbase.dynamic_list.emplace_back(std::move(dn));
 	else
 		*i = std::move(dn);
 } catch (const std::bad_alloc &) {
@@ -2945,7 +2945,7 @@ static void dbeng_notify_cttbl_delete_row(db_conn &db, uint64_t folder_id,
 			dn.depth     = stm_sel.col_int64(7);
 			dn.inst_num  = stm_sel.col_int64(10);
 			dn.b_read    = stm_sel.col_int64(12) != 0;
-			del_list.push_back(std::move(dn));
+			del_list.emplace_back(std::move(dn));
 		}
 		}
 
@@ -3026,7 +3026,7 @@ static void dbeng_notify_cttbl_delete_row(db_conn &db, uint64_t folder_id,
 				nn.depth     = pstmt.col_int64(7);
 				nn.inst_num  = 0;
 				nn.b_read    = delnode.b_read;
-				del_list.push_back(std::move(nn));
+				del_list.emplace_back(std::move(nn));
 				sqlite3_reset(pstmt);
 				continue;
 			}
@@ -4226,7 +4226,7 @@ void db_conn::notify_message_movecopy(BOOL b_copy, uint64_t folder_id,
 		if (pnsub->b_whole || (pnsub->folder_id == old_fid &&
 		    pnsub->message_id == old_mid)) {
 			auto rid = sub.remote_id.has_value() ? sub.remote_id->c_str() : nullptr;
-			recv_list[rid].push_back(pnsub->sub_id);
+			recv_list[rid].emplace_back(pnsub->sub_id);
 		}
 	}
 	if (recv_list.size() > 0) {
@@ -4275,7 +4275,7 @@ void db_conn::notify_folder_movecopy(BOOL b_copy, uint64_t parent_id,
 		    (pnsub->folder_id == folder_id && pnsub->message_id == 0) ||
 		    (pnsub->folder_id == old_fid && pnsub->message_id == 0)) {
 			auto rid = sub.remote_id.has_value() ? sub.remote_id->c_str() : nullptr;
-			recv_list[rid].push_back(pnsub->sub_id);
+			recv_list[rid].emplace_back(pnsub->sub_id);
 		}
 	}
 	if (recv_list.size() > 0) {
@@ -4316,7 +4316,7 @@ void db_conn::notify_cttbl_reload(uint32_t table_id, const db_base &dbase,
 		db_notify_type::cttbl_changed :
 		db_notify_type::srchtbl_changed;
 	datagram.b_table = TRUE;
-	datagram.id_array.push_back(table_id);
+	datagram.id_array.emplace_back(table_id);
 	notifq.emplace_back(datagram, table_to_idarray(*ptable));
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);

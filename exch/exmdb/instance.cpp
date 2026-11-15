@@ -472,7 +472,7 @@ BOOL exmdb_server::load_message_instance(const char *dir, const char *username,
 		if (ict->proplist.set(PidTagMid, &message_id) != ecSuccess ||
 		    ict->proplist.set(PR_MSG_STATUS, &tmp_int32) != ecSuccess)
 			return false;
-		dbase->instance_list.push_back(std::move(inode));
+		dbase->instance_list.emplace_back(std::move(inode));
 		*pinstance_id = instance_id;
 		return TRUE;
 	}
@@ -494,7 +494,7 @@ BOOL exmdb_server::load_message_instance(const char *dir, const char *username,
 		return TRUE;
 	}
 	pinstance->b_new = FALSE;
-	dbase->instance_list.push_back(std::move(inode));
+	dbase->instance_list.emplace_back(std::move(inode));
 	*pinstance_id = instance_id;
 	return TRUE;
 } catch (const std::bad_alloc &) {
@@ -554,7 +554,7 @@ BOOL exmdb_server::load_embedded_instance(const char *dir, BOOL b_new,
 		auto ict = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
 		if (ict->proplist.set(PidTagMid, &message_id) != ecSuccess)
 			return FALSE;
-		dbase->instance_list.push_back(std::move(inode));
+		dbase->instance_list.emplace_back(std::move(inode));
 		*pinstance_id = instance_id;
 		return TRUE;
 	}
@@ -584,7 +584,7 @@ BOOL exmdb_server::load_embedded_instance(const char *dir, BOOL b_new,
 	pinstance->pcontent = pmsgctnt->dup();
 	if (pinstance->pcontent == nullptr)
 		return FALSE;
-	dbase->instance_list.push_back(std::move(inode));
+	dbase->instance_list.emplace_back(std::move(inode));
 	*pinstance_id = instance_id;
 	return TRUE;
 } catch (const std::bad_alloc &) {
@@ -1258,7 +1258,7 @@ BOOL exmdb_server::load_attachment_instance(const char *dir,
 	pinstance->pcontent = pattachment->dup();
 	if (pinstance->pcontent == nullptr)
 		return FALSE;
-	dbase->instance_list.push_back(std::move(inode));
+	dbase->instance_list.emplace_back(std::move(inode));
 	*pinstance_id = instance_id;
 	return TRUE;
 } catch (const std::bad_alloc &) {
@@ -1308,7 +1308,7 @@ BOOL exmdb_server::create_attachment_instance(const char *dir,
 		return FALSE;
 	}
 	pinstance->pcontent = pattachment;
-	dbase->instance_list.push_back(std::move(inode));
+	dbase->instance_list.emplace_back(std::move(inode));
 	*pinstance_id = instance_id;
 	return TRUE;
 } catch (const std::bad_alloc &) {

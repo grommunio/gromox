@@ -392,7 +392,7 @@ static bool ab_tree_resolvename(const ab_tree::ab_base &base, const char *needle
 		if (node.hidden() & AB_HIDE_RESOLVE ||
 		    !ab_tree_resolve_node(node, needle))
 			continue;
-		result.push_back(*it);
+		result.emplace_back(*it);
 	}
 	return true;
 } catch (const std::bad_alloc &) {
@@ -2179,7 +2179,7 @@ static void unclamp_binaries(const EWSContext &ctx, const std::string &dir,
 	for (const auto &pv : props)
 		if (PROP_TYPE(pv.proptag) == PT_BINARY &&
 		    static_cast<const BINARY *>(pv.pvalue)->cb == 510)
-			tags.push_back(pv.proptag);
+			tags.emplace_back(pv.proptag);
 	if (tags.empty())
 		return;
 	auto eid = props.get<const BINARY>(PR_ENTRYID);
@@ -2316,7 +2316,7 @@ void process(mFindItemRequest &&request, XMLElement *response, const EWSContext 
 			startTag = PROP_TAG(PT_SYSTIME, ctx.getNamedPropId(dir, NtAppointmentStartWhole));
 			for (proptag_t extra : {recurTag, startTag, proptag_t(PR_ENTRYID)})
 				if (std::find(tagvec.begin(), tagvec.end(), extra) == tagvec.end())
-					tagvec.push_back(extra);
+					tagvec.emplace_back(extra);
 		}
 		PROPTAG_ARRAY tags = {static_cast<uint16_t>(tagvec.size()), tagvec.data()};
 		TARRAY_SET table;
@@ -2757,7 +2757,7 @@ const char *RulesEnv::resolve_template(const Rules::ItemRef &ref, REPLY_ACTION &
 	if (!exmdb.write_message(dir.c_str(), CP_ACP, rules_inbox, copy.get(),
 	    {}, &outmid, &outcn, &err) || err != ecSuccess)
 		return "UnexpectedError";
-	created_templates.push_back(eid_t(outmid));
+	created_templates.emplace_back(eid_t(outmid));
 	ra.template_folder_id = rules_inbox;
 	ra.template_message_id = eid_t(outmid);
 	ra.template_guid = guid;
@@ -2899,8 +2899,8 @@ std::vector<eid_t> find_rule_blobs(const EWSContext &ctx, const std::string &dir
 	if (!exmdb.query_table(dir.c_str(), nullptr, CP_ACP, table_id, {tags, std::size(tags)}, 0, count, &set))
 		throw EWSError::InternalServerError(E3608);
 	for (const auto &row : set)
-		if (auto mid = row.get<const uint64_t>(PidTagMid))
-			mids.push_back(eid_t(*mid));
+		if (auto mid = row.get<const eid_t>(PidTagMid))
+			mids.emplace_back(*mid);
 	return mids;
 }
 
@@ -2930,7 +2930,7 @@ std::vector<rule_row> load_rules(const EWSContext &ctx, const std::string &dir, 
 			continue;
 		auto seq = row.get<const uint32_t>(PR_RULE_SEQUENCE);
 		auto st = row.get<const uint32_t>(PR_RULE_STATE);
-		rows.push_back({*id, seq != nullptr ? *seq : 0, st != nullptr ? *st : 0, &row});
+		rows.emplace_back(*id, seq != nullptr ? *seq : 0, st != nullptr ? *st : 0, &row);
 	}
 	std::stable_sort(rows.begin(), rows.end(), [](const rule_row &a, const rule_row &b) {
 		return a.seq != b.seq ? a.seq < b.seq : eid_t(a.id).gcv() < eid_t(b.id).gcv();
@@ -2964,7 +2964,7 @@ void process(mGetInboxRulesRequest &&request, XMLElement *response, const EWSCon
 		for (const auto &row : load_rules(ctx, dir)) {
 			auto rule = Rules::from_mapi(*row.props, env);
 			rule.priority = ++prio;
-			data.InboxRules.push_back(std::move(rule));
+			data.InboxRules.emplace_back(std::move(rule));
 		}
 		data.success();
 	} catch (const EWSError &err) {
@@ -3041,8 +3041,8 @@ void purge_templates(const EWSContext &ctx, const std::string &dir)
 	}
 	std::vector<eid_t> orphans;
 	for (const auto &row : set)
-		if (auto mid = row.get<const uint64_t>(PidTagMid); mid != nullptr && !used.contains(*mid))
-			orphans.push_back(eid_t(*mid));
+		if (auto mid = row.get<const eid_t>(PidTagMid); mid != nullptr && !used.contains(*mid))
+			orphans.emplace_back(*mid);
 	if (orphans.empty())
 		return;
 	BOOL partial = false;
@@ -3085,7 +3085,7 @@ void process(mUpdateInboxRulesRequest &&request, XMLElement *response, const EWS
 
 		std::vector<rule_slot> list;
 		for (const auto &row : rows)
-			list.push_back({&row, nullptr, nullptr, nullptr, row.state});
+			list.emplace_back(&row, nullptr, nullptr, nullptr, row.state);
 		auto find = [&](const std::string &id) {
 			auto v = Rules::decode_rule_id(id);
 			return v ? std::find_if(list.begin(), list.end(), [&](const rule_slot &s) {
@@ -3104,16 +3104,16 @@ void process(mUpdateInboxRulesRequest &&request, XMLElement *response, const EWS
 			    (op.kind == Rules::Operation::SET && op.rule.id)) {
 				it = find(id);
 				if (!id.empty() && !touched.insert(id).second)
-					ve.push_back({"RuleId", "DuplicatedOperationOnTheSameRule",
-						"Only one operation per rule is allowed.", id});
+					ve.emplace_back("RuleId", "DuplicatedOperationOnTheSameRule",
+						"Only one operation per rule is allowed.", id);
 				else if (it == list.end())
-					ve.push_back({"RuleId", "RuleNotFound", "The rule was not found.", id});
+					ve.emplace_back("RuleId", "RuleNotFound", "The rule was not found.", id);
 			}
 			if (op.kind == Rules::Operation::DELETE) {
 				if (ve.empty())
 					list.erase(it);
 				else
-					errors.push_back({static_cast<int32_t>(i), std::move(ve)});
+					errors.emplace_back(static_cast<int32_t>(i), std::move(ve));
 				continue;
 			}
 			Rules::strip_wildcards(op.rule);
@@ -3121,8 +3121,8 @@ void process(mUpdateInboxRulesRequest &&request, XMLElement *response, const EWS
 			ve.insert(ve.end(), rv.begin(), rv.end());
 			if (ve.empty() && it != list.end() && op.kind == Rules::Operation::SET &&
 			    Rules::from_mapi(*it->old->props, *env).not_supported.value_or(false))
-				ve.push_back({"IsNotSupported", "UnsupportedRule",
-					"The rule cannot be changed through EWS.", id});
+				ve.emplace_back("IsNotSupported", "UnsupportedRule",
+					"The rule cannot be changed through EWS.", id);
 			rule_slot slot;
 			if (ve.empty() && Rules::to_mapi(op.rule, *env, slot.cond, slot.acts, ve)) {
 				uint32_t state = 0;
@@ -3144,7 +3144,7 @@ void process(mUpdateInboxRulesRequest &&request, XMLElement *response, const EWS
 				list.insert(list.begin() + pos, slot);
 			}
 			if (!ve.empty())
-				errors.push_back({static_cast<int32_t>(i), std::move(ve)});
+				errors.emplace_back(static_cast<int32_t>(i), std::move(ve));
 		}
 		if (!errors.empty()) {
 			env->rollback();
@@ -3164,13 +3164,13 @@ void process(mUpdateInboxRulesRequest &&request, XMLElement *response, const EWS
 
 		std::vector<uint32_t> old_seqs;
 		for (const auto &row : rows)
-			old_seqs.push_back(row.seq);
+			old_seqs.emplace_back(row.seq);
 		auto seqs = Rules::assign_sequences(std::move(old_seqs), list.size());
 		std::vector<RULE_DATA> batch;
 		auto mkrow = [&](uint8_t flags, std::vector<TAGGED_PROPVAL> &&pv) {
 			auto arr = EWSContext::alloc<TAGGED_PROPVAL>(pv.size());
 			std::copy(pv.begin(), pv.end(), arr);
-			batch.push_back({flags, {static_cast<uint16_t>(pv.size()), arr}});
+			batch.emplace_back(flags, TPROPVAL_ARRAY{static_cast<uint16_t>(pv.size()), arr});
 		};
 		for (const auto &row : rows)
 			if (std::none_of(list.begin(), list.end(), [&](const rule_slot &s) { return s.old == &row; }))
@@ -3193,13 +3193,13 @@ void process(mUpdateInboxRulesRequest &&request, XMLElement *response, const EWS
 				{PR_RULE_ACTIONS, s.acts},
 			};
 			if (s.old != nullptr) {
-				pv.push_back({PR_RULE_ID, deconst(&s.old->id)});
+				pv.emplace_back(PR_RULE_ID, deconst(&s.old->id));
 				mkrow(ROW_MODIFY, std::move(pv));
 				continue;
 			}
-			pv.push_back({PR_RULE_PROVIDER, deconst("RuleOrganizer")});
-			pv.push_back({PR_RULE_LEVEL, deconst(&zero)});
-			pv.push_back({PR_RULE_PROVIDER_DATA, provider_data()});
+			pv.emplace_back(PR_RULE_PROVIDER, deconst("RuleOrganizer"));
+			pv.emplace_back(PR_RULE_LEVEL, deconst(&zero));
+			pv.emplace_back(PR_RULE_PROVIDER_DATA, provider_data());
 			mkrow(ROW_ADD, std::move(pv));
 		}
 		/* Removals first so they make room for the additions */
@@ -3274,7 +3274,7 @@ void process(mGetServerTimeZonesRequest &&request, XMLElement *response, const E
 	if (request.Ids) {
 		for (const auto &id : *request.Ids)
 			if (auto tzd = wintz_to_tzdef(id.c_str()))
-				blobs.push_back(*tzd);
+				blobs.emplace_back(*tzd);
 	} else {
 		blobs = wintz_all_tzdefs();
 	}
@@ -3570,15 +3570,15 @@ void process(mCreateUserConfigurationRequest &&request, XMLElement *response,
 
 		std::string configClass = "IPM.Configuration." + reqName.Name;
 		std::vector<TAGGED_PROPVAL> props;
-		props.push_back({PidTagMid, &messageId});
-		props.push_back({PidTagChangeNumber, &changeNumber});
-		props.push_back({PR_CHANGE_KEY, &ckeyBin});
-		props.push_back({PR_PREDECESSOR_CHANGE_LIST, pclBin.get()});
+		props.emplace_back(PidTagMid, &messageId);
+		props.emplace_back(PidTagChangeNumber, &changeNumber);
+		props.emplace_back(PR_CHANGE_KEY, &ckeyBin);
+		props.emplace_back(PR_PREDECESSOR_CHANGE_LIST, pclBin.get());
 		props.emplace_back(PR_ASSOCIATED, deconst(&byte_value_one));
-		props.push_back({PR_MESSAGE_CLASS, deconst(configClass.c_str())});
+		props.emplace_back(PR_MESSAGE_CLASS, deconst(configClass.c_str()));
 		props.emplace_back(PR_READ, deconst(&byte_value_one));
 		auto modtime = rop_util_current_nttime();
-		props.push_back({PR_LAST_MODIFICATION_TIME, &modtime});
+		props.emplace_back(PR_LAST_MODIFICATION_TIME, &modtime);
 
 		auto& userConfiguration = request.UserConfiguration;
 		if (userConfiguration.XmlData) {
@@ -3586,14 +3586,14 @@ void process(mCreateUserConfigurationRequest &&request, XMLElement *response,
 			           static_cast<uint32_t>(userConfiguration.XmlData->size()),
 			           {EWSContext::alloc<char>(userConfiguration.XmlData->size())}});
 			memcpy(bin->pc, userConfiguration.XmlData->data(), bin->cb);
-			props.push_back({PR_ROAMING_XMLSTREAM, bin});
+			props.emplace_back(PR_ROAMING_XMLSTREAM, bin);
 		}
 		if (userConfiguration.BinaryData) {
 			auto bin = EWSContext::construct<BINARY>(BINARY{
 			           static_cast<uint32_t>(userConfiguration.BinaryData->size()),
 			           {EWSContext::alloc<char>(userConfiguration.BinaryData->size())}});
 			memcpy(bin->pc, userConfiguration.BinaryData->data(), bin->cb);
-			props.push_back({PR_ROAMING_BINARYSTREAM, bin});
+			props.emplace_back(PR_ROAMING_BINARYSTREAM, bin);
 		}
 
 		MESSAGE_CONTENT content{};
@@ -4211,29 +4211,29 @@ void process(mSetUserOofSettingsRequest &&request, XMLElement *response, const E
 		throw DispatchError(E3009(OofSettings.ExternalAudience));
 
 	std::vector<TAGGED_PROPVAL> pvs;
-	pvs.push_back(TAGGED_PROPVAL{PR_EC_OUTOFOFFICE, &oof_state});
-	pvs.push_back(TAGGED_PROPVAL{PR_EC_ALLOW_EXTERNAL, &allow_external_oof});
-	pvs.push_back(TAGGED_PROPVAL{PR_EC_EXTERNAL_AUDIENCE, &external_audience});
+	pvs.emplace_back(PR_EC_OUTOFOFFICE, &oof_state);
+	pvs.emplace_back(PR_EC_ALLOW_EXTERNAL, &allow_external_oof);
+	pvs.emplace_back(PR_EC_EXTERNAL_AUDIENCE, &external_audience);
 	mapitime_t nt_start{}, nt_end{};
 	if (OofSettings.Duration) {
 		nt_start = rop_util_unix_to_nttime(OofSettings.Duration->StartTime);
 		nt_end = rop_util_unix_to_nttime(OofSettings.Duration->EndTime);
-		pvs.push_back(TAGGED_PROPVAL{PR_EC_OUTOFOFFICE_FROM, &nt_start});
-		pvs.push_back(TAGGED_PROPVAL{PR_EC_OUTOFOFFICE_UNTIL, &nt_end});
+		pvs.emplace_back(PR_EC_OUTOFOFFICE_FROM, &nt_start);
+		pvs.emplace_back(PR_EC_OUTOFOFFICE_UNTIL, &nt_end);
 	}
 	std::string int_msg, ext_msg;
 	if (OofSettings.InternalReply && OofSettings.InternalReply->Message)
 		int_msg = *OofSettings.InternalReply->Message;
-	pvs.push_back(TAGGED_PROPVAL{PR_EC_OUTOFOFFICE_MSG, deconst(int_msg.c_str())});
+	pvs.emplace_back(PR_EC_OUTOFOFFICE_MSG, deconst(int_msg.c_str()));
 	if (OofSettings.ExternalReply && OofSettings.ExternalReply->Message)
 		ext_msg = *OofSettings.ExternalReply->Message;
-	pvs.push_back(TAGGED_PROPVAL{PR_EC_EXTERNAL_REPLY, deconst(ext_msg.c_str())});
+	pvs.emplace_back(PR_EC_EXTERNAL_REPLY, deconst(ext_msg.c_str()));
 	/*
 	 * Exchange has no OOF reply subject, its replies are titled
 	 * "Automatic reply: <subject>". Drop one a non-EWS client stored.
 	 */
-	pvs.push_back(TAGGED_PROPVAL{PR_EC_OUTOFOFFICE_SUBJECT, deconst("")});
-	pvs.push_back(TAGGED_PROPVAL{PR_EC_EXTERNAL_SUBJECT, deconst("")});
+	pvs.emplace_back(PR_EC_OUTOFOFFICE_SUBJECT, deconst(""));
+	pvs.emplace_back(PR_EC_EXTERNAL_SUBJECT, deconst(""));
 	TPROPVAL_ARRAY vals = {static_cast<uint16_t>(pvs.size()), pvs.data()};
 	PROBLEM_ARRAY problems{};
 	if (!ctx.plugin().exmdb.autoreply_setprop(maildir.c_str(), CP_UTF8,
@@ -5291,12 +5291,12 @@ static void process_upditem_2(mUpdateItemRequest &request, const EWSContext &ctx
 
 	std::vector<TAGGED_PROPVAL> sprops;
 	auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
-	sprops.push_back({PR_CLIENT_SUBMIT_TIME, now});
-	sprops.push_back({PR_MESSAGE_DELIVERY_TIME, now});
+	sprops.emplace_back(PR_CLIENT_SUBMIT_TIME, now);
+	sprops.emplace_back(PR_MESSAGE_DELIVERY_TIME, now);
 	auto flags = sendcontent->proplist.get<const uint32_t>(PR_MESSAGE_FLAGS);
 	if (flags != nullptr && *flags & MSGFLAG_UNSENT)
-		sprops.push_back({PR_MESSAGE_FLAGS,
-			EWSContext::construct<uint32_t>(*flags & ~MSGFLAG_UNSENT)});
+		sprops.emplace_back(PR_MESSAGE_FLAGS,
+			EWSContext::construct<uint32_t>(*flags & ~MSGFLAG_UNSENT));
 
 	std::vector<proptag_t> drop;
 	auto ident = ctx.submitIdentity(dir, sendcontent->proplist, drop);

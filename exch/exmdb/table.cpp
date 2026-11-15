@@ -1012,7 +1012,7 @@ static bool table_load_content_table(db_conn &db, db_base_wr_ptr &dbase,
 			return true;
 		};
 		while (pstmt.step() == SQLITE_ROW) {
-			mids.push_back(pstmt.col_uint64(0));
+			mids.emplace_back(pstmt.col_uint64(0));
 			if (mids.size() == batch && !flush())
 				return false;
 		}

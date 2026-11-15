@@ -96,7 +96,7 @@ int cmd_parser_run()
 		char buf[32];
 		snprintf(buf, sizeof(buf), "cmd_parser/%u", i);
 		pthread_setname_np(tid, buf);
-		g_thread_ids.push_back(tid);
+		g_thread_ids.emplace_back(tid);
 	}
 	return 0;
 }

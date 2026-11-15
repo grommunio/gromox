@@ -216,7 +216,7 @@ static std::vector<Address> xaddresses(const XMLElement *e)
 			a.email = xtext(x);
 		if (auto x = c->FirstChildElement("RoutingType"))
 			a.routing = xtext(x);
-		out.push_back(std::move(a));
+		out.emplace_back(std::move(a));
 	}
 	return out;
 }
@@ -340,7 +340,7 @@ std::vector<Operation> parse_operations(const XMLElement *e)
 			if (id == nullptr)
 				throw ParseError("DeleteRuleOperation lacks RuleId");
 			op.rule_id = xtext(id);
-			ops.push_back(std::move(op));
+			ops.emplace_back(std::move(op));
 			continue;
 		}
 		if (n == "CreateRuleOperation")
@@ -353,7 +353,7 @@ std::vector<Operation> parse_operations(const XMLElement *e)
 		if (rule == nullptr)
 			throw ParseError(fmt::format("{} lacks Rule", n));
 		op.rule = parse_rule(rule);
-		ops.push_back(std::move(op));
+		ops.emplace_back(std::move(op));
 	}
 	return ops;
 }
@@ -665,7 +665,7 @@ collect(const RESTRICTION &r, F &&leaf)
 		auto s = leaf(r);
 		if (!s)
 			return std::nullopt;
-		out.push_back(std::move(*s));
+		out.emplace_back(std::move(*s));
 		return out;
 	}
 	if (r.andor->count == 0)
@@ -674,7 +674,7 @@ collect(const RESTRICTION &r, F &&leaf)
 		auto s = leaf(c);
 		if (!s)
 			return std::nullopt;
-		out.push_back(std::move(*s));
+		out.emplace_back(std::move(*s));
 	}
 	return out;
 }
@@ -846,7 +846,7 @@ bool reader::addresses(const RESTRICTION &r, Predicates &p)
 		auto one = [&](const RESTRICTION &y) {
 			auto a = leaf(y);
 			if (a)
-				out.push_back(std::move(*a));
+				out.emplace_back(std::move(*a));
 			return a.has_value();
 		};
 		if (x.rt == RES_OR) {
@@ -1131,7 +1131,7 @@ bool reader::recipients(const FORWARDDELEGATE_ACTION &fwd, std::vector<Address> 
 			return false;
 		if (a.name == a.email)
 			a.name.clear();
-		out.push_back(std::move(a));
+		out.emplace_back(std::move(a));
 	}
 	return true;
 }
@@ -1377,7 +1377,7 @@ struct writer {
 	ACTION_BLOCK *action(act_kind, const Value &, ACTION_BLOCK &);
 	void error(const std::string &uri, const char *code, const char *msg, const std::string &value = {})
 	{
-		errs.push_back({uri, code, msg, value});
+		errs.emplace_back(uri, code, msg, value);
 	}
 	FORWARDDELEGATE_ACTION *recipients(const std::vector<Address> &, const std::string &uri);
 	RESTRICTION addr_cond(const Address &, proptag_t);
@@ -1392,7 +1392,7 @@ struct writer {
 static std::string smtp_srchkey(const std::string &addr)
 {
 	auto s = "SMTP:" + upper(addr);
-	s.push_back('\0');
+	s += '\0';
 	return s;
 }
 
@@ -1752,7 +1752,7 @@ bool to_mapi(const Rule &rule, Env &env, RESTRICTION *&cond,
 		if (rule.conditions.v[k])
 			if (auto r = w.pred(static_cast<pred_kind>(k), *rule.conditions.v[k],
 			    "Condition:"s + pred_name(k)))
-				all.push_back(*r);
+				all.emplace_back(*r);
 	}
 	for (unsigned int k = 0; k < P_COUNT; ++k) {
 		if (rule.exceptions.v[k])
@@ -1805,14 +1805,14 @@ static void check_strings(const Value &v, const std::string &uri,
     std::vector<ValidationError> &errs)
 {
 	if (v.strings.empty()) {
-		errs.push_back({uri, "EmptyValueFound", "The list is empty.", ""});
+		errs.emplace_back(uri, "EmptyValueFound", "The list is empty.", "");
 		return;
 	}
 	for (const auto &s : v.strings) {
 		if (s.empty())
-			errs.push_back({uri, "EmptyValueFound", "The string is empty.", ""});
+			errs.emplace_back(uri, "EmptyValueFound", "The string is empty.", "");
 		else if (s.size() > 255)
-			errs.push_back({uri, "StringValueTooBig", "The string is too long.", s});
+			errs.emplace_back(uri, "StringValueTooBig", "The string is too long.", s);
 	}
 }
 
@@ -1820,19 +1820,19 @@ static void check_addresses(const Value &v, const std::string &uri,
     std::vector<ValidationError> &errs)
 {
 	if (v.addrs.empty()) {
-		errs.push_back({uri, "EmptyValueFound", "The address list is empty.", ""});
+		errs.emplace_back(uri, "EmptyValueFound", "The address list is empty.", "");
 		return;
 	}
 	if (v.addrs.size() > MAX_RECIPIENTS) {
-		errs.push_back({uri, "InvalidValue", "Too many addresses.", std::to_string(v.addrs.size())});
+		errs.emplace_back(uri, "InvalidValue", "Too many addresses.", std::to_string(v.addrs.size()));
 		return;
 	}
 	for (const auto &a : v.addrs) {
 		if (a.email.empty())
-			errs.push_back({uri, "InvalidAddress", "The address is empty.", a.name});
+			errs.emplace_back(uri, "InvalidAddress", "The address is empty.", a.name);
 		else if (!a.routing.empty() && strcasecmp(a.routing.c_str(), "SMTP") != 0 &&
 		    strcasecmp(a.routing.c_str(), "EX") != 0)
-			errs.push_back({uri, "UnsupportedAddress", "The routing type is not supported.", a.routing});
+			errs.emplace_back(uri, "UnsupportedAddress", "The routing type is not supported.", a.routing);
 	}
 }
 
@@ -1848,29 +1848,29 @@ static void check_value(vtype type, const Value &v, const std::string &uri,
 		break;
 	case vtype::date_range:
 		if (!v.start && !v.end)
-			errs.push_back({uri, "MissingRangeValue", "The range has no bound.", ""});
+			errs.emplace_back(uri, "MissingRangeValue", "The range has no bound.", "");
 		else if (v.start && v.end && *v.start > *v.end)
-			errs.push_back({uri, "InvalidDateRange", "The start is after the end.", ""});
+			errs.emplace_back(uri, "InvalidDateRange", "The start is after the end.", "");
 		break;
 	case vtype::size_range:
 		if (!v.min && !v.max)
-			errs.push_back({uri, "MissingRangeValue", "The range has no bound.", ""});
+			errs.emplace_back(uri, "MissingRangeValue", "The range has no bound.", "");
 		else if (v.min.value_or(0) < 0 || v.max.value_or(0) < 0)
-			errs.push_back({uri, "SizeLessThanZero", "The size is negative.",
-				std::to_string(std::min(v.min.value_or(0), v.max.value_or(0)))});
+			errs.emplace_back(uri, "SizeLessThanZero", "The size is negative.",
+				std::to_string(std::min(v.min.value_or(0), v.max.value_or(0))));
 		else if (v.min.value_or(0) > MAX_SIZE_KB || v.max.value_or(0) > MAX_SIZE_KB)
-			errs.push_back({uri, "InvalidValue", "The value isn't valid.",
-				std::to_string(std::max(v.min.value_or(0), v.max.value_or(0)))});
+			errs.emplace_back(uri, "InvalidValue", "The value isn't valid.",
+				std::to_string(std::max(v.min.value_or(0), v.max.value_or(0))));
 		else if (v.min && v.max && *v.min > *v.max)
-			errs.push_back({uri, "InvalidSizeRange", "The minimum is above the maximum.", ""});
+			errs.emplace_back(uri, "InvalidSizeRange", "The minimum is above the maximum.", "");
 		break;
 	case vtype::folder:
 		if (v.folder.id.empty())
-			errs.push_back({uri, "InvalidFolderId", "The folder id is empty.", ""});
+			errs.emplace_back(uri, "InvalidFolderId", "The folder id is empty.", "");
 		break;
 	case vtype::item:
 		if (v.item.id.empty())
-			errs.push_back({uri, "InvalidValue", "The item id is empty.", ""});
+			errs.emplace_back(uri, "InvalidValue", "The item id is empty.", "");
 		break;
 	default:
 		break;
@@ -1916,17 +1916,17 @@ std::vector<ValidationError> validate(const Rule &rule, Operation::kind_t kind)
 {
 	std::vector<ValidationError> errs;
 	if (kind == Operation::CREATE && rule.id)
-		errs.push_back({"RuleId", "CreateWithRuleId",
-			"Create rule operation should not have rule ID set in request.", *rule.id});
+		errs.emplace_back("RuleId", "CreateWithRuleId",
+			"Create rule operation should not have rule ID set in request.", *rule.id);
 	if (kind == Operation::SET && !rule.id)
-		errs.push_back({"RuleId", "MissingParameter", "The rule ID is missing.", ""});
+		errs.emplace_back("RuleId", "MissingParameter", "The rule ID is missing.", "");
 	if (rule.priority < 1)
-		errs.push_back({"Priority", "InvalidValue", "The value isn't valid.",
-			std::to_string(rule.priority)});
+		errs.emplace_back("Priority", "InvalidValue", "The value isn't valid.",
+			std::to_string(rule.priority));
 	if (rule.name.empty())
-		errs.push_back({"DisplayName", "EmptyValueFound", "The display name is empty.", ""});
+		errs.emplace_back("DisplayName", "EmptyValueFound", "The display name is empty.", "");
 	else if (rule.name.size() > 256)
-		errs.push_back({"DisplayName", "StringValueTooBig", "The display name is too long.", rule.name});
+		errs.emplace_back("DisplayName", "StringValueTooBig", "The display name is too long.", rule.name);
 	for (unsigned int k = 0; k < P_COUNT; ++k) {
 		if (rule.conditions.v[k])
 			check_value(pred_type(k), *rule.conditions.v[k], "Condition:"s + pred_name(k), errs);
@@ -1943,7 +1943,7 @@ std::vector<ValidationError> validate(const Rule &rule, Operation::kind_t kind)
 			any = true;
 	}
 	if (!any)
-		errs.push_back({"Actions", "MissingAction", "The rule has no action.", ""});
+		errs.emplace_back("Actions", "MissingAction", "The rule has no action.", "");
 	return errs;
 }
 
@@ -1957,7 +1957,7 @@ std::vector<uint32_t> assign_sequences(std::vector<uint32_t> old, size_t count)
 	std::vector<uint32_t> out;
 	uint32_t next = old.empty() ? 10 : old.back() + 1;
 	for (size_t i = 0; i < count; ++i)
-		out.push_back(i < old.size() ? old[i] : next++);
+		out.emplace_back(i < old.size() ? old[i] : next++);
 	return out;
 }
 

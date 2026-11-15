@@ -98,7 +98,7 @@ int asyncemsmdb_interface_run()
 		char buf[32];
 		snprintf(buf, sizeof(buf), "asyncems/%u", i);
 		pthread_setname_np(tid, buf);
-		g_thread_ids.push_back(tid);
+		g_thread_ids.emplace_back(tid);
 	}
 	return 0;
 }
@@ -325,7 +325,7 @@ static void aemsi_scanwork(std::any &)
 				++iter;
 				continue;
 			}
-			tl.push_back(pwait);
+			tl.emplace_back(pwait);
 			iter = g_tag_hash.erase(iter);
 			if (pwait->async_id != 0)
 				g_async_hash.erase(pwait->async_id);

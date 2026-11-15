@@ -334,7 +334,7 @@ void* MhEmsmdbPlugin::scanWork(void* ptr)
 			if (ctx->pending_status == PENDING_STATUS_NONE)
 				continue;
 			try {
-				waiting.push_back(ctx->session_guid);
+				waiting.emplace_back(ctx->session_guid);
 			} catch (const std::bad_alloc &) {
 			}
 		}
@@ -347,7 +347,7 @@ void* MhEmsmdbPlugin::scanWork(void* ptr)
 				++entry;
 			} else if (entry->second.expire_time < now) {
 				try {
-					expired.push_back(entry->second.session_guid);
+					expired.emplace_back(entry->second.session_guid);
 				} catch (const std::bad_alloc &) {
 				}
 				entry = plugin.removeSession(entry);

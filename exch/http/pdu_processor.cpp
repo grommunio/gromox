@@ -390,7 +390,7 @@ static int mgmt_dispatch(unsigned int op, const GUID *, uint64_t,
 	if (op == mgmt_inq_if_ids) {
 		auto &ep = *g_call_key->pprocessor->pendpoint;
 		for (const auto &i : ep.interface_list)
-			r->if_ids.push_back({i.uuid, i.version});
+			r->if_ids.emplace_back(i.uuid, i.version);
 	} else if (op == mgmt_inq_stats) {
 		auto &rq = *static_cast<const mgmt_inq_stats_in *>(in);
 		r->count = std::min(rq.count, MGMT_STATS_MAX);
@@ -3036,7 +3036,7 @@ static int pdu_processor_load_library(const generic_module &mod)
 
 	plug.lib_main = mod.lib_main;
 	plug.file_name = std::move(mod.file_name);
-	g_plugin_list.push_back(std::move(plug));
+	g_plugin_list.emplace_back(std::move(plug));
 	g_cur_plugin = &g_plugin_list.back();
 	
 	/* append the pendpoint node into endpoint list */

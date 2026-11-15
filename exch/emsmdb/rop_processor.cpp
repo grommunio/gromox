@@ -552,7 +552,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 		switch (status) {
 		case pack_result::ok:
 			try {
-				response_list.push_back(std::move(rsp));
+				response_list.emplace_back(std::move(rsp));
 			} catch (const std::bad_alloc &) {
 				return ecServerOOM;
 			}

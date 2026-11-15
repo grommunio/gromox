@@ -33,7 +33,7 @@ static void ftstream_producer_try_recode_nbp(fxstream_producer *pstream) try
 	if (pstream->offset - last_seek < FTSTREAM_PRODUCER_POINT_LENGTH)
 		return;
 	point_node p = {point_type::normal_break, pstream->offset};
-	pstream->bp_list.push_back(std::move(p));
+	pstream->bp_list.emplace_back(std::move(p));
 } catch (const std::bad_alloc &) {
 	mlog(LV_WARN, "%s: ENOMEM", __func__);
 }

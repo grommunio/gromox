@@ -176,7 +176,7 @@ ec_error_t store_object::get_named_propnames(const PROPID_ARRAY &propids,
 			pindex_map[i] = i;
 			ppropnames->ppropname[i] = static_cast<PROPERTY_NAME>(iter->second);
 		} else {
-			tmp_propids.push_back(propids[i]);
+			tmp_propids.emplace_back(propids[i]);
 			pindex_map[i] = -static_cast<int>(tmp_propids.size());
 		}
 	}

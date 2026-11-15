@@ -2147,7 +2147,7 @@ pack_result rop_ext_pull(EXT_PULL &x, ROP_BUFFER &r) try
 	while (subext.m_offset < size) {
 		std::unique_ptr<rop_request> rq;
 		TRY(rop_ext_pull(subext, rq));
-		r.rop_list.push_back(std::move(rq));
+		r.rop_list.emplace_back(std::move(rq));
 	}
 	tmp_num = (rpc_header_ext.size_actual - size) / sizeof(uint32_t);
 	if (0 == tmp_num) {
