@@ -2396,20 +2396,41 @@ static ec_error_t oxcical_import_internal(const char *method,
 
 	piline = pmain_event->get_line("DTEND");
 	if (piline != nullptr) {
+		/*
+		 * RFC 5545 3.8.2.2 lets DTEND name its own zone. Like Exchange,
+		 * keep the end in the zone of the start, which is the one zone
+		 * a series has. A DTEND without zone is read like DTSTART, a
+		 * DATE value carries no zone, RFC 5545 3.2.19.
+		 */
 		auto pvalue = piline->get_first_paramval("TZID");
-		bool parse_dtv = (pvalue == nullptr && ptzid == nullptr) ||
-		                 (pvalue != nullptr && ptzid != nullptr &&
-		                 strcasecmp(pvalue, ptzid) == 0);
-		if (!parse_dtv) {
-			errstr = "E-2199: oxcical_import: TZID present but VTIMEZONE not (or vice-versa)";
-			return ecInvalidParam;
+		auto vtype = piline->get_first_paramval("VALUE");
+		auto end_tz = ptz_component;
+		if (pvalue != nullptr && (vtype == nullptr ||
+		    strcasecmp(vtype, "DATE") != 0) && (ptzid == nullptr ||
+		    strcasecmp(pvalue, ptzid) != 0)) {
+			if (ptzid != nullptr && ptz_component == nullptr) {
+				errstr = fmt::format("E-2199: DTSTART zone "
+				         "\"{}\" was not declared, DTEND "
+				         "names another one", ptzid);
+				return ecInvalidParam;
+			}
+			end_tz = oxcical_find_vtimezone(pical, pvalue);
+			if (end_tz == nullptr) {
+				errstr = fmt::format("E-2200: Timezone \"{}\" "
+				         "of DTEND was not declared", pvalue);
+				return ecInvalidParam;
+			}
 		}
-		err = oxcical_parse_dtvalue(ptz_component, *piline, &end_itime,
+		err = oxcical_parse_dtvalue(end_tz, *piline, &end_itime,
 		      &end_time, errstr);
 		if (err != ecSuccess) {
 			errstr.insert(0, "E-2198: ");
 			return err;
 		}
+		if (end_tz != ptz_component || (ptz_component != nullptr &&
+		    end_itime.type == itime_type::utc))
+			ical_utc_to_datetime(ptz_component, end_time,
+				&end_itime);
 		if (end_time < start_time) {
 			errstr = "E-2795: ical not imported due to end_time < start_time";
 			return ecInvalidParam;
@@ -3116,6 +3137,11 @@ static const ical_line *oxcical_first_floating_dt(const ical_component &comp)
 		if (vtype != nullptr && strcasecmp(vtype, "DATE-TIME") != 0)
 			continue;
 		if (line->get_first_paramval("TZID") != nullptr)
+			continue;
+		/* Read in the zone of DTSTART, see oxcical_import_internal */
+		auto dts = comp.get_line("DTSTART");
+		if (strcmp(name, "DTEND") == 0 && dts != nullptr &&
+		    dts->get_first_paramval("TZID") != nullptr)
 			continue;
 		auto value = line->get_first_subvalue();
 		if (value == nullptr || *value == '\0')
