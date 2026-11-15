@@ -92,10 +92,12 @@ class EWSPlugin {
 	struct _exmdb {
 		_exmdb();
 
-	#define EXMIDL(n, p) EXMIDL_RETTYPE (*n) p;
+	#define EXMIDL(n, p) GX_WUR EXMIDL_RETTYPE (*n) p;
+	#define EXMIDU(n, p) EXMIDL_RETTYPE (*n) p;
 	#define IDLOUT
 	#include <gromox/exmdb_idef.hpp>
 	#undef EXMIDL
+	#undef EXMIDU
 	#undef IDLOUT
 		bool get_message_property(const char*, const char*, cpid_t, uint64_t, uint32_t, void **ppval) const;
 		void (*register_proc)(void*);

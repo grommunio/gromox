@@ -31,10 +31,12 @@ class GX_EXPORT exmdb_client_shm final {
 	 * `proptag_cspan{expr}` when exmdb_client_shm's function pointers are
 	 * invoked.
 	 */
-#define EXMIDL(n, p) EXMIDL_RETTYPE (*n) p;
+#define EXMIDL(n, p) GX_WUR EXMIDL_RETTYPE (*n) p;
+#define EXMIDU(n, p) EXMIDL_RETTYPE (*n) p;
 #define IDLOUT
 #include <gromox/exmdb_idef.hpp>
 #undef EXMIDL
+#undef EXMIDU
 #undef IDLOUT
 };
 

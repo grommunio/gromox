@@ -61,10 +61,12 @@ class OxdiscoPlugin {
 
 	struct _exmdb {
 		_exmdb();
-		#define EXMIDL(n, p) EXMIDL_RETTYPE (*n) p;
+		#define EXMIDL(n, p) GX_WUR EXMIDL_RETTYPE (*n) p;
+		#define EXMIDU(n, p) EXMIDL_RETTYPE (*n) p;
 		#define IDLOUT
 		#include <gromox/exmdb_idef.hpp>
 		#undef EXMIDL
+		#undef EXMIDU
 		#undef IDLOUT
 	} exmdb;
 
@@ -1482,9 +1484,11 @@ OxdiscoPlugin::_exmdb::_exmdb()
 	if ((n) == nullptr) \
 		throw std::runtime_error("oxdisco: failed to get the \"exmdb_client_"# n"\" service\n"); \
 } while (false);
+#define EXMIDU(n, p) EXMIDL(n, p)
 #define IDLOUT
 #include <gromox/exmdb_idef.hpp>
 #undef EXMIDL
+#undef EXMIDU
 #undef IDLOUT
 }
 

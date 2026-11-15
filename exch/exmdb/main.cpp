@@ -296,9 +296,11 @@ bool SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 		}
 
 #define EXMIDL(n, p) register_service("exmdb_client_" #n, exmdb_client_local::n);
+#define EXMIDU(n, p) EXMIDL(n, p)
 #define IDLOUT
 #include <gromox/exmdb_idef.hpp>
 #undef EXMIDL
+#undef EXMIDU
 #undef IDLOUT
 		register_service("exmdb_client_register_proc", exmdb_server::register_proc);
 		register_service("pass_service", common_util_pass_service);

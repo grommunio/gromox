@@ -487,9 +487,11 @@ EWSPlugin::_exmdb::_exmdb()
 		throw std::runtime_error("[ews]: failed to get the \"exmdb_client_"# n"\" service\n"); \
 	} \
 } while (false);
+#define EXMIDU(n, p) EXMIDL(n, p)
 #define IDLOUT
 #include <gromox/exmdb_idef.hpp>
 #undef EXMIDL
+#undef EXMIDU
 #undef IDLOUT
 	query_service2("exmdb_client_register_proc", register_proc);
 	 if (register_proc == nullptr)

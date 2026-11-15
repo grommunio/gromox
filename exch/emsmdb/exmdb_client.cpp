@@ -32,9 +32,11 @@ int exmdb_client_shm::run()
 		return -1; \
 	} \
 } while (false);
+#define EXMIDU(n, p) EXMIDL(n, p)
 #define IDLOUT
 #include <gromox/exmdb_idef.hpp>
 #undef EXMIDL
+#undef EXMIDU
 #undef IDLOUT
 
 #define E(f, s) do { \

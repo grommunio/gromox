@@ -5,6 +5,11 @@
  * ACLs. See the individual exmdb_server:: function heads for a case-by-case
  * explanation.
  */
+/*
+ * EXMIDU is used to mark functions where ignoring the return code is
+ * acceptable, e.g. because the call is often used in error handling paths
+ * where a different error prevails anyway.
+ */
 #define EXMIDL_RETTYPE BOOL
 EXMIDL(ping_store, (const char *dir))
 EXMIDL(get_all_named_propids, (const char *dir, IDLOUT PROPID_ARRAY *propids))
@@ -48,7 +53,7 @@ EXMIDL(load_content_table, (const char *dir, cpid_t cpid, uint64_t folder_id, co
 EXMIDL(reload_content_table, (const char *dir, uint32_t table_id))
 EXMIDL(load_permission_table, (const char *dir, uint64_t folder_id, uint32_t table_flags, IDLOUT uint32_t *table_id, uint32_t *row_count))
 EXMIDL(load_rule_table, (const char *dir, uint64_t folder_id,  uint8_t table_flags, const RESTRICTION *prestriction, IDLOUT uint32_t *table_id, uint32_t *row_count))
-EXMIDL(unload_table, (const char *dir, uint32_t table_id))
+EXMIDU(unload_table, (const char *dir, uint32_t table_id))
 EXMIDL(sum_table, (const char *dir, uint32_t table_id, IDLOUT uint32_t *rows))
 EXMIDL(query_table, (const char *dir, const char *username, cpid_t cpid, uint32_t table_id, proptag_cspan pproptags, uint32_t start_pos, int32_t row_needed, IDLOUT TARRAY_SET *set))
 EXMIDL(match_table, (const char *dir, const char *username, cpid_t cpid, uint32_t table_id, BOOL b_forward, uint32_t start_pos, const RESTRICTION *pres, proptag_cspan pproptags, IDLOUT int32_t *position, TPROPVAL_ARRAY *propvals))
@@ -75,7 +80,7 @@ EXMIDL(read_attachment_instance, (const char *dir, uint32_t instance_id, IDLOUT 
 EXMIDL(write_attachment_instance, (const char *dir, uint32_t instance_id, const ATTACHMENT_CONTENT *pattctnt, BOOL b_force, IDLOUT PROBLEM_ARRAY *problems))
 EXMIDL(delete_message_instance_attachment, (const char *dir, uint32_t message_instance_id, uint32_t attachment_num))
 EXMIDL(flush_instance, (const char *dir, uint32_t instance_id, IDLOUT ec_error_t *e_result))
-EXMIDL(unload_instance, (const char *dir, uint32_t instance_id))
+EXMIDU(unload_instance, (const char *dir, uint32_t instance_id))
 EXMIDL(get_instance_all_proptags, (const char *dir, uint32_t instance_id, IDLOUT PROPTAG_ARRAY *proptags))
 EXMIDL(get_instance_properties, (const char *dir, uint32_t size_limit, uint32_t instance_id, proptag_cspan pproptags, IDLOUT TPROPVAL_ARRAY *propvals))
 EXMIDL(set_instance_properties, (const char *dir, uint32_t instance_id, const TPROPVAL_ARRAY *pproperties, IDLOUT PROBLEM_ARRAY *problems))
@@ -102,7 +107,7 @@ EXMIDL(allocate_message_id, (const char *dir, uint64_t folder_id, IDLOUT uint64_
 EXMIDL(allocate_cn, (const char *dir, IDLOUT uint64_t *cn))
 EXMIDL(mark_modified, (const char *dir, uint64_t message_id))
 EXMIDL(try_mark_submit, (const char *dir, uint64_t message_id, IDLOUT BOOL *b_marked))
-EXMIDL(clear_submit, (const char *dir, uint64_t message_id, BOOL b_unsent))
+EXMIDU(clear_submit, (const char *dir, uint64_t message_id, BOOL b_unsent))
 EXMIDL(link_message, (const char *dir, cpid_t cpid, uint64_t folder_id, uint64_t message_id, IDLOUT BOOL *b_result))
 EXMIDL(link_messages, (const char *dir, cpid_t cpid, uint64_t folder_id, std::span<const eid_t> message_ids, IDLOUT BOOL *b_partial))
 EXMIDL(unlink_message, (const char *dir, cpid_t cpid, uint64_t folder_id, uint64_t message_id))
@@ -118,7 +123,7 @@ EXMIDL(get_content_sync, (const char *dir, uint64_t folder_id, const char *usern
 EXMIDL(get_hierarchy_sync, (const char *dir, uint64_t folder_id, const char *username, const gromox::idset *pgiven, const gromox::idset *pseen, IDLOUT FOLDER_CHANGES *fldchgs, uint64_t *last_cn, EID_ARRAY *given_fids, EID_ARRAY *deleted_fids))
 EXMIDL(allocate_ids, (const char *dir, uint32_t count, IDLOUT uint64_t *begin_eid))
 EXMIDL(subscribe_notification, (const char *dir, uint16_t notification_type, BOOL b_whole, uint64_t folder_id, uint64_t message_id, IDLOUT uint32_t *sub_id))
-EXMIDL(unsubscribe_notification, (const char *dir, uint32_t sub_id))
+EXMIDU(unsubscribe_notification, (const char *dir, uint32_t sub_id))
 EXMIDL(transport_new_mail, (const char *dir, uint64_t folder_id, uint64_t message_id, uint32_t message_flags, const char *pstr_class))
 EXMIDL(check_contact_address, (const char *dir, const char *paddress, IDLOUT BOOL *b_found))
 EXMIDL(get_public_folder_unread_count, (const char *dir, const char *username, uint64_t folder_id, IDLOUT uint32_t *count))

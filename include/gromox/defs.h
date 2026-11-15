@@ -16,6 +16,7 @@
 #define SOCKET_TIMEOUT 60
 #define SOCKET_TIMEOUT_MS 60000U
 #define GX_EXPORT __attribute__((visibility("default")))
+#define GX_WUR __attribute__((warn_unused_result))
 #if __cplusplus >= 202300L && (defined(__clang__) || (defined(__GNUC__) && __GNUC__ >= 16))
 #	define STATIC_IN_CXX23 static
 #	define CONST_BEFORE_CXX23

@@ -41,9 +41,11 @@ class GX_EXPORT exmdb_client_remote {
 	void set_async_rearm(rearm_handler_t h) { m_async_rearm = h; }
 
 #define IDLOUT
-#define EXMIDL(n, p) static EXMIDL_RETTYPE n p;
+#define EXMIDL(n, p) static GX_WUR EXMIDL_RETTYPE n p;
+#define EXMIDU(n, p) static EXMIDL_RETTYPE n p;
 #include <gromox/exmdb_idef.hpp>
 #undef EXMIDL
+#undef EXMIDU
 #undef IDLOUT
 
 	public:

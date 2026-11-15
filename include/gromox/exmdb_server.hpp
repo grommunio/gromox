@@ -36,9 +36,11 @@ extern void register_proc(void *);
 extern void event_proc(const char *dir, BOOL is_table, uint32_t notify_id, const DB_NOTIFY *);
 
 #define IDLOUT
-#define EXMIDL(n, p) extern EXMIDL_RETTYPE n p;
+#define EXMIDL(n, p) extern GX_WUR EXMIDL_RETTYPE n p;
+#define EXMIDU(n, p) extern EXMIDL_RETTYPE n p;
 #include <gromox/exmdb_idef.hpp>
 #undef EXMIDL
+#undef EXMIDU
 #undef IDLOUT
 
 }
