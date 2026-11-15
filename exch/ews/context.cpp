@@ -6674,8 +6674,9 @@ void EWSContext::notifyReadReceipt(const std::string &dir,
 	};
 	const TPROPVAL_ARRAY propvals = {std::size(propval_buff), deconst(propval_buff)};
 	PROBLEM_ARRAY problems;
-	m_plugin.exmdb.set_message_properties(dir.c_str(), nullptr,
-		CP_ACP, mid, &propvals, &problems);
+	if (!m_plugin.exmdb.set_message_properties(dir.c_str(), nullptr,
+	    CP_ACP, mid, &propvals, &problems))
+		throw EWSError::ItemSave(E3592);
 } catch (const std::exception &e) {
 	mlog(LV_ERR, "[ews] read receipt: %s", e.what());
 }

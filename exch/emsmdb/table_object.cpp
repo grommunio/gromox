@@ -292,7 +292,8 @@ uint32_t table_object::get_total()
 		return num;
 	}
 	uint32_t total_rows = 0;
-	exmdb_client->sum_table(plogon->get_dir(), m_table_id, &total_rows);
+	if (!exmdb_client->sum_table(plogon->get_dir(), m_table_id, &total_rows))
+		return 0;
 	return total_rows;
 }
 

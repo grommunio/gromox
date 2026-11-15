@@ -987,12 +987,14 @@ ec_error_t rop_updatedeferredactionmessages(const BINARY *pserver_entry_id,
 	propval_buff[1].pvalue = &tmp_byte;
 	tmp_byte = 1;
 
+	ec_error_t ret = ecSuccess;
 	for (const auto &row : tmp_set) {
 		auto pmid = row.get<uint64_t>(PidTagMid);
 		if (pmid == nullptr)
 			continue;
-		exmdb_client->set_message_properties(dir, nullptr, CP_ACP,
-			*pmid, &propvals, &problems);
+		if (!exmdb_client->set_message_properties(dir, nullptr, CP_ACP,
+		    *pmid, &propvals, &problems))
+			return ecWarnWithErrors;
 	}
-	return ecSuccess;
+	return ret;
 }

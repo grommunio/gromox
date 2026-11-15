@@ -2076,8 +2076,9 @@ ec_error_t zs_setreadflags(GUID hsession, uint32_t hfolder,
 		propval_buff[0].pvalue = deconst(&fake_false);
 		propval_buff[1].proptag = PR_NON_RECEIPT_NOTIFICATION_REQUESTED;
 		propval_buff[1].pvalue = deconst(&fake_false);
-		exmdb_client->set_message_properties(pstore->get_dir(), username,
-			CP_ACP, message_id, &propvals, &problems);
+		if (!exmdb_client->set_message_properties(pstore->get_dir(), username,
+		    CP_ACP, message_id, &propvals, &problems))
+			return ecRpcFailed;
 	}
 	return ecSuccess;
 }

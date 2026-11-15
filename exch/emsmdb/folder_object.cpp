@@ -581,7 +581,7 @@ ec_error_t folder_object::remove_props(proptag_cspan pproptags,
 	};
 	const TPROPVAL_ARRAY tmp_propvals = {std::size(propval_buff), deconst(propval_buff)};
 	PROBLEM_ARRAY tmp_problems;
-	exmdb_client->set_folder_properties(dir, CP_ACP,
-		pfolder->folder_id, &tmp_propvals, &tmp_problems);
-	return ecSuccess;
+	return exmdb_client->set_folder_properties(dir, CP_ACP,
+	       pfolder->folder_id, &tmp_propvals, &tmp_problems) ?
+	       ecSuccess : ecRpcFailed;
 }

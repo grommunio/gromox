@@ -153,9 +153,8 @@ static BOOL fastupctx_object_create_folder(fastupctx_object *pctx,
 	};
 	const PERMISSION_DATA permission_row =
 		{ROW_ADD, {std::size(propval_buff), deconst(propval_buff)}};
-	exmdb_client->update_folder_permission(dir,
-		*pfolder_id, FALSE, 1, &permission_row);
-	return TRUE;
+	return exmdb_client->update_folder_permission(dir, *pfolder_id, false,
+	       1, &permission_row) ? TRUE : false;
 }
 
 static BOOL fastupctx_object_empty_folder(fastupctx_object *pctx,

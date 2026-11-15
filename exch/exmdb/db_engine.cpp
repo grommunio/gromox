@@ -1140,7 +1140,9 @@ static void *sf_popul_thread(void *param)
 		 * client eventually learns of the new message count.
 		 */
 		while (table_ids.size() > 0) {
-			exmdb_server::reload_content_table(psearch->dir.c_str(), table_ids.back());
+			if (!exmdb_server::reload_content_table(psearch->dir.c_str(),
+			    table_ids.back()))
+				/* unclear */;
 			table_ids.pop_back();
 		}
 	} catch (const std::bad_alloc &) {
@@ -4347,7 +4349,8 @@ void db_conn::commit_batch_mode_release(std::optional<db_conn> &&pdb,
 	pdb.reset();
 	auto dir = exmdb_server::get_dir();
 	while (table_num > 0)
-		exmdb_server::reload_content_table(dir, ptable_ids[--table_num]);
+		if (!exmdb_server::reload_content_table(dir, ptable_ids[--table_num]))
+			/* Ignore. We are already in a "destructor". */;
 }
 
 void db_conn::cancel_batch_mode(db_base &dbase)

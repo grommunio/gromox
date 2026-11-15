@@ -2316,7 +2316,8 @@ static void *midbme_scanwork(void *param)
 static int me_mping(std::span<char *> argv, int sockd)
 {
 	me_get_idb(argv[1]);
-	exmdb_client->ping_store(argv[1]);
+	if (!exmdb_client->ping_store(argv[1]))
+		return cmd_write(sockd, "FALSE\r\n");
 	return cmd_write(sockd, "TRUE\r\n");
 }
 

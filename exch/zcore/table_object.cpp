@@ -775,8 +775,9 @@ uint32_t table_object::get_total()
 	} else if (ptable->table_type == zcore_tbltype::store) {
 		return fixed_data != nullptr ? fixed_data->count : 0;
 	}
-	exmdb_client->sum_table(ptable->pstore->get_dir(),
-		ptable->table_id, &total_rows);
+	if (!exmdb_client->sum_table(ptable->pstore->get_dir(),
+	    ptable->table_id, &total_rows))
+		return 0;
 	return total_rows;
 }
 

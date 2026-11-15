@@ -551,8 +551,9 @@ ec_error_t folder_object::remove_props(proptag_cspan pproptags)
 	propval_buff[2].pvalue = pbin_pcl;
 	propval_buff[3].proptag = PR_LAST_MODIFICATION_TIME;
 	propval_buff[3].pvalue = &last_time;
-	exmdb_client->set_folder_properties(pfolder->pstore->get_dir(), CP_ACP,
-		pfolder->folder_id, &tmp_propvals, &tmp_problems);
+	if (!exmdb_client->set_folder_properties(pfolder->pstore->get_dir(), CP_ACP,
+	    pfolder->folder_id, &tmp_propvals, &tmp_problems))
+		return ecWarnWithErrors;
 	return ecSuccess;
 }
 

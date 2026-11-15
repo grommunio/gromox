@@ -430,7 +430,8 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 
 	ret = cu_send_message(*plogon, *pmessage, actor, delegator.c_str(), repr_grant);
 	if (ret != ecSuccess && ret != ecWarnWithErrors) {
-		exmdb_client->clear_submit(dir, pmessage->get_id(), b_unsent);
+		if (!exmdb_client->clear_submit(dir, pmessage->get_id(), b_unsent))
+			/* already in error path */;
 		return ret;
 	}
 	oxomsg_audit_send(get_rpc_info().username, actor, delegator.c_str(), repr_grant,

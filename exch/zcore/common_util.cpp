@@ -1747,8 +1747,9 @@ static ec_error_t cu_create_folder(store_object &store, uint64_t parent_id,
 	propval_buff[1].pvalue = &tmp_id;
 	propval_buff[2].proptag = PR_MEMBER_RIGHTS;
 	propval_buff[2].pvalue = &permission;
-	exmdb_client->update_folder_permission(store.get_dir(),
-		*pfolder_id, 0, 1, &permission_row);
+	if (!exmdb_client->update_folder_permission(store.get_dir(),
+	    *pfolder_id, 0, 1, &permission_row))
+		return ecWarnWithErrors;
 	return ecSuccess;
 }
 

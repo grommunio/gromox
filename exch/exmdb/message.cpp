@@ -1514,21 +1514,25 @@ ec_error_t exmdb_execute_deferred_send(const char *dir, uint64_t mid_val) try
 
 	/* Clear MSGFLAG_SUBMITTED on the copy about to be filed. */
 	exmdb_server::clear_submit(dir, eid_t(1, mid_val), false);
+
 	auto del_after = ctnt->proplist.get<const uint8_t>(PR_DELETE_AFTER_SUBMIT);
 	eid_t mid_eid = eid_t(1, mid_val);
 	EID_ARRAY ids = {1, &mid_eid};
 	BOOL partial = false;
-	if (del_after != nullptr && *del_after != 0)
-		exmdb_server::delete_messages(dir, CP_ACP, nullptr,
-			eid_t(1, parent_fid), ids, TRUE, &partial);
-	else
+	if (del_after != nullptr && *del_after != 0) {
+		if (!exmdb_server::delete_messages(dir, CP_ACP, nullptr,
+		    eid_t(1, parent_fid), ids, TRUE, &partial))
+			return ecWarnWithErrors;
+	} else {
 		/*
 		 * NB: Filing always targets Sent Items. PR_SENTMAIL_ENTRYID and the
 		 * represented mailbox copy are not honored for deferred sends.
 		 */
-		exmdb_server::movecopy_messages(dir, CP_ACP, false, nullptr,
-			eid_t(1, parent_fid), eid_t(1, PRIVATE_FID_SENT_ITEMS),
-			false, ids, &partial);
+		if (!exmdb_server::movecopy_messages(dir, CP_ACP, false, nullptr,
+		    eid_t(1, parent_fid), eid_t(1, PRIVATE_FID_SENT_ITEMS),
+		    false, ids, &partial))
+			return ecWarnWithErrors;
+	}
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);

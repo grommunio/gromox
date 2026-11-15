@@ -165,7 +165,8 @@ void auto_response_reply(const char *user_home, const char *from,
 		return;
 	}
 	enqueue_context(ctx);
-	exmdb_client->autoreply_tsupdate(user_home, rcpt);
+	if (!exmdb_client->autoreply_tsupdate(user_home, rcpt))
+		/* can't do much now */;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
 }

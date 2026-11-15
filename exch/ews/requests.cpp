@@ -2139,8 +2139,9 @@ void process(mFindFolderRequest &&request, XMLElement *response, const EWSContex
 		uint32_t results = rowCount - offset;
 		if (maxResults)
 			results = std::min(maxResults, results);
-		exmdb.query_table(dir.c_str(), ctx.auth_info().username,
-			CP_UTF8, tableId, tags, offset, results, &table);
+		if (!exmdb.query_table(dir.c_str(), ctx.auth_info().username,
+		    CP_UTF8, tableId, tags, offset, results, &table))
+			throw EWSError::InternalServerError(E3608);
 		mFindFolderResponseMessage msg;
 		msg.RootFolder.emplace().Folders.reserve(rowCount);
 		for (const TPROPVAL_ARRAY &props : table) {
@@ -2332,14 +2333,16 @@ void process(mFindItemRequest &&request, XMLElement *response, const EWSContext 
 		TARRAY_SET privRows;
 		std::vector<TPROPVAL_ARRAY *> rows;
 		if (offset < pubCount)
-			exmdb.query_table(dir.c_str(), ctx.auth_info().username,
-				CP_UTF8, tableId, tags, offset,
-				std::min(results, pubCount - offset), &table);
+			if (!exmdb.query_table(dir.c_str(), ctx.auth_info().username,
+			    CP_UTF8, tableId, tags, offset,
+			    std::min(results, pubCount - offset), &table))
+				throw EWSError::InternalServerError(E3608);
 		if (offset + results > pubCount) {
 			uint32_t privOffset = offset > pubCount ? offset - pubCount : 0;
-			exmdb.query_table(dir.c_str(), ctx.auth_info().username,
-				CP_UTF8, privTable, tags, privOffset,
-				offset + results - pubCount - privOffset, &privRows);
+			if (!exmdb.query_table(dir.c_str(), ctx.auth_info().username,
+			    CP_UTF8, privTable, tags, privOffset,
+			    offset + results - pubCount - privOffset, &privRows))
+				throw EWSError::InternalServerError(E3608);
 		}
 		rows.insert(rows.end(), table.pparray, table.pparray + table.count);
 		rows.insert(rows.end(), privRows.pparray, privRows.pparray + privRows.count);
@@ -2774,8 +2777,9 @@ void RulesEnv::rollback()
 	if (created_templates.empty())
 		return;
 	BOOL partial = false;
-	exmdb.delete_messages(dir.c_str(), CP_ACP, nullptr, rules_inbox,
-		created_templates, true, &partial);
+	if (!exmdb.delete_messages(dir.c_str(), CP_ACP, nullptr, rules_inbox,
+	    created_templates, true, &partial))
+		/* Ignore. We already in a "destructor". */;
 	created_templates.clear();
 }
 
@@ -3046,8 +3050,9 @@ void purge_templates(const EWSContext &ctx, const std::string &dir)
 	if (orphans.empty())
 		return;
 	BOOL partial = false;
-	exmdb.delete_messages(dir.c_str(), CP_ACP, nullptr, rules_inbox,
-		orphans, true, &partial);
+	if (!exmdb.delete_messages(dir.c_str(), CP_ACP, nullptr, rules_inbox,
+	    orphans, true, &partial))
+		/* ignore */;
 }
 
 }
@@ -3662,8 +3667,9 @@ void process(mGetUserConfigurationRequest &&request, XMLElement *response, const
 
 		static constexpr proptag_t midTag = PidTagMid;
 		TARRAY_SET rows;
-		exmdb.query_table(dir.c_str(), username, CP_UTF8, tableId,
-			{&midTag, 1}, 0, 1, &rows);
+		if (!exmdb.query_table(dir.c_str(), username, CP_UTF8, tableId,
+		    {&midTag, 1}, 0, 1, &rows))
+			throw EWSError::InternalServerError(E3608);
 		if (rows.count == 0 || rows.pparray[0] == nullptr)
 			throw EWSError::ItemNotFound(E3393);
 		auto mid = rows.pparray[0]->get<const uint64_t>(PidTagMid);
@@ -3995,7 +4001,9 @@ void process(mGetUserPhotoRequest &&request, XMLElement *response, EWSContext &c
 			throw std::runtime_error("failed to get photo property id");
 		const proptag_t tag = PROP_TAG(PT_BINARY, propIds[0]);
 		TPROPVAL_ARRAY props;
-		ctx.plugin().exmdb.get_store_properties(dir.c_str(), CP_ACP, {&tag, 1}, &props);
+		if (!ctx.plugin().exmdb.get_store_properties(dir.c_str(),
+		    CP_ACP, {&tag, 1}, &props))
+			throw std::runtime_error("failed to get some store property");
 		photodata = props.get<const BINARY>(tag);
 	} catch (const std::exception &err) {
 		mlog(LV_WARN, "[ews#%d] Failed to load organizational user photo: %s", ctx.context_id(), err.what());

@@ -629,9 +629,8 @@ static BOOL oxcmsg_setreadflag(logon_object *plogon,
 		{PR_NON_RECEIPT_NOTIFICATION_REQUESTED, deconst(&byte_value_zero)},
 	};
 	const TPROPVAL_ARRAY propvals = {std::size(propval_buff), deconst(propval_buff)};
-	exmdb_client->set_message_properties(dir, username,
-		CP_ACP, message_id, &propvals, &problems);
-	return TRUE;
+	return exmdb_client->set_message_properties(dir, username,
+	       CP_ACP, message_id, &propvals, &problems) ? TRUE : false;
 }
 
 ec_error_t rop_setreadflags(uint8_t want_asynchronous, uint8_t read_flags,

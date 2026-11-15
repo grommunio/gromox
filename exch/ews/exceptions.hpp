@@ -676,6 +676,7 @@ E(3584, "failed to stamp the message instance before its flush");
 E(3585, "the attachments changed since the id was issued");
 E(3590, "no right to answer for the principal in its calendar");
 E(3591, "failed to map named properties to the principal's store");
+E(3592, "unable to set read flags");
 E(3600, "cannot write to the calendar of the referenced item");
 E(3601, "cannot modify the existing calendar item of the meeting");
 E(3602, "no read access to the referenced item");

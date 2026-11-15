@@ -1320,9 +1320,10 @@ ec_error_t message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 	};
 	const TPROPVAL_ARRAY propvals = {std::size(propval_buff), deconst(propval_buff)};
 	PROBLEM_ARRAY problems;
-	exmdb_client->set_instance_properties(dir,
-		pmessage->instance_id, &propvals, &problems);
-	exmdb_client->set_message_properties(dir,
-		username, CP_ACP, pmessage->message_id, &propvals, &problems);
-	return ecSuccess;
+	if (!exmdb_client->set_instance_properties(dir,
+	    pmessage->instance_id, &propvals, &problems))
+		return ecRpcFailed;
+	return exmdb_client->set_message_properties(dir, username, CP_ACP,
+	       pmessage->message_id, &propvals, &problems) ?
+	       ecSuccess : ecRpcFailed;
 }
