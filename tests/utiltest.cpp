@@ -7,7 +7,9 @@
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
+#include <filesystem>
 #include <limits>
+#include <vector>
 #include <unistd.h>
 #include <libHX/endian.h>
 #include <libHX/string.h>
@@ -26,6 +28,7 @@
 #include <gromox/resource_pool.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/stream.hpp>
+#include <gromox/textmaps.hpp>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 #include "../tools/staticnpmap.cpp"
@@ -1137,6 +1140,48 @@ static int t_rfc822_years()
 	return EXIT_SUCCESS;
 }
 
+/*
+ * The charsets of the Chinese languages are the ANSI codepages of their
+ * LCIDs. Every charset directory of a bounce set has all templates of
+ * the ascii one, bounce_gen_lookup only falls back for a missing
+ * directory.
+ */
+static int t_lang_charset()
+{
+	auto dir = getenv("TEST_PATH");
+	if (dir == nullptr)
+		return EXIT_SUCCESS;
+	textmaps_init(dir);
+	auto tw = znul(lang_to_charset("zh_TW"));
+	auto cn = znul(lang_to_charset("zh_CN"));
+	if (strcmp(tw, "big5") != 0 || strcmp(cn, "gbk") != 0) {
+		fprintf(stderr, "zh_TW: %s, zh_CN: %s\n", tw, cn);
+		return EXIT_FAILURE;
+	}
+	namespace fs = std::filesystem;
+	for (const auto &set : fs::directory_iterator(dir)) {
+		if (!set.is_directory() ||
+		    !set.path().filename().string().ends_with("_bounce"))
+			continue;
+		std::vector<fs::path> names;
+		auto ascii = set.path() / "ascii";
+		for (const auto &t : fs::directory_iterator(ascii))
+			names.push_back(t.path().filename());
+		for (const auto &cs : fs::directory_iterator(set.path())) {
+			if (!cs.is_directory())
+				continue;
+			for (const auto &n : names) {
+				if (fs::exists(cs.path() / n))
+					continue;
+				fprintf(stderr, "%s lacks %s\n",
+				        cs.path().c_str(), n.c_str());
+				return EXIT_FAILURE;
+			}
+		}
+	}
+	return EXIT_SUCCESS;
+}
+
 static int runner()
 {
 	if (t_cookie_jar() != 0)
@@ -1156,6 +1201,7 @@ static int runner()
 		t_wildcard, t_utf8_prefix, t_eidcvt, t_bin2cstr, t_log_escape,
 		t_string, t_unfold, t_time, t_tzdef, t_floating_dt, t_essdn, t_fb_recur,
 		t_res_mvprop, t_srchkey_words, t_array_growth, t_rfc822_years, t_stream_skip,
+		t_lang_charset,
 	};
 	for (auto f : fct) {
 		auto ret = f();
