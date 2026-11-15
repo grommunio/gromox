@@ -656,14 +656,6 @@ static const char *prop_str(const RESTRICTION &r, proptag_t tag)
 	return pv_str(r.prop->propval);
 }
 
-static std::string bin_str(const BINARY &b)
-{
-	std::string s(b.pc != nullptr ? b.pc : "", b.cb);
-	while (!s.empty() && s.back() == '\0')
-		s.pop_back();
-	return s;
-}
-
 /* Collect one needle per leaf, from a single leaf or a RES_OR of leaves */
 template<typename F> static std::optional<std::vector<std::string>>
 collect(const RESTRICTION &r, F &&leaf)
@@ -757,7 +749,7 @@ bool reader::strings(const RESTRICTION &r, Predicates &p)
 	/* Binary search key needles, written upper-cased */
 	auto v = collect(r, [](const RESTRICTION &x) -> svec {
 		auto b = content_bin(x, PR_SENDER_SEARCH_KEY);
-		return b != nullptr ? svec(bin_str(*b)) : std::nullopt;
+		return b != nullptr ? svec(std::string_view(*b)) : std::nullopt;
 	});
 	if (v) {
 		set(p, P_ContainsSenderStrings, Value{.strings = std::move(*v)});
@@ -765,7 +757,7 @@ bool reader::strings(const RESTRICTION &r, Predicates &p)
 	}
 	v = collect(r, [](const RESTRICTION &x) -> svec {
 		if (auto b = content_bin(x, PR_SEARCH_KEY))
-			return bin_str(*b);
+			return std::string(std::string_view(*b));
 		if (x.rt != RES_SUBRESTRICTION || x.sub->subobject != PR_MESSAGE_RECIPIENTS)
 			return std::nullopt;
 		for (auto tag : {PR_SMTP_ADDRESS, PR_EMAIL_ADDRESS, PR_DISPLAY_NAME})
@@ -812,7 +804,7 @@ std::optional<Address> reader::srchkey_addr(const RESTRICTION &r, proptag_t tag)
 		return std::nullopt;
 	Address a;
 	a.routing = "SMTP";
-	auto sk = bin_str(*key);
+	auto sk = std::string(std::string_view(*key));
 	if (strncasecmp(sk.c_str(), "SMTP:", 5) == 0)
 		a.email = lower(sk.substr(5));
 	else if (strncasecmp(sk.c_str(), "EX:", 3) == 0 &&
