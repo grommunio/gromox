@@ -115,6 +115,40 @@ bool mime_string_to_utf8(std::string_view in, std::string &out) try
 
 namespace gromox {
 
+/**
+ * Raw 8-bit parameter bytes that are not UTF-8 (RFC 6532) name no
+ * charset. Exchange reads them as windows-1252, with the five bytes that
+ * windows-1252 leaves undefined kept as U+0081 and so on, like Windows
+ * does. Do the same rather than keep invalid UTF-8.
+ */
+std::string vmail_param_utf8(const vmime::word &w)
+{
+	static constexpr uint16_t c1[32] = {
+		0x20AC, 0x81, 0x201A, 0x192, 0x201E, 0x2026, 0x2020, 0x2021,
+		0x2C6, 0x2030, 0x160, 0x2039, 0x152, 0x8D, 0x17D, 0x8F,
+		0x90, 0x2018, 0x2019, 0x201C, 0x201D, 0x2022, 0x2013, 0x2014,
+		0x2DC, 0x2122, 0x161, 0x203A, 0x153, 0x9D, 0x17E, 0x178,
+	};
+	auto s = w.getConvertedText(vmime::charsets::UTF_8);
+	if (utf8_valid(s.c_str()))
+		return s;
+	std::string out;
+	for (unsigned char c : s) {
+		unsigned int cp = c >= 0x80 && c < 0xA0 ? c1[c - 0x80] : c;
+		if (cp < 0x80) {
+			out += static_cast<char>(cp);
+		} else if (cp < 0x800) {
+			out += static_cast<char>(0xC0 | (cp >> 6));
+			out += static_cast<char>(0x80 | (cp & 0x3F));
+		} else {
+			out += static_cast<char>(0xE0 | (cp >> 12));
+			out += static_cast<char>(0x80 | ((cp >> 6) & 0x3F));
+			out += static_cast<char>(0x80 | (cp & 0x3F));
+		}
+	}
+	return out;
+}
+
 vmime::parsingContext vmail_default_parsectx()
 {
 	vmime::parsingContext c;
@@ -305,10 +339,10 @@ static int vmail_to_mimes_digest(std::string_view omsg, vmime::bodyPart &part,
 	if (ctd != nullptr)
 		entry["cntdspn"] = ctd->getValue()->generate();
 	if (ctd != nullptr && ctd->hasFilename())
-		entry["filename"] = base64_encode(ctd->getFilename().getConvertedText(vmime::charsets::UTF_8));
+		entry["filename"] = base64_encode(vmail_param_utf8(ctd->getFilename()));
 	else if (auto name = ctf != nullptr ? ctf->findParameter("name") : nullptr; name != nullptr)
 		/* RFC 1341 (obsoleted by RFC 2183) */
-		entry["filename"] = base64_encode(name->getValue().getConvertedText(vmime::charsets::UTF_8));
+		entry["filename"] = base64_encode(vmail_param_utf8(name->getValue()));
 	fld = hdr.findField(vmime::fields::CONTENT_ID);
 	if (fld != nullptr)
 		entry["cid"] = base64_encode(fld->getValue()->generate());
