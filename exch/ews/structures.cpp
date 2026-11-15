@@ -161,11 +161,7 @@ void fromProp(const TAGGED_PROPVAL* prop, T& target)
  */
 void fromProp(const TAGGED_PROPVAL* prop, std::optional<sTimePoint>& target)
 {
-	/*
-	 * Stores can hold impossible times, e.g. negative ones from a
-	 * misparsed year. xs:dateTime readers fail on what they would turn
-	 * into, so treat anything after the year 9999 as absent.
-	 */
+	/* OXWSCDATA cannot represent everything that nttime can. */
 	static constexpr uint64_t year10000 = 2650467744000000000ULL;
 	if (prop == nullptr)
 		return;
