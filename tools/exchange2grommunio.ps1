@@ -238,7 +238,8 @@ $StopOnError = $true
 $AutoMount = $true
 
 # Windows user name. Make sure the Windows user exists and has at least read
-# permissions on $WinSharedFolder.
+# permissions on $WinSharedFolder. A domain user is given as "DOMAIN\user"
+# or as "user@domain.example".
 $WindowsUser = "<Windows user>"
 
 # Password for $WindowsUser.
@@ -518,7 +519,12 @@ function Linux-Mount
 		# The password goes through the SSH channel and not on a command line.
 		# PowerShell ends the line with CR LF, mount.cifs would take that for
 		# a part of the password.
-		$MountCmd = "tr -d '\r\n' | PASSWD_FD=0 mount.cifs -v $WinFolder $LinuxFolder -o user=$(Quote-ShArg $WindowsUser),ro"
+		$MountUser = "user=$(Quote-ShArg $WindowsUser)"
+		if ($WindowsUser -match '^([^\\/@]+)[\\/](.+)$') {
+			# mount.cifs may send DOMAIN\user as the user name
+			$MountUser = "user=$(Quote-ShArg $Matches[2]),domain=$(Quote-ShArg $Matches[1])"
+		}
+		$MountCmd = "tr -d '\r\n' | PASSWD_FD=0 mount.cifs -v $WinFolder $LinuxFolder -o $MountUser,ro"
 		$OutputEncoding = New-Object System.Text.UTF8Encoding $false
 		if ($PowerShellOld) {
 			$WindowsPassword | .\plink.exe @PLINKARGS $MountCmd
