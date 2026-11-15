@@ -2232,13 +2232,61 @@ static time_t oxcical_wall_time(const ical_component *tz, const ical_time &itime
 	return t;
 }
 
+/**
+ * @brief      Zone to read a RECURRENCE-ID in
+ *
+ * RFC 5545 3.8.4.4 lets RECURRENCE-ID name its own zone. A zone the
+ * calendar does not declare is refused when DTSTART names one. Without
+ * a TZID on DTSTART such a RECURRENCE-ID used to be read like DTSTART,
+ * and still is.
+ */
+static ec_error_t oxcical_rid_zone(const ical &pical, const ical_line &line,
+    const char *dtstart_tzid, const ical_component *dtstart_tz,
+    const ical_component **rid_tz, std::string &errstr)
+{
+	*rid_tz = dtstart_tz;
+	auto tzid = line.get_first_paramval("TZID");
+	if (tzid == nullptr || (dtstart_tzid != nullptr &&
+	    strcasecmp(tzid, dtstart_tzid) == 0))
+		return ecSuccess;
+	auto tz = oxcical_find_vtimezone(pical, tzid);
+	if (tz != nullptr) {
+		*rid_tz = tz;
+		return ecSuccess;
+	}
+	if (dtstart_tzid == nullptr)
+		return ecSuccess;
+	errstr = fmt::format("E-2707: Timezone \"{}\" of RECURRENCE-ID "
+	         "was not declared", tzid);
+	return ecInvalidParam;
+}
+
+/**
+ * @brief      Express a time given in another zone in the series zone
+ *
+ * Exception times, the original start and the instance date of the
+ * GlobalObjectId are wall times of the series, like Exchange keeps
+ * them.
+ */
+static ical_time oxcical_series_time(const ical_component *series_tz,
+    const ical_component *tz, const ical_time &itime, time_t utc)
+{
+	ical_time lcl;
+	if (series_tz == nullptr || tz == series_tz ||
+	    itime.type == itime_type::utc ||
+	    itime.type == itime_type::floating_day ||
+	    !ical_utc_to_datetime(series_tz, utc, &lcl))
+		return itime;
+	return lcl;
+}
+
 static ec_error_t oxcical_import_internal(const char *method,
     bool b_proposal, uint16_t calendartype, const ical &pical,
     const event_list_t &pevent_list, EXT_BUFFER_ALLOC alloc,
     GET_PROPIDS get_propids, USERNAME_TO_ENTRYID username_to_entryid,
     message_content *pmsg, ical_time *pstart_itime, ical_time *pend_itime,
     EXCEPTIONINFO *pexception, EXTENDEDEXCEPTION *pext_exception,
-    std::string &errstr) try
+    const ical_component *series_tz, std::string &errstr) try
 {
 	auto pmain_event = oxcical_main_event(pevent_list, errstr);
 	if (pmain_event == nullptr)
@@ -2343,7 +2391,8 @@ static ec_error_t oxcical_import_internal(const char *method,
 		return ecInvalidParam;
 	}
 	if (pstart_itime != nullptr)
-		*pstart_itime = start_itime;
+		*pstart_itime = oxcical_series_time(series_tz, ptz_component,
+		                start_itime, start_time);
 
 	piline = pmain_event->get_line("DTEND");
 	if (piline != nullptr) {
@@ -2392,7 +2441,8 @@ static ec_error_t oxcical_import_internal(const char *method,
 	}
 
 	if (pend_itime != nullptr)
-		*pend_itime = end_itime;
+		*pend_itime = oxcical_series_time(series_tz, ptz_component,
+		              end_itime, end_time);
 	if (ptz_component != nullptr) {
 		err = oxcical_parse_tzdisplay(false, *ptz_component, phash,
 		      &last_propid, pmsg, errstr);
@@ -2439,30 +2489,40 @@ static ec_error_t oxcical_import_internal(const char *method,
 	ical_time itime{};
 	piline = pmain_event->get_line("RECURRENCE-ID");
 	if (piline != nullptr) {
+		auto pvalue = piline->get_first_paramval("TZID");
+		const ical_component *rid_tz = nullptr;
+		err = oxcical_rid_zone(pical, *piline, ptzid, ptz_component,
+		      &rid_tz, errstr);
+		if (err != ecSuccess)
+			return err;
 		/* A standalone occurrence update needs it just as much */
 		if (pexception != nullptr ||
 		    (pmain_event->get_line("RRULE") == nullptr &&
 		    pmain_event->get_line("X-MICROSOFT-RRULE") == nullptr)) {
-			err = oxcical_parse_recurrence_id(ptz_component,
+			err = oxcical_parse_recurrence_id(rid_tz,
 			      *piline, phash, &last_propid, pmsg, errstr);
 			if (err != ecSuccess) {
 				errstr.insert(0, "E-2706: ");
 				return err;
 			}
 		}
-		auto pvalue = piline->get_first_paramval("TZID");
-		if (pvalue != nullptr && ptzid != nullptr &&
-		    strcasecmp(pvalue, ptzid) != 0) {
-			errstr = "E-2707: Timezone mismatch on RECURRENCE-ID and TZID";
-			return ecInvalidParam;
-		}
 		if (pvalue != nullptr) {
-			err = oxcical_parse_dtvalue(ptz_component, *piline,
-			      &itime, nullptr, errstr);
+			time_t rid_time = 0;
+			err = oxcical_parse_dtvalue(rid_tz, *piline,
+			      &itime, &rid_time, errstr);
 			if (err != ecSuccess) {
 				errstr.insert(0, "E-2708: ");
 				return err;
 			}
+			/*
+			 * An exception of a series carries the day in the
+			 * series zone. A lone occurrence update does not know
+			 * the series zone and keeps the day of its RECURRENCE-ID
+			 * like Exchange, ruleproc matches it by
+			 * PidLidExceptionReplaceTime.
+			 */
+			itime = oxcical_series_time(series_tz, rid_tz, itime,
+			        rid_time);
 		} else {
 			err = oxcical_parse_dtvalue(nullptr, *piline, &itime,
 			      nullptr, errstr);
@@ -2648,7 +2708,8 @@ static ec_error_t oxcical_import_internal(const char *method,
 			err = oxcical_import_internal(method, false,
 			      calendartype, pical, tmp_list, alloc, get_propids,
 			      username_to_entryid, pembedded, &start_itime,
-			      &end_itime, &ei_new, &ee_new, errstr);
+			      &end_itime, &ei_new, &ee_new, ptz_component,
+			      errstr);
 			if (err != ecSuccess)
 				return err;
 			if (!oxcical_parse_exceptional_attachment(pattachment,
@@ -2660,12 +2721,20 @@ static ec_error_t oxcical_import_internal(const char *method,
 			piline = event->get_line("RECURRENCE-ID");
 			if (piline == nullptr)
 				return ecInvalidParam;
-			err = oxcical_parse_dtvalue(ptz_component, *piline,
-			      &itime, nullptr, errstr);
+			const ical_component *rid_tz = nullptr;
+			err = oxcical_rid_zone(pical, *piline, ptzid,
+			      ptz_component, &rid_tz, errstr);
+			if (err != ecSuccess)
+				return err;
+			time_t rid_time = 0;
+			err = oxcical_parse_dtvalue(rid_tz, *piline,
+			      &itime, &rid_time, errstr);
 			if (err != ecSuccess) {
 				errstr.insert(0, "E-2730: ");
 				return err;
 			}
+			itime = oxcical_series_time(ptz_component, rid_tz,
+			        itime, rid_time);
 			auto minutes = rop_util_unix_to_rtime(oxcical_wall_time(ptz_component, itime));
 			if (std::any_of(apr.pexceptioninfo.cbegin(), apr.pexceptioninfo.cend(),
 			    [&](const EXCEPTIONINFO &e) { return e.originalstartdate / 1440 == minutes / 1440; }))
@@ -2795,7 +2864,7 @@ static ec_error_t oxcical_import_events(uint16_t calendartype,
 		err = oxcical_import_internal("PUBLISH", false, calendartype,
 		      pical, event_list, alloc, get_propids,
 		      username_to_entryid, pembedded, nullptr, nullptr,
-		      nullptr, nullptr, errstr);
+		      nullptr, nullptr, nullptr, errstr);
 		if (err != ecSuccess)
 			return err;
 	}
@@ -3206,7 +3275,7 @@ ec_error_t oxcical_converter::ical_to_mapi_multi(const ical &pical,
 		return err;
 	err = oxcical_import_internal(pvalue, b_proposal, calendartype, pical,
 	      uid_list.begin()->second, alloc, get_propids, username_to_entryid,
-	      pmsg, nullptr, nullptr, nullptr, nullptr, errstr);
+	      pmsg, nullptr, nullptr, nullptr, nullptr, nullptr, errstr);
 	if (err != ecSuccess)
 		return err;
 	finalvec.insert(finalvec.end(), std::make_move_iterator(msgvec.begin()), std::make_move_iterator(msgvec.end()));

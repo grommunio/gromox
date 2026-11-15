@@ -3900,6 +3900,52 @@ static ec_error_t mr_make_exception(const message_content &master,
 }
 
 /**
+ * Minutes that local time is ahead of UTC at the local-as-UTC rtime
+ * @lt in the series @props. The series time zone gives it exactly.
+ * Without one, take it from the series start.
+ */
+static int64_t mr_series_offset(const TPROPVAL_ARRAY &props,
+    const PROPID_ARRAY &propids, const APPOINTMENT_RECUR_PAT &apr, int64_t lt)
+{
+	int64_t bias = 0;
+	auto tzbin = props.get<const BINARY>(PROP_TAG(PT_BINARY, propids[l_tzdefrecur]));
+	auto tzdef = tzbin != nullptr ? EXT_PULL::bin_to_tzdef(*tzbin) : std::nullopt;
+	if (tzdef && tz_to_offset(*tzdef, rop_util_rtime_to_unix(lt), bias))
+		return -bias;
+	auto mstart = props.get<const uint64_t>(PROP_TAG(PT_SYSTIME, propids[l_start_whole]));
+	if (mstart == nullptr)
+		mstart = props.get<const uint64_t>(PR_START_DATE);
+	if (mstart == nullptr)
+		return 0;
+	return static_cast<int64_t>(apr.recur_pat.startdate) + apr.starttimeoffset -
+	       rop_util_nttime_to_rtime(*mstart);
+}
+
+/**
+ * Day of the instance that an occurrence request names. The
+ * GlobalObjectId of a lone update carries the day of its RECURRENCE-ID
+ * zone, which need not be the series zone. PidLidExceptionReplaceTime
+ * @xrt_tag names the instance in UTC. Take its day in the series zone
+ * when it is the start of an instance there.
+ */
+static uint32_t mr_occ_basedate(const TPROPVAL_ARRAY &rq, proptag_t xrt_tag,
+    const TPROPVAL_ARRAY &props, const PROPID_ARRAY &propids,
+    const APPOINTMENT_RECUR_PAT &apr, uint32_t basedate)
+{
+	auto xrt = rq.get<const uint64_t>(xrt_tag);
+	if (xrt == nullptr)
+		return basedate;
+	int64_t t = rop_util_nttime_to_rtime(*xrt);
+	int64_t day = t + mr_series_offset(props, propids, apr, t);
+	day = day / 1440 * 1440;
+	int64_t lstart = day + apr.starttimeoffset;
+	if (day < 0 ||
+	    lstart - mr_series_offset(props, propids, apr, lstart) != t)
+		return basedate;
+	return day;
+}
+
+/**
  * Mark one occurrence of a recurring master in an attendee's calendar as
  * cancelled, as the EXC Calendar Attendant does: the occurrence becomes an
  * exception, or keeps the one it already has, whose embedded message carries
@@ -3934,16 +3980,6 @@ static ec_error_t mr_cancel_occurrence(rxparam &par, const PROPID_ARRAY &propids
 			par.cur.dirc(), LLU{cal_mid.gcv()});
 		return ecSuccess;
 	}
-	auto &rp = apr.recur_pat;
-	auto day_eq = [](uint32_t a, uint32_t b) { return a / 1440 == b / 1440; };
-	auto exi = ct_index_if(apr.pexceptioninfo,
-	           [&](const EXCEPTIONINFO &e) { return day_eq(e.originalstartdate, basedate); });
-	bool have_exc = exi < apr.pexceptioninfo.size();
-	if (!have_exc && std::any_of(rp.pdeletedinstancedates.cbegin(),
-	    rp.pdeletedinstancedates.cend(),
-	    [&](uint32_t d) { return day_eq(d, basedate); }))
-		return ecSuccess;
-
 	const PROPERTY_NAME xnames[] = {
 		{MNID_ID, PSETID_Appointment, PidLidExceptionReplaceTime},
 		{MNID_ID, PSETID_Common, PidLidCommonStart},
@@ -3957,6 +3993,18 @@ static ec_error_t mr_cancel_occurrence(rxparam &par, const PROPID_ARRAY &propids
 	for (auto id : xids)
 		if (id == 0)
 			return ecError;
+	basedate = mr_occ_basedate(par.ctnt->proplist,
+	           PROP_TAG(PT_SYSTIME, xids[0]), props, propids, apr, basedate);
+
+	auto &rp = apr.recur_pat;
+	auto day_eq = [](uint32_t a, uint32_t b) { return a / 1440 == b / 1440; };
+	auto exi = ct_index_if(apr.pexceptioninfo,
+	           [&](const EXCEPTIONINFO &e) { return day_eq(e.originalstartdate, basedate); });
+	bool have_exc = exi < apr.pexceptioninfo.size();
+	if (!have_exc && std::any_of(rp.pdeletedinstancedates.cbegin(),
+	    rp.pdeletedinstancedates.cend(),
+	    [&](uint32_t d) { return day_eq(d, basedate); }))
+		return ecSuccess;
 
 	/*
 	 * Local time minus UTC, in minutes, at the instance. The series time
@@ -4092,28 +4140,6 @@ static ec_error_t mr_cancel_occurrence(rxparam &par, const PROPID_ARRAY &propids
 }
 
 /**
- * Minutes that local time is ahead of UTC at the local-as-UTC rtime
- * @lt in the series @props. The series time zone gives it exactly.
- * Without one, take it from the series start.
- */
-static int64_t mr_series_offset(const TPROPVAL_ARRAY &props,
-    const PROPID_ARRAY &propids, const APPOINTMENT_RECUR_PAT &apr, int64_t lt)
-{
-	int64_t bias = 0;
-	auto tzbin = props.get<const BINARY>(PROP_TAG(PT_BINARY, propids[l_tzdefrecur]));
-	auto tzdef = tzbin != nullptr ? EXT_PULL::bin_to_tzdef(*tzbin) : std::nullopt;
-	if (tzdef && tz_to_offset(*tzdef, rop_util_rtime_to_unix(lt), bias))
-		return -bias;
-	auto mstart = props.get<const uint64_t>(PROP_TAG(PT_SYSTIME, propids[l_start_whole]));
-	if (mstart == nullptr)
-		mstart = props.get<const uint64_t>(PR_START_DATE);
-	if (mstart == nullptr)
-		return 0;
-	return static_cast<int64_t>(apr.recur_pat.startdate) + apr.starttimeoffset -
-	       rop_util_nttime_to_rtime(*mstart);
-}
-
-/**
  * Turn the request for one occurrence into the embedded message of its
  * exception: times @ustart/@uend in UTC, @uorig the original start, and
  * not yet answered, see MS-OXOCAL v22.1 §3.1.4.7.4.2.
@@ -4227,6 +4253,8 @@ static ec_error_t mr_update_occurrence(rxparam &par, const PROPID_ARRAY &propids
 	for (auto id : xids)
 		if (id == 0)
 			return ecError;
+	basedate = mr_occ_basedate(rq_prop, PROP_TAG(PT_SYSTIME, xids[0]),
+	           props, propids, apr, basedate);
 
 	auto &rp = apr.recur_pat;
 	uint32_t lorig = basedate / 1440 * 1440 + apr.starttimeoffset;
