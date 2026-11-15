@@ -3123,16 +3123,49 @@ static bool oxcical_classify_calendar(const ical &pical, uidxevent_list_t &ul) t
 	return false;
 }
 
-static const char *oxcical_get_partstat(const uidxevent_list_t &uid_list)
+/**
+ * Validated on Exchange: the PARTSTAT of a response that came by mail is
+ * the one of the ATTENDEE named like @responder, the From address. Other
+ * ATTENDEEs, Sender and SENT-BY do not count, and without a match the
+ * response is tentative. Without @responder, the first ATTENDEE answers.
+ */
+static const char *oxcical_get_partstat(const uidxevent_list_t &uid_list,
+    const char *responder)
 {
 	if (uid_list.size() == 0)
 		return nullptr;
 	for (const auto &event : uid_list.cbegin()->second) {
-		auto piline = event->get_line("ATTENDEE");
-		if (piline != nullptr)
-			return piline->get_first_paramval("PARTSTAT");
+		if (responder == nullptr) {
+			auto piline = event->get_line("ATTENDEE");
+			if (piline != nullptr)
+				return piline->get_first_paramval("PARTSTAT");
+			continue;
+		}
+		for (const auto &line : event->line_list) {
+			if (strcasecmp(line.m_name.c_str(), "ATTENDEE") != 0)
+				continue;
+			auto addr = line.get_first_subvalue();
+			if (addr != nullptr &&
+			    strncasecmp(addr, "MAILTO:", 7) == 0 &&
+			    strcasecmp(addr + 7, responder) == 0)
+				return line.get_first_paramval("PARTSTAT");
+		}
 	}
 	return nullptr;
+}
+
+/**
+ * Validated on Exchange: ACCEPTED and DECLINED make a positive or negative
+ * response, any other PARTSTAT or none a tentative one, for REPLY and
+ * COUNTER alike.
+ */
+static const char *partstat_to_resp_class(const char *partstat)
+{
+	if (partstat != nullptr && strcasecmp(partstat, "ACCEPTED") == 0)
+		return "IPM.Schedule.Meeting.Resp.Pos";
+	if (partstat != nullptr && strcasecmp(partstat, "DECLINED") == 0)
+		return "IPM.Schedule.Meeting.Resp.Neg";
+	return "IPM.Schedule.Meeting.Resp.Tent";
 }
 
 static constexpr std::pair<enum calendar_scale, const char *> cal_scale_names[] = {
@@ -3229,7 +3262,7 @@ ec_error_t oxcical_converter::ical_to_mapi_multi(const ical &pical,
     std::vector<message_ptr> &finalvec, std::string &errstr) try
 {
 	bool b_proposal;
-	const char *pvalue = nullptr, *pvalue1 = nullptr;
+	const char *pvalue = nullptr;
 
 	b_proposal = false;
 	auto piline = pical.get_line("X-MICROSOFT-CALSCALE");
@@ -3315,15 +3348,8 @@ ec_error_t oxcical_converter::ical_to_mapi_multi(const ical &pical,
 				errstr = "iCal/iTIP REPLY file with multiple UIDs not supported by gromox-oxcical";
 				return ecInvalidParam;
 			}
-			pvalue1 = oxcical_get_partstat(uid_list);
-			if (pvalue1 != nullptr) {
-				if (strcasecmp(pvalue1, "ACCEPTED") == 0)
-					mclass = "IPM.Schedule.Meeting.Resp.Pos";
-				else if (strcasecmp(pvalue1, "TENTATIVE") == 0)
-					mclass = "IPM.Schedule.Meeting.Resp.Tent";
-				else if (strcasecmp(pvalue1, "DECLINED") == 0)
-					mclass = "IPM.Schedule.Meeting.Resp.Neg";
-			}
+			mclass = partstat_to_resp_class(
+			         oxcical_get_partstat(uid_list, responder));
 		} else if (strcasecmp(pvalue, "COUNTER") == 0) {
 			if (uid_list.size() == 0) {
 				errstr = "No event UIDs in ical object";
@@ -3332,11 +3358,9 @@ ec_error_t oxcical_converter::ical_to_mapi_multi(const ical &pical,
 				errstr = "iCal/iTIP COUNTER file with multiple UIDs not supported by gromox-oxcical";
 				return ecInvalidParam;
 			}
-			pvalue1 = oxcical_get_partstat(uid_list);
-			if (pvalue1 != nullptr && strcasecmp(pvalue1, "TENTATIVE") == 0) {
-				mclass = "IPM.Schedule.Meeting.Resp.Tent";
-				b_proposal = true;
-			}
+			mclass = partstat_to_resp_class(
+			         oxcical_get_partstat(uid_list, responder));
+			b_proposal = true;
 		} else if (strcasecmp(pvalue, "CANCEL") == 0) {
 			mclass = "IPM.Schedule.Meeting.Canceled";
 		}
@@ -4285,14 +4309,8 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 			method = "REPLY";
 			partstat = "ACCEPTED";
 		} else if (class_match_prefix(str, "IPM.Schedule.Meeting.Resp.Tent") == 0) {
+			method = "REPLY";
 			partstat = "TENTATIVE";
-			auto flag = pmsg->proplist.get<const uint8_t>(PROP_TAG(PT_BOOLEAN, propids[l_counterproposal]));
-			if (flag != nullptr && *flag != 0) {
-				b_proposal = true;
-				method = "COUNTER";
-			} else {
-				method = "REPLY";
-			}
 		} else if (class_match_prefix(str, "IPM.Schedule.Meeting.Resp.Neg") == 0) {
 			method = "REPLY";
 			partstat = "DECLINED";
@@ -4308,6 +4326,13 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 			icaltype = "VJOURNAL";
 		} else {
 			return fmt::format("W-2060: oxcical_export does not handle message class \"{}\"", str);
+		}
+		/* Validated on Exchange: every proposal is a COUNTER */
+		auto flag = pmsg->proplist.get<const uint8_t>(
+		            PROP_TAG(PT_BOOLEAN, propids[l_counterproposal]));
+		if (is_meeting_response(str) && flag != nullptr && *flag != 0) {
+			b_proposal = true;
+			method = "COUNTER";
 		}
 	}
 	auto lnum = pmsg->proplist.get<const uint64_t>(PROP_TAG(PT_SYSTIME,

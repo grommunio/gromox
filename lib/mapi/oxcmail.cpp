@@ -1749,12 +1749,13 @@ static bool oxcmail_keep_delegate_sender(const MESSAGE_CONTENT &mime,
 
 /**
  * Exchange names the responder of a received meeting response after the
- * From and Sender headers of @mime, also when the ATTENDEE of the iCal
- * part says otherwise. The iCal part is not authenticated, so drop the
- * identity it put into @ical and let the headers fill it.
+ * From header of @mime, also when the ATTENDEE of the iCal part says
+ * otherwise. The iCal part is not authenticated, so with @from_hdr drop
+ * the identity it put into @ical and let the headers fill it. Without
+ * @from_hdr, the ATTENDEE answers and a Sender header names the sender.
  */
 static void oxcmail_keep_mail_responder(const MESSAGE_CONTENT &mime,
-    MESSAGE_CONTENT &ical)
+    MESSAGE_CONTENT &ical, bool from_hdr)
 {
 	static constexpr proptag_t tags[] = {
 		PR_SENT_REPRESENTING_NAME, PR_SENT_REPRESENTING_ADDRTYPE,
@@ -1766,11 +1767,14 @@ static void oxcmail_keep_mail_responder(const MESSAGE_CONTENT &mime,
 	};
 	auto cls = ical.proplist.get<const char>(PR_MESSAGE_CLASS);
 	if (cls == nullptr ||
-	    class_match_prefix(cls, "IPM.Schedule.Meeting.Resp") != 0 ||
-	    !mime.proplist.has(PR_SENT_REPRESENTING_SMTP_ADDRESS))
+	    class_match_prefix(cls, "IPM.Schedule.Meeting.Resp") != 0)
 		return;
-	for (auto tag : tags)
-		ical.proplist.erase(tag);
+	if (from_hdr)
+		for (auto tag : tags)
+			ical.proplist.erase(tag);
+	else if (mime.proplist.has(PR_SENDER_SMTP_ADDRESS))
+		for (size_t i = 6; i < std::size(tags); ++i)
+			ical.proplist.erase(tags[i]);
 }
 
 static BOOL oxcmail_merge_message_attachments(
@@ -2477,6 +2481,17 @@ std::unique_ptr<message_content, mc_delete> oxcmail_converter::inet_to_mapi(cons
 	field_param.b_classified = phead->get_field("X-Microsoft-Classified") != nullptr;
 	if (!phead->enum_field(oxcmail_enum_mail_head, &field_param))
 		return imp_null;
+	/* Validated on Exchange: an empty From line also prevents this */
+	if (envelope_from != nullptr && strchr(envelope_from, '@') != nullptr &&
+	    phead->get_field("From") == nullptr &&
+	    phead->get_field("Sender") == nullptr &&
+	    !oxcmail_parse_address(envelope_from, PR_SENT_REPRESENTING_NAME,
+	    PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_EMAIL_ADDRESS,
+	    PR_SENT_REPRESENTING_SMTP_ADDRESS, PR_SENT_REPRESENTING_SEARCH_KEY,
+	    PR_SENT_REPRESENTING_ENTRYID, &pmsg->proplist))
+		return imp_null;
+	auto b_from_hdr = pmsg->proplist.has(PR_SENT_REPRESENTING_NAME) ||
+	                  pmsg->proplist.has(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 	auto b_sender_hdr = pmsg->proplist.has(PR_SENDER_SMTP_ADDRESS);
 	if (!pmsg->proplist.has(PR_SENDER_NAME) &&
 	    !pmsg->proplist.has(PR_SENDER_SMTP_ADDRESS)) {
@@ -2681,6 +2696,11 @@ std::unique_ptr<message_content, mc_delete> oxcmail_converter::inet_to_mapi(cons
 				ical_cvt.alloc = alloc;
 				ical_cvt.get_propids = get_propids;
 				ical_cvt.username_to_entryid = oxcmail_username_to_entryid;
+				/* A From without address matches no ATTENDEE */
+				auto frm = pmsg->proplist.get<char>(
+				           PR_SENT_REPRESENTING_SMTP_ADDRESS);
+				if (b_from_hdr)
+					ical_cvt.responder = znul(frm);
 				pmsg1 = ical_cvt.ical_to_mapi_single(ical);
 				if (pmsg1 == nullptr) {
 					mlog(LV_WARN, "W-2728: oxcmail_import_single returned no object (parse error?); placing ical as attachment instead");
@@ -2714,7 +2734,7 @@ std::unique_ptr<message_content, mc_delete> oxcmail_converter::inet_to_mapi(cons
 				return imp_null;
 			pmsg1.reset();
 		} else {
-			oxcmail_keep_mail_responder(*pmsg, *pmsg1);
+			oxcmail_keep_mail_responder(*pmsg, *pmsg1, b_from_hdr);
 			if ((b_sender_hdr &&
 			    !oxcmail_keep_delegate_sender(*pmsg, *pmsg1)) ||
 			    !oxcmail_copy_message_proplist(pmsg.get(), pmsg1.get()) ||

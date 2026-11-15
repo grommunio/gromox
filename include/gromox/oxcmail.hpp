@@ -79,6 +79,8 @@ class GX_EXPORT oxcmail_converter {
 	bool add_rcvd_timestamp = false, unwrap_smime_clearsigned = false;
 	/* Domain for IMCEA addresses of originators that do not resolve */
 	const char *imcea_domain = nullptr;
+	/* SMTP envelope sender, stands in for missing From and Sender */
+	const char *envelope_from = nullptr;
 };
 
 struct GX_EXPORT oxcical_converter {
@@ -91,6 +93,8 @@ struct GX_EXPORT oxcical_converter {
 	GET_PROPIDS get_propids = nullptr;
 	USERNAME_TO_ENTRYID username_to_entryid = nullptr;
 	gromox::cvt_id2user id2user = nullptr;
+	/* From address of the mail that carried a response */
+	const char *responder = nullptr;
 };
 
 struct GX_EXPORT oxvcard_converter {

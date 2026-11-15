@@ -228,6 +228,11 @@ static int t_emailaddr()
 		EMAIL_ADDR em(s);
 		printf("\tmime: <%s> <%s> <%s>\n", em.display_name, em.local_part, em.domain);
 	}
+	EMAIL_ADDR em("<>");
+	assert(!em.has_value() && *em.addr == '\0');
+	em.parse("\"U D\" <>");
+	assert(strcmp(em.display_name, "U D") == 0);
+	assert(!em.has_addr() && *em.addr == '\0');
 	return EXIT_SUCCESS;
 }
 

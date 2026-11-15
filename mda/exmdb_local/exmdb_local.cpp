@@ -376,6 +376,8 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 	oxcmail_converter cvt;
 	cvt.alloc = exmdb_local_alloc;
 	cvt.get_propids = exmdb_local_get_propids;
+	if (strcasecmp(pcontext->ctrl.from, ENVELOPE_FROM_NULL) != 0)
+		cvt.envelope_from = pcontext->ctrl.from;
 	auto pmsg = cvt.inet_to_mapi(*pmail);
 	g_storedir = nullptr;
 	if (NULL == pmsg) {

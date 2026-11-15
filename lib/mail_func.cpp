@@ -293,7 +293,16 @@ void EMAIL_ADDR::set(const vmime::mailbox &mb) try
 	auto e_addr = this;
 
 	gx_strlcpy(e_addr->display_name, mb.getName().getConvertedText("utf-8").c_str(), std::size(e_addr->display_name));
-	auto emp = mb.getEmail().generate();
+	/* vmime parses "<>" as invalid@invalid, RFC 6761 reserves that */
+	auto &email = mb.getEmail();
+	auto &lp = email.getLocalName().getBuffer();
+	auto &dom = email.getDomainName().getBuffer();
+	if (strcasecmp(lp.c_str(), "invalid") == 0 &&
+	    strcasecmp(dom.c_str(), "invalid") == 0) {
+		*e_addr->addr = *e_addr->local_part = *e_addr->domain = '\0';
+		return;
+	}
+	auto emp = email.generate();
 	gx_strlcpy(e_addr->addr, emp.c_str(), std::size(e_addr->addr));
 	auto at  = emp.find('@');
 	if (at == emp.npos) {
