@@ -831,6 +831,13 @@ static ec_error_t oxcical_parse_recipients(const ical_component &main_ev,
 			return ecSuccess;
 		organizer += 7;
 	}
+	/*
+	 * The ATTENDEE of a REPLY or COUNTER is the responder, which
+	 * oxcical_parse_organizer puts into PR_SENT_REPRESENTING. Exchange
+	 * lists only the organizer as recipient of a response.
+	 */
+	bool response = class_match_prefix(pmessage_class,
+	                "IPM.Schedule.Meeting.Resp") == 0;
 
 	prcpts = tarray_set_init();
 	if (prcpts == nullptr)
@@ -842,7 +849,7 @@ static ec_error_t oxcical_parse_recipients(const ical_component &main_ev,
 		/* Cf. [MS-OXCICAL] v20240416 §2.1.3.1.1.20.16 "property: ORGANIZER". */
 		auto is_attendee  = strcasecmp(piline->m_name.c_str(), "ATTENDEE") == 0;
 		auto is_organizer = strcasecmp(piline->m_name.c_str(), "ORGANIZER") == 0;
-		if (!is_attendee && !is_organizer)
+		if ((!is_attendee && !is_organizer) || (response && is_attendee))
 			continue;
 		paddress = piline->get_first_subvalue();
 		if (paddress == nullptr || strncasecmp(paddress, "MAILTO:", 7) != 0) {
@@ -1436,8 +1443,6 @@ static bool oxcical_parse_organizer(const ical_component &main_event,
 	USERNAME_TO_ENTRYID username_to_entryid, MESSAGE_CONTENT *pmsg)
 {
 	auto piline = main_event.get_line("ORGANIZER");
-	if (piline == nullptr)
-		return true;
 	BINARY tmp_bin;
 	uint8_t tmp_buff[1024];
 	const char *paddress;
@@ -1448,16 +1453,26 @@ static bool oxcical_parse_organizer(const ical_component &main_event,
 		pvalue = pmsg->proplist.get<char>(PR_MESSAGE_CLASS_A);
 	if (pvalue == nullptr)
 		pvalue = "IPM.Note";
-	/* ignore ORGANIZER when METHOD is "REPLY" OR "COUNTER" */
-	if (class_match_prefix(pvalue, "IPM.Schedule.Meeting.Resp") == 0)
+	/*
+	 * A REPLY or COUNTER carries the organizer as its addressee, and the
+	 * responder is the ATTENDEE. The responder is whom the message
+	 * represents. For a response that came by mail, oxcmail replaces
+	 * this identity with the one of the mail headers.
+	 */
+	const bool response = class_match_prefix(pvalue,
+	                      "IPM.Schedule.Meeting.Resp") == 0;
+	if (response)
+		piline = main_event.get_line("ATTENDEE");
+	if (piline == nullptr)
 		return true;
 	paddress = piline->get_first_subvalue();
 	if (paddress != nullptr) {
 		if (strncasecmp(paddress, "MAILTO:", 7) == 0) {
 			paddress += 7;
 		} else {
-			mlog(LV_WARN, "W-2744: ORGANIZER has non-MAILTO URI \"%s\", "
-				"address properties will be incomplete", paddress);
+			mlog(LV_WARN, "W-2744: %s has non-MAILTO URI \"%s\", "
+				"address properties will be incomplete",
+				piline->m_name.c_str(), paddress);
 			paddress = nullptr;
 		}
 	}
@@ -1502,8 +1517,27 @@ static bool oxcical_parse_organizer(const ical_component &main_event,
 	    pmsg->proplist.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, paddress) != ecSuccess ||
 	    pmsg->proplist.set(PR_SENT_REPRESENTING_SMTP_ADDRESS, paddress) != ecSuccess ||
 	    pmsg->proplist.set(PR_SENT_REPRESENTING_ENTRYID, &tmp_bin) != ecSuccess ||
-	    pmsg->proplist.set(PR_SENT_REPRESENTING_SEARCH_KEY, &srchkey) != ecSuccess ||
-	    pmsg->proplist.set(PR_SENDER_ADDRTYPE, "SMTP") != ecSuccess ||
+	    pmsg->proplist.set(PR_SENT_REPRESENTING_SEARCH_KEY, &srchkey) != ecSuccess)
+		return false;
+	/*
+	 * Validated on Exchange: a response names SENT-BY of its ATTENDEE as
+	 * the sender, and the attendee itself when there is none.
+	 */
+	auto sentby = response ? piline->get_first_paramval("SENT-BY") : nullptr;
+	if (sentby != nullptr && strncasecmp(sentby, "MAILTO:", 7) == 0 &&
+	    strcasecmp(sentby + 7, paddress) != 0) {
+		paddress = sentby + 7;
+		tmp_bin.cb = 0;
+		if (!username_to_entryid(paddress, paddress, &tmp_bin, nullptr))
+			return false;
+		skb = "SMTP:"s + paddress;
+		HX_strupper(skb.data());
+		srchkey.cb = skb.size() + 1;
+		srchkey.pc = deconst(skb.c_str());
+		if (pmsg->proplist.set(PR_SENDER_NAME, paddress) != ecSuccess)
+			return false;
+	}
+	if (pmsg->proplist.set(PR_SENDER_ADDRTYPE, "SMTP") != ecSuccess ||
 	    pmsg->proplist.set(PR_SENDER_EMAIL_ADDRESS, paddress) != ecSuccess ||
 	    pmsg->proplist.set(PR_SENDER_SMTP_ADDRESS, paddress) != ecSuccess ||
 	    pmsg->proplist.set(PR_SENDER_ENTRYID, &tmp_bin) != ecSuccess ||
@@ -3546,6 +3580,11 @@ static bool oxcical_export_recipient_table(ical_component &pevent_component,
 			snprintf(tmp_value, sizeof(tmp_value), "MAILTO:%s", sentby);
 			piline->append_param("SENT-BY", tmp_value);
 		}
+		auto name = pmsg->proplist.get<const char>(
+		            PR_SENT_REPRESENTING_NAME);
+		if (name != nullptr && *name != '\0' &&
+		    strcasecmp(name, str) != 0)
+			piline->append_param("CN", name);
 		snprintf(tmp_value, sizeof(tmp_value), "MAILTO:%s", str);
 		piline->append_value(nullptr, tmp_value);
 		return true;
@@ -3863,29 +3902,38 @@ static void oxcical_export_organizer(const MESSAGE_CONTENT &msg,
 }
 
 /**
- * The organizer of a reply is whoever the reply is addressed to. A response
- * message carries no organizer of its own — oxcical_parse_organizer discards
- * the ORGANIZER line of an incoming REPLY for that very reason — so the
- * recipient table is the only place left to read it from.
+ * The organizer of a reply is whoever the reply is addressed to. The
+ * representing identity of a response is the responder, so the organizer
+ * comes from the recipient table: the row flagged recipOrganizer, else
+ * the first To row.
  */
 static void oxcical_export_organizer_rcpt(const MESSAGE_CONTENT &msg,
     ical_component &com, const char *org_name, cvt_id2user id2user)
 {
 	if (msg.children.prcpts == nullptr)
 		return;
-	for (const auto &rcpt : *msg.children.prcpts) {
-		auto rcpttype = rcpt.get<const uint32_t>(PR_RECIPIENT_TYPE);
-		if (rcpttype != nullptr && *rcpttype != MAPI_TO)
-			continue;
+	auto emit = [&](const TPROPVAL_ARRAY &rcpt) {
 		std::string username;
 		if (!oxcmail_get_smtp_address(rcpt, nullptr /* tags_self */,
 		    org_name, id2user, username))
-			continue;
+			return false;
 		auto line = &com.append_line("ORGANIZER", "MAILTO:"s + username);
 		auto name = rcpt.get<const char>(PR_DISPLAY_NAME);
 		if (name != nullptr)
 			line->append_param("CN", name);
-		return;
+		return true;
+	};
+	for (const auto &rcpt : *msg.children.prcpts) {
+		auto fl = rcpt.get<const uint32_t>(PR_RECIPIENT_FLAGS);
+		if (fl != nullptr && *fl & recipOrganizer && emit(rcpt))
+			return;
+	}
+	for (const auto &rcpt : *msg.children.prcpts) {
+		auto rcpttype = rcpt.get<const uint32_t>(PR_RECIPIENT_TYPE);
+		if (rcpttype != nullptr && *rcpttype != MAPI_TO)
+			continue;
+		if (emit(rcpt))
+			return;
 	}
 }
 

@@ -1747,6 +1747,32 @@ static bool oxcmail_keep_delegate_sender(const MESSAGE_CONTENT &mime,
 	return true;
 }
 
+/**
+ * Exchange names the responder of a received meeting response after the
+ * From and Sender headers of @mime, also when the ATTENDEE of the iCal
+ * part says otherwise. The iCal part is not authenticated, so drop the
+ * identity it put into @ical and let the headers fill it.
+ */
+static void oxcmail_keep_mail_responder(const MESSAGE_CONTENT &mime,
+    MESSAGE_CONTENT &ical)
+{
+	static constexpr proptag_t tags[] = {
+		PR_SENT_REPRESENTING_NAME, PR_SENT_REPRESENTING_ADDRTYPE,
+		PR_SENT_REPRESENTING_EMAIL_ADDRESS,
+		PR_SENT_REPRESENTING_SMTP_ADDRESS,
+		PR_SENT_REPRESENTING_SEARCH_KEY, PR_SENT_REPRESENTING_ENTRYID,
+		PR_SENDER_NAME, PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS,
+		PR_SENDER_SMTP_ADDRESS, PR_SENDER_SEARCH_KEY, PR_SENDER_ENTRYID,
+	};
+	auto cls = ical.proplist.get<const char>(PR_MESSAGE_CLASS);
+	if (cls == nullptr ||
+	    class_match_prefix(cls, "IPM.Schedule.Meeting.Resp") != 0 ||
+	    !mime.proplist.has(PR_SENT_REPRESENTING_SMTP_ADDRESS))
+		return;
+	for (auto tag : tags)
+		ical.proplist.erase(tag);
+}
+
 static BOOL oxcmail_merge_message_attachments(
 	MESSAGE_CONTENT *pmsg, MESSAGE_CONTENT *pmsg1)
 {
@@ -2688,6 +2714,7 @@ std::unique_ptr<message_content, mc_delete> oxcmail_converter::inet_to_mapi(cons
 				return imp_null;
 			pmsg1.reset();
 		} else {
+			oxcmail_keep_mail_responder(*pmsg, *pmsg1);
 			if ((b_sender_hdr &&
 			    !oxcmail_keep_delegate_sender(*pmsg, *pmsg1)) ||
 			    !oxcmail_copy_message_proplist(pmsg.get(), pmsg1.get()) ||
