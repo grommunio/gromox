@@ -1789,7 +1789,7 @@ bool to_mapi(const Rule &rule, Env &env, RESTRICTION *&cond,
 			continue;
 		ACTION_BLOCK blk;
 		if (w.action(k, *rule.actions.v[k], blk) != nullptr)
-			blocks.push_back(blk);
+			blocks.emplace_back(std::move(blk));
 	}
 	if (blocks.empty()) {
 		/* Only StopProcessingRules, store grommunio-web's placeholder */
@@ -1798,7 +1798,7 @@ bool to_mapi(const Rule &rule, Env &env, RESTRICTION *&cond,
 		blk.length = 9 + sizeof(web_default_dam);
 		blk.pdata = w.mk<uint8_t>(sizeof(web_default_dam));
 		memcpy(blk.pdata, web_default_dam, sizeof(web_default_dam));
-		blocks.push_back(blk);
+		blocks.emplace_back(std::move(blk));
 	}
 	acts = w.mk<RULE_ACTIONS>();
 	acts->count = blocks.size();
