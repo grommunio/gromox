@@ -1388,7 +1388,9 @@ static bool oxcical_parse_location(const ical_component &main_event,
 	const char *pvalue;
 	char tmp_buff[1024];
 
-	pvalue = piline->get_first_subvalue();
+	/* An empty LOCATION of an override clears the series location */
+	pvalue = piline->value_list.empty() && pexception != nullptr ? "" :
+	         piline->get_first_subvalue();
 	if (pvalue == nullptr)
 		return true;
 	tmp_len = strlen(pvalue);
@@ -1410,6 +1412,11 @@ static bool oxcical_parse_location(const ical_component &main_event,
 	if (pmsg->proplist.set(PROP_TAG(PT_UNICODE, *plast_propid), tmp_buff) != ecSuccess)
 		return false;
 	(*plast_propid) ++;
+	if (pexception != nullptr && pext_exception != nullptr) {
+		pexception->overrideflags |= ARO_LOCATION;
+		pexception->location = tmp_buff;
+		pext_exception->location = tmp_buff;
+	}
 	pvalue = piline->get_first_paramval("ALTREP");
 	if (pvalue == nullptr)
 		return true;
@@ -1419,11 +1426,6 @@ static bool oxcical_parse_location(const ical_component &main_event,
 	if (pmsg->proplist.set(PROP_TAG(PT_UNICODE, *plast_propid), pvalue) != ecSuccess)
 		return false;
 	(*plast_propid) ++;
-	if (pexception != nullptr && pext_exception != nullptr) {
-		pexception->overrideflags |= ARO_LOCATION;
-		pexception->location = tmp_buff;
-		pext_exception->location = tmp_buff;
-	}
 	return true;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
@@ -1617,7 +1619,9 @@ static bool oxcical_parse_summary(const ical_component &main_event,
 	const char *pvalue;
 	char tmp_buff[1024];
 
-	pvalue = piline->get_first_subvalue();
+	/* An empty SUMMARY of an override blanks the series subject */
+	pvalue = piline->value_list.empty() && pexception != nullptr ? "" :
+	         piline->get_first_subvalue();
 	if (pvalue == nullptr)
 		return true;
 	tmp_len = strlen(pvalue);
@@ -2737,6 +2741,19 @@ static ec_error_t oxcical_import_internal(const char *method,
 			    *event, start_itime, end_itime, pmsg)) {
 				errstr = "E-2729";
 				return ecInvalidParam;
+			}
+			/*
+			 * Exchange keeps a SUMMARY equal to the series as
+			 * inherited, so a later rename of the series reaches
+			 * it.
+			 */
+			auto ssubj = pmsg->proplist.get<const char>(PR_SUBJECT);
+			if (ei_new.overrideflags & ARO_SUBJECT &&
+			    ssubj != nullptr && ei_new.subject == ssubj) {
+				ei_new.overrideflags &= ~ARO_SUBJECT;
+				ei_new.subject.clear();
+				ee_new.subject.clear();
+				pembedded->proplist.erase(PR_SUBJECT);
 			}
 
 			piline = event->get_line("RECURRENCE-ID");
@@ -4147,7 +4164,8 @@ static std::string oxcical_export_valarm(const MESSAGE_CONTENT &msg,
 static std::string oxcical_export_internal(const char *method, const char *tzid,
     const message_content &msg, const std::string &log_id_s, ical &pical,
     const std::string &org_name_s, cvt_id2user id2user, EXT_BUFFER_ALLOC alloc,
-    GET_PROPIDS get_propids, const char *parent_uid = nullptr) try
+    GET_PROPIDS get_propids, const char *parent_uid = nullptr,
+    const message_content *series = nullptr) try
 {
 	const PROPERTY_NAME namequeries[] = {
 		{MNID_ID, PSETID_Appointment, PidLidAppointmentCounterProposal},
@@ -4404,7 +4422,15 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 	if (err != nullptr)
 		return err;
 
+	/*
+	 * An exception without its own subject or location shows those of
+	 * the series. Readers of the VEVENT do not inherit them, so write
+	 * them out, like Exchange does.
+	 */
+	auto inherit = b_exceptional && series != nullptr ? series : nullptr;
 	str = pmsg->proplist.get<char>(PR_SUBJECT);
+	if (str == nullptr && inherit != nullptr)
+		str = inherit->proplist.get<char>(PR_SUBJECT);
 	if (str != nullptr) {
 		auto piline = &pcomponent->append_line("SUMMARY", str);
 		if (planguage != nullptr)
@@ -4520,10 +4546,17 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 	if (psequence != nullptr)
 		pcomponent->append_line("SEQUENCE", std::to_string(*psequence));
 
-	str = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids[l_location]));
+	auto loctag = PROP_TAG(PT_UNICODE, propids[l_location]);
+	auto locmsg = pmsg;
+	str = pmsg->proplist.get<char>(loctag);
+	if (str == nullptr && inherit != nullptr) {
+		locmsg = inherit;
+		str = inherit->proplist.get<char>(loctag);
+	}
 	if (str != nullptr) {
 		auto piline = &pcomponent->append_line("LOCATION", str);
-		str = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids[l_locationurl]));
+		str = locmsg->proplist.get<char>(PROP_TAG(PT_UNICODE,
+		      propids[l_locationurl]));
 		if (str != nullptr)
 			piline->append_param("ALTREP", str);
 		if (planguage != nullptr)
@@ -4570,7 +4603,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 				continue;
 			auto estr = oxcical_export_internal(method, tzid,
 			            *pembedded, log_id, pical, org_name,
-			            id2user, alloc, get_propids, uid_val);
+			            id2user, alloc, get_propids, uid_val, pmsg);
 			if (estr.size() > 0)
 				return estr;
 		}
