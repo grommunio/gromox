@@ -894,7 +894,7 @@ static ZEND_FUNCTION(mapi_openentry)
 		break;
 	default:
 		efree(presource);
-		pthrow(ecInvalidObject);
+		pthrow(ecNotFound);
 	}
 	MAPI_G(hr) = ecSuccess;
 }
@@ -964,7 +964,7 @@ static ZEND_FUNCTION(mapi_ab_openentry)
 		break;
 	default:
 		efree(presource);
-		pthrow(ecInvalidObject);
+		pthrow(ecNotFound);
 	}
 	MAPI_G(hr) = ecSuccess;
 }
@@ -1502,7 +1502,7 @@ static ZEND_FUNCTION(mapi_msgstore_openentry)
 	else if (mapi_type == zs_objtype::message)
 		RETVAL_RG(presource, le_mapi_message);
 	else
-		pthrow(ecInvalidParam);
+		pthrow(ecNotFound);
 	MAPI_G(hr) = ecSuccess;
 }
 
