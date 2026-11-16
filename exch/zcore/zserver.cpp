@@ -2003,13 +2003,13 @@ ec_error_t zs_setreadflags(GUID hsession, uint32_t hfolder,
 		if (!exmdb_client->load_content_table(pstore->get_dir(), CP_ACP,
 		    pfolder->folder_id, username, TABLE_FLAG_NONOTIFICATIONS,
 		    &restriction, nullptr, &table_id, &row_count))
-			return ecError;
+			return ecRpcFailed;
 
 		static constexpr proptag_t tmp_proptag[] = {PR_ENTRYID};
 		if (!exmdb_client->query_table(pstore->get_dir(), username,
 		    CP_ACP, table_id, tmp_proptag, 0, row_count, &tmp_set)) {
 			exmdb_client->unload_table(pstore->get_dir(), table_id);
-			return ecError;
+			return ecRpcFailed;
 		}
 		exmdb_client->unload_table(pstore->get_dir(), table_id);
 		if (tmp_set.count > 0) {
@@ -2039,7 +2039,7 @@ ec_error_t zs_setreadflags(GUID hsession, uint32_t hfolder,
 		if (flags & rfClearReadFlag) {
 			if (!exmdb_client_get_message_property(pstore->get_dir(),
 			    username, CP_ACP, message_id, PR_READ, &pvalue))
-				return ecError;
+				return ecRpcFailed;
 			if (pvb_enabled(pvalue)) {
 				tmp_byte = 0;
 				b_changed = TRUE;
@@ -2047,26 +2047,26 @@ ec_error_t zs_setreadflags(GUID hsession, uint32_t hfolder,
 		} else {
 			if (!exmdb_client_get_message_property(pstore->get_dir(),
 			    username, CP_ACP, message_id, PR_READ, &pvalue))
-				return ecError;
+				return ecRpcFailed;
 			if (pvb_disabled(pvalue)) {
 				tmp_byte = 1;
 				b_changed = TRUE;
 				if (!exmdb_client_get_message_property(pstore->get_dir(),
 				    username, CP_ACP, message_id,
 				    PR_READ_RECEIPT_REQUESTED, &pvalue))
-					return ecError;
+					return ecRpcFailed;
 				if (pvb_enabled(pvalue))
 					b_notify = TRUE;
 			}
 		}
 		if (b_changed && !exmdb_client->set_message_read_state(pstore->get_dir(),
 		    username, message_id, tmp_byte, &read_cn))
-			return ecError;
+			return ecRpcFailed;
 		if (!b_notify)
 			continue;
 		if (!exmdb_client->get_message_brief(pstore->get_dir(),
 		    pinfo->cpid, message_id, &pbrief))
-			return ecError;
+			return ecRpcFailed;
 		if (pbrief != nullptr)
 			common_util_notify_receipt(pstore->get_account(),
 				NOTIFY_RECEIPT_READ, pbrief);
