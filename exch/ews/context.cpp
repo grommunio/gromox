@@ -7343,20 +7343,10 @@ void EWSContext::toContent(const std::string &dir, tCalendarItem &item,
 			mlog(LV_DEBUG, "[ews] %s:m?: unknown timezone \"%s\"",
 				dir.c_str(), tz.c_str());
 		if (buf != nullptr) {
-			size_t len = buf->size();
-			if (len > UINT32_MAX)
-				throw InputError(E3293);
-			auto temp_bin = construct<BINARY>(BINARY{static_cast<uint32_t>(len), {deconst(buf->data())}});
-			shape.write(NtAppointmentTimeZoneDefinitionStartDisplay,
-				TAGGED_PROPVAL{PT_BINARY, temp_bin});
-			shape.write(NtAppointmentTimeZoneDefinitionEndDisplay,
-				TAGGED_PROPVAL{PT_BINARY, temp_bin});
-			shape.write(NtAppointmentTimeZoneDefinitionRecur,
-				TAGGED_PROPVAL{PT_BINARY, temp_bin});
-
 			auto tzdef = EXT_PULL::bin_to_tzdef(*buf);
 			if (!tzdef)
 				throw EWS::DispatchError(E3294);
+			tCalendarItem::writeTimeZoneDefinitions(shape, *tzdef);
 
 			/*
 			 * Write PidLidTimeZoneStruct – the freebusy and

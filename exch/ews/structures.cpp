@@ -2609,6 +2609,38 @@ void tCalendarItem::update(const sShape& shape)
 		fromProp(shape.get(PR_LOCAL_COMMIT_TIME), DateTimeStamp);
 }
 
+/* Recur rules carry TZRULE_FLAG_RECUR_CURRENT_TZREG. Display rules do not. */
+void tCalendarItem::writeTimeZoneDefinitions(sShape &shape, const TZDEF &src,
+    uint8_t blobs)
+{
+	auto encode = [](const TZDEF &from, uint16_t flags) -> BINARY * {
+		TZDEF def = from;
+		for (auto &rule : def.rules)
+			rule.flags = flags;
+		EXT_PUSH push;
+		if (!push.init(nullptr, 0, 0) ||
+		    push.p_tzdef(def) != pack_result::ok)
+			return nullptr;
+		auto bytes = EWSContext::alloc<char>(push.m_offset);
+		memcpy(bytes, push.m_cdata, push.m_offset);
+		return EWSContext::construct<BINARY>(BINARY{push.m_offset, {bytes}});
+	};
+	auto display = encode(src, TZRULE_FLAG_EFFECTIVE_TZREG);
+	auto recur = encode(src, TZRULE_FLAG_EFFECTIVE_TZREG |
+	    TZRULE_FLAG_RECUR_CURRENT_TZREG);
+	if (display == nullptr || recur == nullptr)
+		throw EWSError::InternalServerError(E3294);
+	if (blobs & sShape::TZ_START)
+		shape.write(NtAppointmentTimeZoneDefinitionStartDisplay,
+			TAGGED_PROPVAL{PT_BINARY, display});
+	if (blobs & sShape::TZ_END)
+		shape.write(NtAppointmentTimeZoneDefinitionEndDisplay,
+			TAGGED_PROPVAL{PT_BINARY, display});
+	if (blobs & sShape::TZ_START)
+		shape.write(NtAppointmentTimeZoneDefinitionRecur,
+			TAGGED_PROPVAL{PT_BINARY, recur});
+}
+
 /**
  * @brief      Set calendar item's datetime fields from written properties
  *             depending on their values
@@ -2628,27 +2660,14 @@ void tCalendarItem::setDatetimeFields(sShape& shape)
 			buf = wintz_to_tzdef(name.c_str());
 		if (buf == nullptr)
 			return;
-		size_t len = buf->size();
-		if (len > UINT32_MAX)
-			throw InputError(E3293);
-		BINARY *tmp_bin = EWSContext::construct<BINARY>(BINARY{static_cast<uint32_t>(buf->size()),
-			{deconst(buf->data())}});
 		bool to_start = blobs & sShape::TZ_START;
 		bool to_end = blobs & sShape::TZ_END;
-		if (to_start)
-			shape.write(NtAppointmentTimeZoneDefinitionStartDisplay,
-				TAGGED_PROPVAL{PT_BINARY, tmp_bin});
-		if (to_end)
-			shape.write(NtAppointmentTimeZoneDefinitionEndDisplay,
-				TAGGED_PROPVAL{PT_BINARY, tmp_bin});
-		if (to_start)
-			shape.write(NtAppointmentTimeZoneDefinitionRecur,
-				TAGGED_PROPVAL{PT_BINARY, tmp_bin});
 		EXT_PULL ext_pull;
 		TZDEF tzdef;
 		ext_pull.init(buf->data(), buf->size(), nullptr, EXT_FLAG_UTF16);
 		if (ext_pull.g_tzdef(&tzdef) != pack_result::ok)
 			throw EWSError::InternalServerError(E3294);
+		writeTimeZoneDefinitions(shape, tzdef, blobs);
 		/*
 		 * Write PidLidTimeZoneStruct for freebusy and
 		 * recurrence expansion code.

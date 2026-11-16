@@ -25,6 +25,8 @@ namespace tinyxml2 {
 	class XMLAttribute;
 }
 
+struct TZDEF;
+
 namespace gromox::EWS {
 
 namespace detail {
@@ -2357,6 +2359,7 @@ struct tCalendarItem : public tItem, public sCalendarMeetingRequestCommon {
 
 	bool mapNamedProperty(const TAGGED_PROPVAL&, const sNamedPropertyMap&);
 	static void setDatetimeFields(sShape&);
+	static void writeTimeZoneDefinitions(sShape &, const TZDEF &, uint8_t blobs = sShape::TZ_START | sShape::TZ_END);
 
 	//<!-- iCalendar properties -->
 	std::optional<std::string> UID;
