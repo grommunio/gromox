@@ -4346,7 +4346,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		}
 	}
 
-	ical_component *ptz_component = nullptr;
+	const ical_component *ptz_component = nullptr;
 	if (!b_exceptional) {
 
 		if (*method != '\0')
@@ -4452,6 +4452,9 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 				}
 			}
 		}
+	} else if (tzid != nullptr) {
+		/* The series has emitted the zone already */
+		ptz_component = oxcical_find_vtimezone(pical, tzid);
 	}
 
 	auto snum = pmsg->proplist.get<const uint8_t>(PROP_TAG(PT_BOOLEAN, propids[l_subtype]));
