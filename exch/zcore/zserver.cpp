@@ -763,7 +763,6 @@ ec_error_t zs_unloadobject(GUID hsession, uint32_t hobject)
 	return ecSuccess;
 }
 
-static ec_error_t zs_openentry_emsab(GUID, BINARY, uint32_t, const char *, uint32_t, zs_objtype *, uint32_t *);
 static ec_error_t zs_openentry_zcsab(GUID, BINARY, uint32_t, zs_objtype *, uint32_t *);
 
 /**
@@ -781,16 +780,11 @@ ec_error_t zs_openentry(GUID hsession, BINARY entryid,
 	auto pinfo = zs_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	if (strncmp(entryid.pc, "/exmdb=", 7) == 0) {
-		/* Stupid GUID-less entryid from submit.php */
-		return zs_openentry_emsab(hsession, entryid, flags, entryid.pc,
-		       DT_REMOTE_MAILUSER, pmapi_type, phobject);
-	} else if (entryid.cb >= 20 && *reinterpret_cast<const FLATUID *>(&entryid.pb[4]) == muidEMSAB) {
+	if (entryid.cb >= 20 && *reinterpret_cast<const FLATUID *>(&entryid.pb[4]) == muidEMSAB)
 		return zs_openabentry(hsession, entryid, pmapi_type, phobject);
-	} else if (entryid.cb >= 20 && *reinterpret_cast<const FLATUID *>(&entryid.pb[4]) == muidZCSAB) {
+	else if (entryid.cb >= 20 && *reinterpret_cast<const FLATUID *>(&entryid.pb[4]) == muidZCSAB)
 		return zs_openentry_zcsab(hsession, entryid, flags,
 		       pmapi_type, phobject);
-	}
 
 	/* Arbitrary GUID, it's probably a FOLDER_ENTRYID/MESSAGE_ENTRYID. */
 	auto type = common_util_get_messaging_entryid_type(entryid);
@@ -822,48 +816,6 @@ ec_error_t zs_openentry(GUID hsession, BINARY entryid,
 	}
 	}
 	return ecNotFound;
-}
-
-static ec_error_t zs_openentry_emsab(GUID hsession, BINARY entryid,
-    uint32_t flags, const char *essdn, uint32_t address_type,
-    zs_objtype *pmapi_type, uint32_t *phobject)
-{
-	/*
-	 * EMSAB entryids with a X500DN of the /exmdb=t:u:i form specify some
-	 * folder/message in some private/public store. Everything else (e.g.
-	 * GAL root or GAL entries) have no message to open.
-	 */
-	if (strncmp(essdn, "/exmdb=", 7) != 0 ||
-	    address_type != DT_REMOTE_MAILUSER)
-		return ecNotFound;
-
-	BOOL b_private;
-	int user_id;
-	eid_t eid{};
-	uint8_t loc_type;
-	if (!common_util_exmdb_locinfo_from_string(essdn + 7,
-	    &loc_type, &user_id, &eid))
-		return ecNotFound;
-	switch (loc_type) {
-	case LOC_TYPE_PRIVATE_FOLDER:
-	case LOC_TYPE_PRIVATE_MESSAGE:
-		b_private = TRUE;
-		break;
-	case LOC_TYPE_PUBLIC_FOLDER:
-	case LOC_TYPE_PUBLIC_MESSAGE:
-		b_private = FALSE;
-		break;
-	default:
-		return ecNotFound;
-	}
-	
-	auto pinfo = zs_query_session(hsession);
-	if (pinfo == nullptr)
-		return ecInvalidParam;
-	auto handle = pinfo->ptree->get_store_handle(b_private, user_id);
-	pinfo.reset();
-	return zs_openstoreentry(hsession,
-		handle, entryid, flags, pmapi_type, phobject);
 }
 
 static ec_error_t zs_openentry_zcsab(GUID ses, BINARY entryid, uint32_t flags,
@@ -1012,75 +964,27 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 	} else {
 		eid_t eid{};
 		std::string essdn_s;
-		const char *essdn;
-		uint32_t address_type = 0;
 		int account_id = 0;
-		uint8_t loc_type = 0;
 		BOOL b_private = TRUE;
 
 		auto type = common_util_get_messaging_entryid_type(entryid);
 		switch (type) {
 		case EITLT_PRIVATE_FOLDER:
 		case EITLT_PUBLIC_FOLDER:
-			if (cu_entryid_to_fid(entryid,
-			    &b_private, &account_id, &folder_id)) {
-				message_id = eid_t(0);
-				goto CHECK_LOC;
-			}
+			if (!cu_entryid_to_fid(entryid,
+			    &b_private, &account_id, &folder_id))
+				return MAPI_E_UNKNOWN_ENTRYID;
+			message_id = eid_t(0);
 			break;
 		case EITLT_PRIVATE_MESSAGE:
 		case EITLT_PUBLIC_MESSAGE:
-			if (cu_entryid_to_mid(entryid,
+			if (!cu_entryid_to_mid(entryid,
 			    &b_private, &account_id, &folder_id, &message_id))
-				goto CHECK_LOC;
-			break;
-		}
-		if (strncmp(entryid.pc, "/exmdb=", 7) == 0) {
-			essdn = entryid.pc;
-		} else if (cu_parse_abkeid(entryid, &address_type, essdn_s) &&
-		     strncmp(essdn_s.c_str(), "/exmdb=", 7) == 0 &&
-		     address_type == DT_REMOTE_MAILUSER) {
-			essdn = essdn_s.c_str();
-		} else {
-			return MAPI_E_UNKNOWN_ENTRYID;
-		}
-		if (!common_util_exmdb_locinfo_from_string(essdn + 7,
-		    &loc_type, &account_id, &eid))
-			return MAPI_E_UNKNOWN_ENTRYID;
-		switch (loc_type) {
-		case LOC_TYPE_PRIVATE_FOLDER:
-			b_private = TRUE;
-			folder_id = eid;
-			message_id = eid_t(0);
-			break;
-		case LOC_TYPE_PRIVATE_MESSAGE:
-			b_private = TRUE;
-			message_id = eid;
-			break;
-		case LOC_TYPE_PUBLIC_FOLDER:
-			b_private = FALSE;
-			folder_id = eid;
-			message_id = eid_t(0);
-			break;
-		case LOC_TYPE_PUBLIC_MESSAGE:
-			b_private = FALSE;
-			message_id = eid;
+				return MAPI_E_UNKNOWN_ENTRYID;
 			break;
 		default:
 			return ecNotFound;
 		}
-		if (LOC_TYPE_PRIVATE_MESSAGE == loc_type ||
-			LOC_TYPE_PUBLIC_MESSAGE == loc_type) {
-			void *pvalue = nullptr;
-			if (!exmdb_client_get_message_property(pstore->get_dir(),
-			    nullptr, CP_ACP, message_id, PidTagParentFolderId,
-			    &pvalue))
-				return ecRpcFailed;
-			if (pvalue == nullptr)
-				return ecError;
-			folder_id = *static_cast<eid_t *>(pvalue);
-		}
- CHECK_LOC:
 		if (b_private != pstore->b_private ||
 		    account_id != pstore->account_id)
 			return ecNotFound;

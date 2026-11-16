@@ -314,42 +314,6 @@ BOOL common_util_essdn_to_ids(const char *pessdn,
 	return TRUE;	
 }
 
-bool common_util_exmdb_locinfo_from_string(const char *loc_string,
-    uint8_t *ptype, int *pdb_id, eid_t *peid)
-{
-	int tmp_len;
-	uint64_t tmp_val;
-	char tmp_buff[16];
-	
-	if (strncmp(loc_string, "1:", 2) == 0)
-		*ptype = LOC_TYPE_PRIVATE_FOLDER;
-	else if (strncmp(loc_string, "2:", 2) == 0)
-		*ptype = LOC_TYPE_PUBLIC_FOLDER;
-	else if (strncmp(loc_string, "3:", 2) == 0)
-		*ptype = LOC_TYPE_PRIVATE_MESSAGE;
-	else if (strncmp(loc_string, "4:", 2) == 0)
-		*ptype = LOC_TYPE_PUBLIC_MESSAGE;
-	else
-		return FALSE;
-
-	auto ptoken = strchr(loc_string + 2, ':');
-	if (ptoken == nullptr)
-		return FALSE;
-	tmp_len = ptoken - (loc_string + 2);
-	if (tmp_len > 12)
-		return FALSE;
-	memcpy(tmp_buff, loc_string + 2, tmp_len);
-	tmp_buff[tmp_len] = '\0';
-	*pdb_id = strtol(tmp_buff, nullptr, 0);
-	if (*pdb_id == 0)
-		return FALSE;
-	tmp_val = strtoll(ptoken + 1, NULL, 16);
-	if (tmp_val == 0)
-		return FALSE;
-	*peid = eid_t(1, tmp_val);
-	return TRUE;
-}
-
 void common_util_init(const char *org_name,
     unsigned int max_rcpt, size_t max_mail_len,
     unsigned int max_rule_len, std::string &&smtp_url)

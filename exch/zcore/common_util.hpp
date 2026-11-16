@@ -45,11 +45,6 @@
 #define NOTIFY_RECEIPT_READ							1
 #define NOTIFY_RECEIPT_NON_READ						2
 
-#define LOC_TYPE_PRIVATE_FOLDER						1
-#define LOC_TYPE_PUBLIC_FOLDER						2
-#define LOC_TYPE_PRIVATE_MESSAGE					3
-#define LOC_TYPE_PUBLIC_MESSAGE						4
-
 struct MAIL;
 struct message_content;
 struct message_object;
@@ -72,7 +67,6 @@ BOOL common_util_essdn_to_ids(const char *pessdn,
 BINARY* common_util_username_to_addressbook_entryid(
 	const char *username);
 extern BOOL common_util_essdn_to_entryid(const char *essdn, BINARY *pbin, unsigned int etyp = DT_MAILUSER);
-extern bool common_util_exmdb_locinfo_from_string(const char *loc_string, uint8_t *ptype, int *pdb_id, eid_t *);
 extern BOOL common_util_build_environment();
 extern void common_util_free_environment();
 void* common_util_alloc(size_t size);
