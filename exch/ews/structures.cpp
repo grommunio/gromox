@@ -1261,7 +1261,7 @@ eid_t sFolderEntryId::folderId() const
  */
 bool sFolderEntryId::isPrivate() const
 {
-	return eid_type == EITLT_PRIVATE_FOLDER;
+	return eid_type == eitLTPrivateFolder;
 }
 
 /**
@@ -1354,7 +1354,7 @@ sMessageEntryId& sMessageEntryId::messageId(eid_t mid)
  */
 bool sMessageEntryId::isPrivate() const
 {
-	return eid_type == EITLT_PRIVATE_MESSAGE;
+	return eid_type == eitLTPrivateMessage;
 }
 
 #undef TRY

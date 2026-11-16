@@ -301,10 +301,10 @@ static void try_shared_cal2(std::string_view s, unsigned int ind)
 static const char *objecttypename(unsigned int i)
 {
 	switch (i) {
-	case EITLT_PRIVATE_FOLDER:  return "eitLTPrivateFolder";
-	case EITLT_PUBLIC_FOLDER:   return "eitLTPublicFolder";
-	case EITLT_PRIVATE_MESSAGE: return "eitLTPrivateMessage";
-	case EITLT_PUBLIC_MESSAGE:  return "eitLTPublicMessage";
+	case eitLTPrivateFolder:    return "eitLTPrivateFolder";
+	case eitLTPublicFolder:     return "eitLTPublicFolder";
+	case eitLTPrivateMessage:   return "eitLTPrivateMessage";
+	case eitLTPublicMessage:    return "eitLTPublicMessage";
 	default:                    return "?";
 	}
 }

@@ -790,8 +790,8 @@ ec_error_t zs_openentry(GUID hsession, BINARY entryid,
 	auto type = common_util_get_messaging_entryid_type(entryid);
 	eid_t folder_id{}, message_id{};
 	switch (type) {
-	case EITLT_PRIVATE_FOLDER:
-	case EITLT_PUBLIC_FOLDER: {
+	case eitLTPrivateFolder:
+	case eitLTPublicFolder: {
 		if (!cu_entryid_to_fid(entryid,
 		    &b_private, &account_id, &folder_id))
 			break;
@@ -802,8 +802,8 @@ ec_error_t zs_openentry(GUID hsession, BINARY entryid,
 		return zs_openstoreentry(hsession,
 			handle, entryid, flags, pmapi_type, phobject);
 	}
-	case EITLT_PRIVATE_MESSAGE:
-	case EITLT_PUBLIC_MESSAGE: {
+	case eitLTPrivateMessage:
+	case eitLTPublicMessage: {
 		if (!cu_entryid_to_mid(entryid,
 		    &b_private, &account_id, &folder_id, &message_id))
 			break;
@@ -969,15 +969,15 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 
 		auto type = common_util_get_messaging_entryid_type(entryid);
 		switch (type) {
-		case EITLT_PRIVATE_FOLDER:
-		case EITLT_PUBLIC_FOLDER:
+		case eitLTPrivateFolder:
+		case eitLTPublicFolder:
 			if (!cu_entryid_to_fid(entryid,
 			    &b_private, &account_id, &folder_id))
 				return MAPI_E_UNKNOWN_ENTRYID;
 			message_id = eid_t(0);
 			break;
-		case EITLT_PRIVATE_MESSAGE:
-		case EITLT_PUBLIC_MESSAGE:
+		case eitLTPrivateMessage:
+		case eitLTPublicMessage:
 			if (!cu_entryid_to_mid(entryid,
 			    &b_private, &account_id, &folder_id, &message_id))
 				return MAPI_E_UNKNOWN_ENTRYID;
@@ -1164,7 +1164,7 @@ static ec_error_t zs_openab_zcsab(USER_INFO_REF &&info, BINARY entryid,
 	    static_cast<mapi_object_type>(mapi_type) != MAPI_ABCONT ||
 	    ep.advance(4) != pack_result::ok ||
 	    ep.g_folder_eid(&fe) != pack_result::ok ||
-	    fe.eid_type != EITLT_PRIVATE_FOLDER)
+	    fe.eid_type != eitLTPrivateFolder)
 		return MAPI_E_UNKNOWN_ENTRYID;
 
 	CONTAINER_ID ctid;
@@ -2465,14 +2465,14 @@ ec_error_t zs_storeadvise(GUID hsession, uint32_t hstore,
 	if (NULL != pentryid) {
 		auto type = common_util_get_messaging_entryid_type(*pentryid);
 		switch (type) {
-		case EITLT_PRIVATE_FOLDER:
-		case EITLT_PUBLIC_FOLDER:
+		case eitLTPrivateFolder:
+		case eitLTPublicFolder:
 			if (!cu_entryid_to_fid(*pentryid,
 			    &b_private, &account_id, &folder_id))
 				return ecError;
 			break;
-		case EITLT_PRIVATE_MESSAGE:
-		case EITLT_PUBLIC_MESSAGE:
+		case eitLTPrivateMessage:
+		case eitLTPublicMessage:
 			if (!cu_entryid_to_mid(*pentryid,
 			    &b_private, &account_id, &folder_id, &message_id))
 				return ecError;
@@ -5123,7 +5123,7 @@ ec_error_t zs_link_messages(GUID hsession, BINARY search_entryid,
 	eid_t folder_id{}, folder_id1{}, message_id{};
 	uint32_t account_id = 0, account_id1 = 0;
 	BOOL b_private = false, b_private1 = false;
-	if (common_util_get_messaging_entryid_type(search_entryid) != EITLT_PRIVATE_FOLDER ||
+	if (common_util_get_messaging_entryid_type(search_entryid) != eitLTPrivateFolder ||
 	    !cu_entryid_to_fid(search_entryid, &b_private,
 	    reinterpret_cast<int *>(&account_id), &folder_id) ||
 	    b_private != TRUE)
@@ -5156,7 +5156,7 @@ ec_error_t zs_link_messages(GUID hsession, BINARY search_entryid,
 	if (ids.pids == nullptr)
 		return ecServerOOM;
 	for (size_t i = 0; i < msg_eids->count; ++i) {
-		if (common_util_get_messaging_entryid_type(msg_eids->pbin[i]) != EITLT_PRIVATE_MESSAGE ||
+		if (common_util_get_messaging_entryid_type(msg_eids->pbin[i]) != eitLTPrivateMessage ||
 		    !cu_entryid_to_mid(msg_eids->pbin[i], &b_private1,
 		    reinterpret_cast<int *>(&account_id1), &folder_id1, &message_id) ||
 		    b_private1 != TRUE || account_id != account_id1)

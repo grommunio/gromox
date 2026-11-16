@@ -1064,7 +1064,7 @@ static BINARY *cu_fid_to_entryid(sqlite3 *psqlite, uint64_t folder_id)
 			return NULL;
 		tmp_entryid.provider_uid  = *pbin;
 		tmp_entryid.folder_dbguid = rop_util_make_user_guid(account_id);
-		tmp_entryid.eid_type      = EITLT_PRIVATE_FOLDER;
+		tmp_entryid.eid_type      = eitLTPrivateFolder;
 	} else {
 		tmp_entryid.provider_uid = pbLongTermNonPrivateGuid;
 		replid = folder_id >> 48;
@@ -1073,7 +1073,7 @@ static BINARY *cu_fid_to_entryid(sqlite3 *psqlite, uint64_t folder_id)
 		else if (!common_util_get_mapping_guid(psqlite, replid,
 		    &b_found, &tmp_entryid.folder_dbguid) || !b_found)
 			return NULL;
-		tmp_entryid.eid_type = EITLT_PUBLIC_FOLDER;
+		tmp_entryid.eid_type = eitLTPublicFolder;
 	}
 	tmp_entryid.folder_gc = rop_util_value_to_gc(folder_id);
 	tmp_entryid.pad1[0] = 0;
@@ -1105,11 +1105,11 @@ static BINARY *cu_mid_to_entryid(sqlite3 *psqlite, uint64_t message_id)
 			return NULL;
 		tmp_entryid.provider_uid  = *pbin;
 		tmp_entryid.folder_dbguid = rop_util_make_user_guid(account_id);
-		tmp_entryid.eid_type      = EITLT_PRIVATE_MESSAGE;
+		tmp_entryid.eid_type      = eitLTPrivateMessage;
 	} else {
 		tmp_entryid.provider_uid = pbLongTermNonPrivateGuid;
 		tmp_entryid.folder_dbguid = rop_util_make_domain_guid(account_id);
-		tmp_entryid.eid_type      = EITLT_PUBLIC_MESSAGE;
+		tmp_entryid.eid_type      = eitLTPublicMessage;
 	}
 	tmp_entryid.message_dbguid = tmp_entryid.folder_dbguid;
 	tmp_entryid.folder_gc      = rop_util_value_to_gc(folder_id);
@@ -4006,7 +4006,7 @@ BINARY* common_util_to_private_folder_entryid(
 		return nullptr;
 	tmp_entryid.provider_uid  = *guid;
 	tmp_entryid.folder_dbguid = rop_util_make_user_guid(user_id);
-	tmp_entryid.eid_type      = EITLT_PRIVATE_FOLDER;
+	tmp_entryid.eid_type      = eitLTPrivateFolder;
 	tmp_entryid.folder_gc     = rop_util_get_gc_array(folder_id);
 	tmp_entryid.pad1[0] = 0;
 	tmp_entryid.pad1[1] = 0;
@@ -4037,7 +4037,7 @@ BINARY* common_util_to_private_message_entryid(
 		return nullptr;
 	tmp_entryid.provider_uid   = *guid;
 	tmp_entryid.folder_dbguid  = rop_util_make_user_guid(user_id);
-	tmp_entryid.eid_type       = EITLT_PRIVATE_MESSAGE;
+	tmp_entryid.eid_type       = eitLTPrivateMessage;
 	tmp_entryid.message_dbguid = tmp_entryid.folder_dbguid;
 	tmp_entryid.folder_gc      = rop_util_get_gc_array(folder_id);
 	tmp_entryid.message_gc     = rop_util_get_gc_array(message_id);

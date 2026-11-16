@@ -218,7 +218,7 @@ BINARY *cu_fid_to_entryid(const logon_object &logon, uint64_t folder_id)
 	if (replid_to_replguid(logon, eid_t(folder_id).replid(),
 	    tmp_entryid.folder_dbguid) != ecSuccess)
 		return nullptr;
-	tmp_entryid.eid_type  = logon.is_private() ? EITLT_PRIVATE_FOLDER : EITLT_PUBLIC_FOLDER;
+	tmp_entryid.eid_type  = logon.is_private() ? eitLTPrivateFolder : eitLTPublicFolder;
 	tmp_entryid.folder_gc = rop_util_get_gc_array(folder_id);
 	tmp_entryid.pad1[0] = 0;
 	tmp_entryid.pad1[1] = 0;
@@ -244,7 +244,7 @@ std::string cu_fid_to_entryid_s(const logon_object &logon, uint64_t folder_id) t
 	if (replid_to_replguid(logon, eid_t(folder_id).replid(),
 	    eid.folder_dbguid) != ecSuccess)
 		return {};
-	eid.eid_type  = logon.is_private() ? EITLT_PRIVATE_FOLDER : EITLT_PUBLIC_FOLDER;
+	eid.eid_type  = logon.is_private() ? eitLTPrivateFolder : eitLTPublicFolder;
 	eid.folder_gc = rop_util_get_gc_array(folder_id);
 
 	std::string out;
@@ -321,7 +321,7 @@ BINARY *cu_mid_to_entryid(const logon_object &logon,
 	if (replid_to_replguid(logon, eid_t(message_id).replid(),
 	    tmp_entryid.message_dbguid) != ecSuccess)
 		return nullptr;
-	tmp_entryid.eid_type   = logon.is_private() ? EITLT_PRIVATE_MESSAGE : EITLT_PUBLIC_MESSAGE;
+	tmp_entryid.eid_type   = logon.is_private() ? eitLTPrivateMessage : eitLTPublicMessage;
 	tmp_entryid.folder_gc  = rop_util_get_gc_array(folder_id);
 	tmp_entryid.message_gc = rop_util_get_gc_array(message_id);
 	tmp_entryid.pad1[0] = 0;
@@ -354,7 +354,7 @@ std::string cu_mid_to_entryid_s(const logon_object &logon, uint64_t folder_id,
 	if (replid_to_replguid(logon, eid_t(msg_id).replid(),
 	    eid.message_dbguid) != ecSuccess)
 		return {};
-	eid.eid_type   = logon.is_private() ? EITLT_PRIVATE_MESSAGE : EITLT_PUBLIC_MESSAGE;
+	eid.eid_type   = logon.is_private() ? eitLTPrivateMessage : eitLTPublicMessage;
 	eid.folder_gc  = rop_util_get_gc_array(folder_id);
 	eid.message_gc = rop_util_get_gc_array(msg_id);
 
@@ -427,8 +427,8 @@ BOOL cu_entryid_to_fid(const logon_object &logon, const BINARY *pbin,
 	if (replguid_to_replid(logon, tmp_entryid.folder_dbguid, replid) != ecSuccess)
 		return false;
 	switch (tmp_entryid.eid_type) {
-	case EITLT_PRIVATE_FOLDER:
-	case EITLT_PUBLIC_FOLDER:
+	case eitLTPrivateFolder:
+	case eitLTPublicFolder:
 		*pfolder_id = rop_util_make_eid(replid, tmp_entryid.folder_gc);
 		return TRUE;
 	default:
@@ -451,8 +451,8 @@ BOOL cu_entryid_to_mid(const logon_object &logon, const BINARY *pbin,
 	if (replguid_to_replid(logon, tmp_entryid.message_dbguid, mreplid) != ecSuccess)
 		return false;
 	switch (tmp_entryid.eid_type) {
-	case EITLT_PRIVATE_MESSAGE:
-	case EITLT_PUBLIC_MESSAGE:
+	case eitLTPrivateMessage:
+	case eitLTPublicMessage:
 		if (mreplid != 1)
 			return false;
 		*pfolder_id  = rop_util_make_eid(freplid, tmp_entryid.folder_gc);

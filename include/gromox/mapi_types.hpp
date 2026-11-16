@@ -23,13 +23,16 @@ struct GX_EXPORT STORE_ENTRYID {
 	char *pserver_name = nullptr, *pmailbox_dn = nullptr;
 };
 
-#define EITLT_PRIVATE_FOLDER						0x0001
-#define EITLT_PUBLIC_FOLDER							0x0003
-#define EITLT_WACKY_FOLDER							0x0005
-#define EITLT_PRIVATE_MESSAGE						0x0007
-#define EITLT_PUBLIC_MESSAGE						0x0009
-#define EITLT_WACKY_MESSAGE							0x000b
-#define EITLT_PUBLIC_FOLDER_BY_NAME					0x000c
+enum {
+	/* entryid type ... */
+	eitLTPrivateFolder      = 0x1,
+	eitLTPublicFolder       = 0x3,
+	eitLTWackyFolder        = 0x5,
+	eitLTPrivateMessage     = 0x7,
+	eitLTPublicMessage      = 0x9,
+	eitLTWackyMessage       = 0xb,
+	eitLTPublicFolderByName = 0xc,
+};
 
 struct GX_EXPORT FOLDER_ENTRYID {
 	uint32_t flags = 0;

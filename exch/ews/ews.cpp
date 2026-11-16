@@ -1440,7 +1440,7 @@ gromox::EWS::Structures::sFolderEntryId EWSPlugin::mkFolderEntryId(const Structu
 {
 	Structures::sFolderEntryId feid{};
 	feid.provider_uid  = mbinfo.mailboxGuid;
-	feid.eid_type      = mbinfo.isPublic ? EITLT_PUBLIC_FOLDER : EITLT_PRIVATE_FOLDER;
+	feid.eid_type      = mbinfo.isPublic ? eitLTPublicFolder : eitLTPrivateFolder;
 	feid.folder_dbguid = replid_to_replguid(mbinfo, eid_t(fid).replid());
 	feid.folder_gc     = rop_util_get_gc_array(fid);
 	return feid;
@@ -1459,7 +1459,7 @@ Structures::sMessageEntryId EWSPlugin::mkMessageEntryId(const Structures::sMailb
 {
 	Structures::sMessageEntryId meid{};
 	meid.provider_uid   = mbinfo.mailboxGuid;
-	meid.eid_type       = mbinfo.isPublic ? EITLT_PUBLIC_MESSAGE : EITLT_PRIVATE_MESSAGE;
+	meid.eid_type       = mbinfo.isPublic ? eitLTPublicMessage : eitLTPrivateMessage;
 	meid.folder_dbguid  = replid_to_replguid(mbinfo, eid_t(fid).replid());
 	meid.folder_gc      = rop_util_get_gc_array(fid);
 	meid.message_dbguid = replid_to_replguid(mbinfo, eid_t(mid).replid());
