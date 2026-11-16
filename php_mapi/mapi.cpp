@@ -1501,6 +1501,8 @@ static ZEND_FUNCTION(mapi_msgstore_openentry)
 		RETVAL_RG(presource, le_mapi_folder);
 	else if (mapi_type == zs_objtype::message)
 		RETVAL_RG(presource, le_mapi_message);
+	else
+		pthrow(ecInvalidParam);
 	MAPI_G(hr) = ecSuccess;
 }
 
