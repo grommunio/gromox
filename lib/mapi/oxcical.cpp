@@ -4353,7 +4353,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		}
 	}
 
-	ical_component *ptz_component = nullptr;
+	const ical_component *ptz_component = nullptr;
 	if (!b_exceptional) {
 
 		if (*method != '\0')
@@ -4455,6 +4455,9 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 					mlog(LV_ERR, "E-2798: %s: export_timezone returned an unspecified error and won't be exported", log_id);
 			}
 		}
+	} else if (tzid != nullptr) {
+		/* An exception carries no zone; the series already emitted one */
+		ptz_component = oxcical_find_vtimezone(pical, tzid);
 	}
 
 	auto snum = pmsg->proplist.get<const uint8_t>(PROP_TAG(PT_BOOLEAN, propids[l_subtype]));
