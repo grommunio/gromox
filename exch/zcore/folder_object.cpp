@@ -531,11 +531,11 @@ ec_error_t folder_object::remove_props(proptag_cspan pproptags)
 	tmp_propvals.count = 4;
 	tmp_propvals.ppropval = propval_buff;
 	if (!exmdb_client->allocate_cn(pfolder->pstore->get_dir(), &change_num))
-		return ecSuccess; // XXX
+		return ecWarnWithErrors;
 	if (!exmdb_client_get_folder_property(pfolder->pstore->get_dir(),
 	    CP_ACP, pfolder->folder_id, PR_PREDECESSOR_CHANGE_LIST,
 	    reinterpret_cast<void **>(&pbin_pcl)))
-		return ecRpcFailed;
+		return ecWarnWithErrors;
 	propval_buff[0].proptag = PidTagChangeNumber;
 	propval_buff[0].pvalue = &change_num;
 	auto pbin_changekey = cu_xid_to_bin({pfolder->pstore->guid(), change_num});
