@@ -70,7 +70,7 @@ class GX_EXPORT wrapfd {
 	int get() const noexcept { return m_fd; }
 	int release() noexcept { int t = m_fd; m_fd = -1; return t; }
 	errno_t close_rd() noexcept;
-	errno_t close_wr() noexcept __attribute__((warn_unused_result)) { return close_rd(); };
+	GX_WUR errno_t close_wr() noexcept { return close_rd(); };
 	wrapfd &operator=(wrapfd &&o) noexcept {
 		if (this == &o)
 			return *this;

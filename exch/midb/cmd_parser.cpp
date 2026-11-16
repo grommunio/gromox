@@ -149,7 +149,7 @@ static void cmd_dump_argv(std::span<char *const> argv)
 	fprintf(stderr, "\n");
 }
 
-static ssize_t __attribute__((warn_unused_result))
+static ssize_t GX_WUR
 cmd_write_x(unsigned int level, int fd, const char *buf, size_t z)
 {
 	auto ret = HXio_fullwrite(fd, buf, z);

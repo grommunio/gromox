@@ -1811,7 +1811,7 @@ static bool message_read_message(const db_conn &db, cpid_t cpid,
 	return false;
 }
 
-static bool message_md5_string(const char *string, uint8_t *pdgt) __attribute__((warn_unused_result));
+static GX_WUR bool message_md5_string(const char *string, uint8_t *pdgt);
 static bool message_md5_string(const char *string, uint8_t *pdgt)
 {
 	char tmp_string[256];

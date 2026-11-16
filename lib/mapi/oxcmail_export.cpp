@@ -32,7 +32,6 @@
 #include <gromox/usercvt.hpp>
 #include <gromox/vcard.hpp>
 #include "oxcmail_int.hpp"
-#define AWUR __attribute__((warn_unused_result))
 
 using namespace std::string_literals;
 using namespace gromox;
@@ -117,7 +116,7 @@ static constexpr addr_tags tags_read_rcpt = {
  * When any part of the input could not be converted (e.g. garbage input, user
  * not found, etc.) and thus produced no output, ecNullObject is returned.
  */
-static AWUR ec_error_t omv_get_smtp_address(const TPROPVAL_ARRAY &props,
+static GX_WUR ec_error_t omv_get_smtp_address(const TPROPVAL_ARRAY &props,
     const addr_tags *ptags, const char *org, cvt_id2user id2user,
     std::string &username)
 {
@@ -173,7 +172,7 @@ static std::string imcea_encode(const char *type, const char *addr,
  * @mb:       Output placeholder.
  * @imcea:    Domain for an address that does not resolve
  */
-static AWUR ec_error_t omv_export_address(const message_content &mct,
+static GX_WUR ec_error_t omv_export_address(const message_content &mct,
     const addr_tags &tags, vmime::mailbox &mb, const char *imcea)
 {
 	auto val = mct.proplist.get<char>(tags.pr_name);
@@ -213,7 +212,7 @@ static AWUR ec_error_t omv_export_address(const message_content &mct,
  * "undisclosed-recipients: ;"). We do not use this group feature. But some callers
  * need to convert mblist going forward.
  */
-static AWUR ec_error_t omv_export_addresses(const tarray_set &rcpt_list,
+static GX_WUR ec_error_t omv_export_addresses(const tarray_set &rcpt_list,
     uint32_t rcpt_type, vmime::mailboxList &mblist)
 {
 	for (const auto &rcpt : rcpt_list) {
@@ -238,7 +237,7 @@ static AWUR ec_error_t omv_export_addresses(const tarray_set &rcpt_list,
  * @mct:   Input MAPI object
  * @vhead: Output vmime object
  */
-static AWUR ec_error_t omv_export_sender(const message_content &mct,
+static GX_WUR ec_error_t omv_export_sender(const message_content &mct,
     vmime::header &vhead, const char *imcea)
 {
 	auto str  = mct.proplist.get<const char>(PR_SENDER_SMTP_ADDRESS);
@@ -278,7 +277,7 @@ static AWUR ec_error_t omv_export_sender(const message_content &mct,
  * @mct:   Input MAPI object
  * @vhead: Output vmime object
  */
-static AWUR ec_error_t omv_export_fromsender(const message_content &mct,
+static GX_WUR ec_error_t omv_export_fromsender(const message_content &mct,
     vmime::header &vhead, bool sched, const char *imcea)
 {
 	auto mb = vmime::make_shared<vmime::mailbox>("");
@@ -309,7 +308,7 @@ static AWUR ec_error_t omv_export_fromsender(const message_content &mct,
 	return err;
 }
 
-static AWUR ec_error_t genentryid_to_smtpaddr(const BINARY &bin,
+static GX_WUR ec_error_t genentryid_to_smtpaddr(const BINARY &bin,
     std::string &dispname, std::string &emaddr)
 {
 	EXT_PULL ep;
@@ -335,7 +334,7 @@ static AWUR ec_error_t genentryid_to_smtpaddr(const BINARY &bin,
 	return ecNullObject;
 }
 
-static AWUR ec_error_t omv_convert_reply_to(const message_content &mct,
+static GX_WUR ec_error_t omv_convert_reply_to(const message_content &mct,
     vmime::header &vhead)
 {
 	EXT_PULL ext_pull;
@@ -381,7 +380,7 @@ static AWUR ec_error_t omv_convert_reply_to(const message_content &mct,
 	return ecSuccess;
 }
 
-static AWUR ec_error_t omv_export_rrt(const message_content &mct,
+static GX_WUR ec_error_t omv_export_rrt(const message_content &mct,
     vmime::header &vhead, bool sched, const char *imcea)
 {
 	auto flag = mct.proplist.get<uint8_t>(PR_ORIGINATOR_DELIVERY_REPORT_REQUESTED);
@@ -398,7 +397,7 @@ static AWUR ec_error_t omv_export_rrt(const message_content &mct,
 	return err;
 }
 
-static AWUR ec_error_t omv_export_mdnflag(const message_content &mct,
+static GX_WUR ec_error_t omv_export_mdnflag(const message_content &mct,
     vmime::header &vhead, bool sched, const char *imcea)
 {
 	auto flag = mct.proplist.get<uint8_t>(PR_READ_RECEIPT_REQUESTED);
@@ -418,7 +417,7 @@ static AWUR ec_error_t omv_export_mdnflag(const message_content &mct,
 	return err;
 }
 
-static AWUR bool is_openpgp_typed(const vmime::header &vhdr)
+static GX_WUR bool is_openpgp_typed(const vmime::header &vhdr)
 {
 	auto ctf = vhdr.findField<vmime::contentTypeField>(vmime::fields::CONTENT_TYPE);
 	if (ctf == nullptr)
@@ -439,7 +438,7 @@ static AWUR bool is_openpgp_typed(const vmime::header &vhdr)
 	return false;
 }
 
-static AWUR bool openpgp_tocc_handling(const message_content &mct)
+static GX_WUR bool openpgp_tocc_handling(const message_content &mct)
 {
 	auto atxlist = mct.children.pattachments;
 	if (atxlist == nullptr || atxlist->count != 1)
@@ -453,7 +452,7 @@ static AWUR bool openpgp_tocc_handling(const message_content &mct)
 	return is_openpgp_typed(*entity.getHeader());
 }
 
-static AWUR ec_error_t omv_export_tocc(const message_content &mct,
+static GX_WUR ec_error_t omv_export_tocc(const message_content &mct,
     const mime_skeleton &skel, vmime::header &vhead)
 {
 	if (mct.children.prcpts == nullptr)
@@ -648,7 +647,7 @@ static std::string tnef_correl_to_vtext(std::string_view sv)
 		return base64_encode(sv);
 }
 
-static AWUR ec_error_t omv_export_mail_head(const message_content &mct,
+static GX_WUR ec_error_t omv_export_mail_head(const message_content &mct,
     const mime_skeleton &skel, EXT_BUFFER_ALLOC alloc,
     GET_PROPIDS get_propids, GET_PROPNAME get_propname, vmime::header &vhead,
     const char *imcea)
@@ -925,7 +924,7 @@ static void omv_set_bodytext(vmime::bodyPart &bp, std::string_view text,
  * @vmsg: VMIME object to unravel @blob into
  * @blob: A RFC5322 message that ought to be multipart/signed
  */
-static AWUR ec_error_t omv_smime_signed_fold(vmime::bodyPart &vmsg,
+static GX_WUR ec_error_t omv_smime_signed_fold(vmime::bodyPart &vmsg,
     std::string &&blob)
 {
 	vmime::message dec_blob;
