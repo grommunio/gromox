@@ -15,6 +15,7 @@
 #include <gromox/defs.h>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
+#include <gromox/ext_buffer.hpp>
 #include <gromox/freebusy.hpp>
 #include <gromox/ical.hpp>
 #include <gromox/mapidefs.h>
@@ -34,7 +35,7 @@ struct freebusy_tags {
 	uint32_t apptstartwhole = 0, apptendwhole = 0, busystatus = 0, recurring = 0,
 		apptrecur = 0, apptsubtype = 0, private_flag = 0, apptstateflags = 0,
 		clipend = 0, location = 0, reminderset = 0, globalobjectid = 0,
-		timezonestruct = 0, exreplacetime = 0;
+		timezonestruct = 0, tzdefrecur = 0, exreplacetime = 0;
 	bool init_ok = false;
 };
 
@@ -56,6 +57,7 @@ freebusy_tags::freebusy_tags(const char *dir)
 		{MNID_ID, PSETID_Common,      PidLidReminderSet},
 		{MNID_ID, PSETID_Meeting,     PidLidGlobalObjectId},
 		{MNID_ID, PSETID_Appointment, PidLidTimeZoneStruct},
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentTimeZoneDefinitionRecur},
 		{MNID_ID, PSETID_Appointment, PidLidExceptionReplaceTime},
 	};
 
@@ -76,7 +78,8 @@ freebusy_tags::freebusy_tags(const char *dir)
 		reminderset    = PROP_TAG(PT_BOOLEAN, ids[10]);
 		globalobjectid = PROP_TAG(PT_BINARY,  ids[11]);
 		timezonestruct = PROP_TAG(PT_BINARY,  ids[12]);
-		exreplacetime  = PROP_TAG(PT_SYSTIME, ids[13]);
+		tzdefrecur     = PROP_TAG(PT_BINARY,  ids[13]);
+		exreplacetime  = PROP_TAG(PT_SYSTIME, ids[14]);
 		init_ok = true;
 	}
 }
@@ -665,6 +668,24 @@ ec_error_t get_freebusy(const char *username, const char *dir, const char *org,
 		EXT_PULL ext_pull;
 		std::optional<ical_component> tzcom;
 		auto bin = ctnt->proplist.get<BINARY>(ptag.timezonestruct);
+		if (bin == nullptr || bin->cb == 0) {
+			auto zdef = ctnt->proplist.get<const BINARY>(ptag.tzdefrecur);
+			if (zdef != nullptr && zdef->cb > 0) {
+				auto def = EXT_PULL::bin_to_tzdef(*zdef);
+				if (def && !def->rules.empty()) {
+					TZSTRUCT tz{};
+					auto &rule = def->rules.back();
+					tz.bias = rule.bias;
+					tz.standardbias = rule.standardbias;
+					tz.daylightbias = rule.daylightbias;
+					tz.standarddate = rule.standarddate;
+					tz.daylightdate = rule.daylightdate;
+					tz.standardyear = tz.standarddate.year;
+					tz.daylightyear = tz.daylightdate.year;
+					tzcom = tz_to_vtimezone(1600, "timezone", tz);
+				}
+			}
+		}
 		if (bin != nullptr) {
 			TZSTRUCT tz;
 			ext_pull.init(bin->pb, bin->cb, exmdb_rpc_alloc, EXT_FLAG_UTF16);
