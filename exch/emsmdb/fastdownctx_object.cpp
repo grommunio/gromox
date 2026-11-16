@@ -340,6 +340,20 @@ static BOOL fastdownctx_object_get_buffer_internal(fastdownctx_object *pctx,
 			common_util_remove_propvals(&pmsgctnt->proplist, PR_MESSAGE_SIZE_EXTENDED);
 
 			common_util_remove_propvals(&pmsgctnt->proplist, PR_ENTRYID);
+			if (pctx->b_chginfo) {
+				auto &lo  = *pctx->pstream->plogon;
+				void *fid = nullptr;
+				if (!exmdb_client->get_message_property(dir, nullptr, CP_ACP,
+				    param, PidTagParentFolderId, &fid) || fid == nullptr)
+					return false;
+				auto eid = cu_mid_to_entryid(lo, *static_cast<const eid_t *>(fid), param);
+				auto sk  = cu_mid_to_sk(lo, param);
+				/* EXC 15.2 sends "PR_ORIG_ENTRYID" (0x300f0102) instead, wth. */
+				if (eid == nullptr || sk == nullptr ||
+				    cu_set_propval(&pmsgctnt->proplist, PR_ORIGINAL_ENTRYID, eid) != ecSuccess ||
+				    cu_set_propval(&pmsgctnt->proplist, PR_SOURCE_KEY, sk) != ecSuccess)
+					return false;
+			}
 			fxs_propsort(*pmsgctnt);
 			if (!pctx->pstream->write_message(*pmsgctnt))
 				return FALSE;

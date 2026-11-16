@@ -103,6 +103,8 @@ Fixes:
   instead of absent.
 * emsmdb: RopCopyProperties reported ecNotFound for the wrong properties when
   the request also named read-only ones.
+* emsmdb: ropFastTransferSourceCopyMessages stream requests with SendEntryId
+  flag erroneously lacked PR_SOURCE_KEY in the output.
 * EWS: UpdateUserConfiguration kept the old change number of the
   configuration message, so cached Outlook never picked up categories added
   in eM Client or Outlook for Mac.
