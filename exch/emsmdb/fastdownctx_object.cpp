@@ -225,24 +225,30 @@ void fxs_propsort(MESSAGE_CONTENT &mc)
 bool fastdownctx_object::make_foldercontent(bool b_subfolders,
     std::unique_ptr<FOLDER_CONTENT> &&fc)
 {
-	auto pctx = this;
-	
+	/*
+	 * flow_list has pointers into fcptr, so folder_content must stay alive
+	 * until destruction. Clear the list for correctness and static
+	 * analyzers. (fastdownctx_object can only hold one folder_content
+	 * object, so any prior flow nodes would have dangling pointers when a
+	 * new fc is assigned.)
+	 */
+	flow_list.clear();
 	fxs_propsort(*fc);
-	if (!flow_list.record_node(fxdown_flow_func::proplist_ptr, &fc->proplist) ||
-	    !flow_list.record_foldermessages(fc->fldmsgs))
+	pfldctnt = std::move(fc);
+	if (!flow_list.record_node(fxdown_flow_func::proplist_ptr, &pfldctnt->proplist) ||
+	    !flow_list.record_foldermessages(pfldctnt->fldmsgs))
 		return FALSE;	
 	if (b_subfolders) {
 		if (!flow_list.record_tag(MetaTagFXDelProp) ||
 		    !flow_list.record_tag(PR_CONTAINER_HIERARCHY))
 			return FALSE;
-		for (auto &f : fc->psubflds) {
+		for (auto &f : pfldctnt->psubflds) {
 			fxs_propsort(f);
 			if (!flow_list.record_subfolder(f))
 				return FALSE;
 		}
 	}
-	pctx->pfldctnt = std::move(fc);
-	pctx->progress_steps = 0;
+	progress_steps = 0;
 	total_steps = std::count_if(flow_list.cbegin(), flow_list.cend(), is_message);
 	divisor = fx_divisor(total_steps);
 	return TRUE;
@@ -250,14 +256,12 @@ bool fastdownctx_object::make_foldercontent(bool b_subfolders,
 	
 bool fastdownctx_object::make_topfolder(std::unique_ptr<folder_content> &&fc)
 {
-	auto pctx = this;
-	
+	pfldctnt = std::move(fc);
 	if (!flow_list.record_tag(STARTTOPFLD) ||
-	    !flow_list.record_foldercontentnodelprops(*fc) ||
+	    !flow_list.record_foldercontentnodelprops(*pfldctnt) ||
 	    !flow_list.record_tag(ENDFOLDER))
 		return FALSE;
-	pctx->pfldctnt = std::move(fc);
-	pctx->progress_steps = 0;
+	progress_steps = 0;
 	total_steps = std::count_if(flow_list.cbegin(), flow_list.cend(), is_message);
 	divisor = fx_divisor(total_steps);
 	return TRUE;
