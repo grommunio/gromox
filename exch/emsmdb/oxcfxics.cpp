@@ -334,7 +334,14 @@ ec_error_t rop_fasttransfersourcecopyfolder(uint8_t flags, uint8_t send_options,
 	           TRUE, TRUE, b_sub);
 	if (pfldctnt == nullptr)
 		return ecError;
-	auto pctx = fastdownctx_object::create(plogon, send_options & 0x0F);
+	/*
+	 * SEND_OPTIONS_PARTIAL is only allowed for content sync (so, not here).
+	 * RESERVED1/2 need to be ignored.
+	 */
+	static constexpr unsigned int fl_0f =
+		SEND_OPTIONS_UNICODE | SEND_OPTIONS_USECPID |
+		SEND_OPTIONS_RECOVERMODE | SEND_OPTIONS_FORCEUNICODE;
+	auto pctx = fastdownctx_object::create(plogon, send_options & fl_0f);
 	if (pctx == nullptr)
 		return ecError;
 	if (!pctx->make_topfolder(std::move(pfldctnt)))

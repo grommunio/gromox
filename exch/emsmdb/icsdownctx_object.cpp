@@ -775,6 +775,12 @@ static bool icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 	    cond1 || !progmsg.b_fai)
 		icsdownctx_object_adjust_msgctnt(*pmsgctnt, pctx->pproptags, cond1);
 
+	/*
+	 * The gains from partial change tracking (SEND_OPTIONS_PARTIAL) are
+	 * not worth the code to implement. (Prior code was even buggy in wh1at
+	 * it did.)
+	 */
+
 	if (pctx->sync_flags & SYNC_PROGRESS_MODE &&
 	    !pctx->pstream->write_progresspermessage(progmsg))
 		return FALSE;
