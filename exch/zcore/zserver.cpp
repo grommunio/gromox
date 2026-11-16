@@ -818,7 +818,7 @@ ec_error_t zs_openentry(GUID hsession, BINARY entryid,
 			handle, entryid, flags, pmapi_type, phobject);
 	}
 	}
-	return ecInvalidParam;
+	return ecNotFound;
 }
 
 static ec_error_t zs_openentry_emsab(GUID hsession, BINARY entryid,
@@ -832,7 +832,7 @@ static ec_error_t zs_openentry_emsab(GUID hsession, BINARY entryid,
 	 */
 	if (strncmp(essdn, "/exmdb=", 7) != 0 ||
 	    address_type != DT_REMOTE_MAILUSER)
-		return ecInvalidParam;
+		return ecNotFound;
 
 	BOOL b_private;
 	int user_id;
@@ -867,7 +867,7 @@ static ec_error_t zs_openentry_zcsab(GUID ses, BINARY entryid, uint32_t flags,
     zs_objtype *mapi_type, uint32_t *objh)
 {
 	if (entryid.cb < 28)
-		return ecInvalidParam;
+		return MAPI_E_UNKNOWN_ENTRYID;
 	BINARY lower_eid = {entryid.cb - 28, {&entryid.pc[28]}};
 	return zs_openentry(ses, lower_eid, flags, mapi_type, objh);
 }
@@ -1035,11 +1035,11 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 		     address_type == DT_REMOTE_MAILUSER) {
 			essdn = essdn_s.c_str();
 		} else {
-			return ecInvalidParam;
+			return MAPI_E_UNKNOWN_ENTRYID;
 		}
 		if (!common_util_exmdb_locinfo_from_string(essdn + 7,
 		    &loc_type, &account_id, &eid))
-			return ecNotFound;
+			return MAPI_E_UNKNOWN_ENTRYID;
 		switch (loc_type) {
 		case LOC_TYPE_PRIVATE_FOLDER:
 			b_private = TRUE;
@@ -1067,14 +1067,16 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 			void *pvalue = nullptr;
 			if (!exmdb_client_get_message_property(pstore->get_dir(),
 			    nullptr, CP_ACP, message_id, PidTagParentFolderId,
-			    &pvalue) || pvalue == nullptr)
+			    &pvalue))
+				return ecRpcFailed;
+			if (pvalue == nullptr)
 				return ecError;
 			folder_id = *static_cast<eid_t *>(pvalue);
 		}
  CHECK_LOC:
 		if (b_private != pstore->b_private ||
 		    account_id != pstore->account_id)
-			return ecInvalidParam;
+			return ecNotFound;
 	}
 	if (message_id != 0)
 		return zs_openstoreentry_1(*pstore, folder_id, message_id,
@@ -1094,7 +1096,7 @@ static ec_error_t zs_openab_oop(USER_INFO_REF &&info, BINARY bin,
 	EXT_PULL ep;
 	ep.init(bin.pv, bin.cb, common_util_alloc, EXT_FLAG_WCOUNT | EXT_FLAG_UTF16);
 	if (ep.g_oneoff_eid(&eid) != pack_result::ok)
-		return ecInvalidParam;
+		return MAPI_E_UNKNOWN_ENTRYID;
 	auto u = oneoff_object::create(std::move(eid));
 	if (u == nullptr)
 		return ecServerOOM;
@@ -1124,7 +1126,7 @@ ec_error_t zs_openabentry(GUID hsession,
 		return ecSuccess;
 	}
 	if (entryid.cb < 20)
-		return ecInvalidParam;
+		return MAPI_E_UNKNOWN_ENTRYID;
 	const auto &prov = *reinterpret_cast<const FLATUID *>(&entryid.pb[4]);
 	if (prov == muidEMSAB)
 		return zs_openab_emsab(std::move(pinfo), entryid, base_id, pmapi_type, phobject);
@@ -1132,7 +1134,7 @@ ec_error_t zs_openabentry(GUID hsession,
 		return zs_openab_zcsab(std::move(pinfo), entryid, base_id, pmapi_type, phobject);
 	else if (prov == muidOOP)
 		return zs_openab_oop(std::move(pinfo), entryid, pmapi_type, phobject);
-	return ecInvalidParam;
+	return MAPI_E_UNKNOWN_ENTRYID;
 }
 
 static ec_error_t zs_openab_emsab(USER_INFO_REF &&pinfo, BINARY entryid,
@@ -1143,7 +1145,7 @@ static ec_error_t zs_openab_emsab(USER_INFO_REF &&pinfo, BINARY entryid,
 	uint32_t address_type;
 
 	if (!cu_parse_abkeid(entryid, &address_type, essdn_s))
-		return ecInvalidParam;
+		return MAPI_E_UNKNOWN_ENTRYID;
 
 	auto essdn = essdn_s.data();
 	if (address_type == DT_CONTAINER) {
@@ -1228,7 +1230,7 @@ static ec_error_t zs_openab_emsab(USER_INFO_REF &&pinfo, BINARY entryid,
 			      zs_objtype::distlist : zs_objtype::mailuser;
 		*phobject = pinfo->ptree->add_object_handle(ROOT_HANDLE, {*pmapi_type, std::move(userobj)});
 	} else {
-		return ecInvalidParam;
+		return MAPI_E_UNKNOWN_ENTRYID;
 	}
 	if (zh_is_error(*phobject))
 		return zh_error(*phobject);
@@ -1248,7 +1250,7 @@ static ec_error_t zs_openab_zcsab(USER_INFO_REF &&info, BINARY entryid,
 	    ep.advance(4) != pack_result::ok ||
 	    ep.g_folder_eid(&fe) != pack_result::ok ||
 	    fe.eid_type != EITLT_PRIVATE_FOLDER)
-		return ecInvalidParam;
+		return MAPI_E_UNKNOWN_ENTRYID;
 
 	CONTAINER_ID ctid;
 	ctid.exmdb_id.b_private = TRUE;
@@ -1446,13 +1448,13 @@ ec_error_t zs_openstore(GUID hsession, BINARY entryid, uint32_t *phobject)
 		 */
 		mlog(LV_INFO, "zs_openstore(%s): unsupported entryid format/pointing to a non-Gromox mailbox",
 			bin2hex(entryid.pb, entryid.cb).c_str());
-		return ecInvalidParam;
+		return MAPI_E_UNKNOWN_ENTRYID;
 	} else if (pkerr == pack_result::alloc) {
 		return ecServerOOM;
 	} else if (pkerr != pack_result::ok) {
 		mlog(LV_DEBUG, "zs_openstore(%s): invalid store entryid",
 			bin2hex(entryid.pb, entryid.cb).c_str());
-		return ecInvalidParam;
+		return MAPI_E_UNKNOWN_ENTRYID;
 	}
 	auto pinfo = zs_query_session(hsession);
 	if (pinfo == nullptr) {
@@ -2236,7 +2238,7 @@ ec_error_t zs_deletefolder(GUID hsession,
 	    &b_private, &account_id, &folder_id))
 		return ecError;
 	if (b_private != pstore->b_private || account_id != pstore->account_id)
-		return ecInvalidParam;
+		return ecNotFound;
 	if (pstore->b_private) {
 		if (folder_id.gcv() < CUSTOM_EID_BEGIN)
 			return ecAccessDenied;
@@ -2355,7 +2357,7 @@ ec_error_t zs_copyfolder(GUID hsession, uint32_t hsrc_folder, BINARY entryid,
 		return ecError;
 	if (b_private != src_store->b_private ||
 	    account_id != src_store->account_id)
-		return ecInvalidParam;
+		return MAPI_E_UNKNOWN_ENTRYID;
 	auto pdst_folder = pinfo->ptree->get_object<folder_object>(hdst_folder, &mapi_type);
 	if (pdst_folder == nullptr)
 		return ecNullObject;
