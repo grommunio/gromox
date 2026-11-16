@@ -892,6 +892,16 @@ static ZEND_FUNCTION(mapi_openentry)
 	case zs_objtype::message:
 		RETVAL_RG(presource, le_mapi_message);
 		break;
+	case zs_objtype::mailuser:
+	case zs_objtype::oneoff:
+		RETVAL_RG(presource, le_mapi_mailuser);
+		break;
+	case zs_objtype::distlist:
+		RETVAL_RG(presource, le_mapi_distlist);
+		break;
+	case zs_objtype::abcont:
+		RETVAL_RG(presource, le_mapi_abcont);
+		break;
 	default:
 		efree(presource);
 		pthrow(ecNotFound);

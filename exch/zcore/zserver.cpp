@@ -766,13 +766,17 @@ ec_error_t zs_unloadobject(GUID hsession, uint32_t hobject)
 static ec_error_t zs_openentry_emsab(GUID, BINARY, uint32_t, const char *, uint32_t, zs_objtype *, uint32_t *);
 static ec_error_t zs_openentry_zcsab(GUID, BINARY, uint32_t, zs_objtype *, uint32_t *);
 
+/**
+ * Conceptually, this function is equivalent to IMAPISession::OpenEntry. It is
+ * supposed to handle all kinds of entryids, including muidStoreWrap, muidEMSAB
+ * and EX FOLDER_ENTRYID/MESSAGE_ENTRYID.
+ */
 ec_error_t zs_openentry(GUID hsession, BINARY entryid,
     uint32_t flags, zs_objtype *pmapi_type, uint32_t *phobject)
 {
 	BOOL b_private;
 	int account_id;
 	std::string essdn;
-	uint32_t address_type;
 	
 	auto pinfo = zs_query_session(hsession);
 	if (pinfo == nullptr)
@@ -781,9 +785,8 @@ ec_error_t zs_openentry(GUID hsession, BINARY entryid,
 		/* Stupid GUID-less entryid from submit.php */
 		return zs_openentry_emsab(hsession, entryid, flags, entryid.pc,
 		       DT_REMOTE_MAILUSER, pmapi_type, phobject);
-	} else if (cu_parse_abkeid(entryid, &address_type, essdn)) {
-		return zs_openentry_emsab(hsession, entryid, flags, essdn.c_str(),
-		       address_type, pmapi_type, phobject);
+	} else if (entryid.cb >= 20 && *reinterpret_cast<const FLATUID *>(&entryid.pb[4]) == muidEMSAB) {
+		return zs_openabentry(hsession, entryid, pmapi_type, phobject);
 	} else if (entryid.cb >= 20 && *reinterpret_cast<const FLATUID *>(&entryid.pb[4]) == muidZCSAB) {
 		return zs_openentry_zcsab(hsession, entryid, flags,
 		       pmapi_type, phobject);
@@ -984,6 +987,10 @@ static ec_error_t zs_openstoreentry_0(store_object &store, eid_t folder_id,
 	return ecSuccess;
 }
 
+/**
+ * Conceptually, this function is equivalent to IMsgStore::OpenEntry, i.e. it
+ * will not accept addressbook entryids.
+ */
 ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
     uint32_t flags, zs_objtype *pmapi_type, uint32_t *phobject)
 {
@@ -1105,6 +1112,10 @@ static ec_error_t zs_openab_oop(USER_INFO_REF &&info, BINARY bin,
 	return zh_error(*objh);
 }
 
+/**
+ * Conceptually, this function is equivalent to IAddrBook::OpenEntry, i.e. it
+ * will only accept addressbook entryids.
+ */
 ec_error_t zs_openabentry(GUID hsession,
     BINARY entryid, zs_objtype *pmapi_type, uint32_t *phobject)
 {
