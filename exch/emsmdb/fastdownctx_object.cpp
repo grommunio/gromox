@@ -267,10 +267,10 @@ bool fastdownctx_object::make_messagelist(bool chginfo, std::vector<eid_t> &&msg
 {
 	auto pctx = this;
 	
-	if (!flow_list.record_messagelist(msglst))
+	if (!flow_list.record_messagelist(std::move(msglst)))
 		return FALSE;
 	pctx->b_chginfo = chginfo;
-	pctx->pmsglst = std::move(msglst);
+	got_msglst = true;
 	pctx->progress_steps = 0;
 	total_steps = std::count_if(flow_list.cbegin(), flow_list.cend(), is_message);
 	divisor = fx_divisor(total_steps);
@@ -287,7 +287,7 @@ static BOOL fastdownctx_object_get_buffer_internal(fastdownctx_object *pctx,
 	if (pctx->flow_list.size() == 0) {
 		if (!pctx->pstream->read_buffer(pbuff, plen, pb_last))
 			return FALSE;	
-		if (!pctx->pmsglst.has_value() && pctx->pfldctnt == nullptr)
+		if (!pctx->got_msglst && pctx->pfldctnt == nullptr)
 			pctx->progress_steps += *plen;
 		return TRUE;
 	}
@@ -334,7 +334,7 @@ static BOOL fastdownctx_object_get_buffer_internal(fastdownctx_object *pctx,
 			 */
 			common_util_remove_propvals(&pmsgctnt->proplist, PR_MESSAGE_SIZE);
 			common_util_remove_propvals(&pmsgctnt->proplist, PR_MESSAGE_SIZE_EXTENDED);
-			if (pctx->pmsglst.has_value()) {
+			if (pctx->got_msglst) {
 				common_util_remove_propvals(&pmsgctnt->proplist, PR_ENTRYID);
 			} else if (!pctx->b_chginfo) {
 				static constexpr proptag_t tags[] = {

@@ -46,7 +46,7 @@ struct fastdownctx_object final {
 
 	std::unique_ptr<fxstream_producer> pstream;
 	bool b_back = false, b_last = false, b_chginfo = false;
-	std::optional<std::vector<eid_t>> pmsglst;
+	bool got_msglst = false;
 	std::unique_ptr<FOLDER_CONTENT> pfldctnt;
 	fxdown_flow_list flow_list;
 	size_t total_steps = 0, progress_steps = 0, divisor = 1;
