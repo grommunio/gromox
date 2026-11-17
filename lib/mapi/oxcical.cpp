@@ -3444,7 +3444,7 @@ static int sprintf_dtutc(char *b, size_t z, const ical_time &t)
 	       t.minute, t.second);
 }
 
-static ical_component *oxcical_export_timezone(ical &pical,
+static ical_component *oxcical_export_timezone1(ical &pical,
     int year, const char *tzid, TZSTRUCT *ptzstruct) try
 {
 	int day;
@@ -3563,6 +3563,17 @@ static ical_component *oxcical_export_timezone(ical &pical,
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return nullptr;
+}
+
+static ical_component *oxcical_export_timezone(ical &pical,
+    int year, const char *tzid, TZSTRUCT *ptzstruct)
+{
+	auto ncomp = pical.component_list.size();
+	auto comp = oxcical_export_timezone1(pical, year, tzid, ptzstruct);
+	if (comp == nullptr)
+		while (pical.component_list.size() > ncomp)
+			pical.component_list.pop_back();
+	return comp;
 }
 
 static bool is_meeting_response(const char *s)
