@@ -506,7 +506,11 @@ ec_error_t get_freebusy(const char *username, const char *dir, const char *org,
 	    &permission) && permission & frightsGromoxStoreOwner)
 		username = nullptr;
 	if (username != nullptr) {
-		permission = freebusy_perms(username, dir);
+		if (!exmdb_client->get_folder_perm(dir, cal_eid, username,
+		    &permission))
+			return ecRpcFailed;
+		permission &= frightsFreeBusySimple | frightsFreeBusyDetailed |
+		              frightsReadAny;
 		if (permission == 0)
 			return ecAccessDenied;
 	} else {
