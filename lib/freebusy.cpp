@@ -498,6 +498,15 @@ static bool exception_private(const message_content &master,
 	return best != nullptr && appt_is_private(best->proplist, ptag);
 }
 
+/* @def must have at least one rule */
+static const TZRULE &effective_rule(const TZDEF &def)
+{
+	for (auto it = def.rules.rbegin(); it != def.rules.rend(); ++it)
+		if (it->flags & TZRULE_FLAG_EFFECTIVE_TZREG)
+			return *it;
+	return def.rules.back();
+}
+
 ec_error_t get_freebusy(const char *username, const char *dir, const char *org,
     time_t start_time, time_t end_time, std::vector<freebusy_event> &fb_data)
 {
@@ -670,8 +679,8 @@ ec_error_t get_freebusy(const char *username, const char *dir, const char *org,
 			if (zdef != nullptr && zdef->cb > 0) {
 				auto def = EXT_PULL::bin_to_tzdef(*zdef);
 				if (def && !def->rules.empty()) {
+					auto &rule = effective_rule(*def);
 					TZSTRUCT tz{};
-					auto &rule = def->rules.back();
 					tz.bias = rule.bias;
 					tz.standardbias = rule.standardbias;
 					tz.daylightbias = rule.daylightbias;
@@ -683,7 +692,7 @@ ec_error_t get_freebusy(const char *username, const char *dir, const char *org,
 				}
 			}
 		}
-		if (bin != nullptr) {
+		if (bin != nullptr && bin->cb > 0) {
 			TZSTRUCT tz;
 			ext_pull.init(bin->pb, bin->cb, exmdb_rpc_alloc, EXT_FLAG_UTF16);
 			if (ext_pull.g_tzstruct(&tz) == pack_result::ok)
