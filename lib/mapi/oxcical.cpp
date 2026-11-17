@@ -4406,8 +4406,11 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 			}
 		} else {
 			bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids[l_tzdefstart]));
-			if (bin != nullptr)
-				bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids[l_tzdefend]));
+			if (bin != nullptr) {
+				auto endbin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids[l_tzdefend]));
+				if (endbin != nullptr)
+					bin = endbin;
+			}
 			if (bin != nullptr && bin->cb > 0) {
 				auto tzdef = EXT_PULL::bin_to_tzdef(*bin);
 				if (tzdef) {
