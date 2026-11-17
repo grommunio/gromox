@@ -25,6 +25,7 @@
 #include <gromox/util.hpp>
 
 using namespace gromox;
+using LLU = unsigned long long;
 
 namespace {
 
@@ -637,22 +638,14 @@ ec_error_t get_freebusy(const char *username, const char *dir, const char *org,
 			continue;
 		}
 		// recurring appointments
-		auto clip = rows.pparray[i]->get<const uint64_t>(ptag.clipend);
-		/* ClipEnd is in local time, 2 days cover any UTC offset */
-		auto unreadable = [&](const char *why) {
-			mlog(LV_ERR, "E-2747: %s: %s of \"%s\"; reported busy "
-				"over the span of the series", dir, why, uid_buf.c_str());
-			auto span_start = start_time >= 0 ?
-			                  std::max(start_whole, start_time) : start_whole;
-			auto span_end = end_time >= 0 ? end_time : end_whole;
-			if (clip != nullptr) {
-				auto last = rop_util_nttime_to_unix(*clip) + 2 * 86400 +
-				            (end_whole - start_whole);
-				span_end = end_time >= 0 ? std::min(last, end_time) : last;
-			}
+		auto add_span = [&](time_t span_start, time_t span_end) {
+			if (start_time >= 0)
+				span_start = std::max(span_start, start_time);
+			if (end_time >= 0)
+				span_end = std::min(span_end, end_time);
 			if (span_end <= span_start)
 				return;
-			fb_data.push_back(FBE{
+			fb_data.emplace_back(FBE{
 				.start_time = span_start, .end_time = span_end,
 				.id = id, .subject = FBE::optnul(subject),
 				.location = FBE::optnul(location),
@@ -668,26 +661,33 @@ ec_error_t get_freebusy(const char *username, const char *dir, const char *org,
 		if (bin != nullptr) {
 			TZSTRUCT tz;
 			ext_pull.init(bin->pb, bin->cb, exmdb_rpc_alloc, EXT_FLAG_UTF16);
-			if (ext_pull.g_tzstruct(&tz) != pack_result::ok) {
-				unreadable("cannot read PidLidTimeZoneStruct");
-				continue;
-			}
-			tzcom = tz_to_vtimezone(1600, "timezone", tz);
-			if (!tzcom.has_value()) {
-				unreadable("cannot build a VTIMEZONE from PidLidTimeZoneStruct");
-				continue;
-			}
+			if (ext_pull.g_tzstruct(&tz) == pack_result::ok)
+				tzcom = tz_to_vtimezone(1600, "timezone", tz);
+			if (!tzcom.has_value())
+				mlog(LV_WARN, "W-2748: %s: message %llu: unusable "
+					"PidLidTimeZoneStruct, expanding in UTC", dir,
+					LLU{rop_util_get_gc_value(*msgid)});
 		}
 
 		bin = ctnt->proplist.get<BINARY>(ptag.apptrecur);
 		if (bin == nullptr) {
-			unreadable("no PidLidAppointmentRecur");
+			add_span(start_whole, end_whole);
 			continue;
 		}
 		APPOINTMENT_RECUR_PAT apprecurr;
 		ext_pull.init(bin->pb, bin->cb, nullptr, EXT_FLAG_UTF16);
 		if (ext_pull.g_apptrecpat(&apprecurr) != pack_result::ok) {
-			unreadable("cannot read PidLidAppointmentRecur");
+			mlog(LV_WARN, "W-2747: %s: message %llu: unreadable "
+				"PidLidAppointmentRecur, reporting the series span as busy",
+				dir, LLU{rop_util_get_gc_value(*msgid)});
+			/* ClipEnd is the local midnight of the last day */
+			auto clip = rows.pparray[i]->get<const uint64_t>(ptag.clipend);
+			auto last = end_whole;
+			if (end_time >= 0)
+				last = clip == nullptr ? end_time :
+				       rop_util_nttime_to_unix(*clip) + 2 * 86400 +
+				       (end_whole - start_whole);
+			add_span(start_whole, last);
 			continue;
 		}
 
