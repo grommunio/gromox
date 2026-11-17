@@ -3464,6 +3464,8 @@ void process(mGetUserAvailabilityRequest &&request, XMLElement *response, const 
 		fbr.ResponseMessage.emplace().success();
 	} catch (const EWSError &err) {
 		mFreeBusyResponse& fbr = data.FreeBusyResponseArray->emplace_back();
+		if (err.type == "ErrorNoFreeBusyAccess")
+			fbr.FreeBusyView.emplace();
 		fbr.ResponseMessage.emplace(err);
 	} catch (const std::exception &err) {
 		mlog(LV_ERR, "[ews#%d] failed to resolve availability for %s: %s",

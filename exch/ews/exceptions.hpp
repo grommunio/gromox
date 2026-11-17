@@ -114,6 +114,7 @@ class EWSError : public DispatchError {
 	ERR(MissingRecipients) ///< Failed to send item because no recipients were specified
 	ERR(MoveCopyFailed) ///< Exmdb `movecopy_message` operation failed
 	ERR(NameResolutionNoResults) ///< Name resolution failed / no results
+	ERR(NoFreeBusyAccess) ///< Caller has no free/busy rights on the mailbox
 	ERR(NotEnoughMemory) ///< Out of memory
 	ERR(OutlookRuleBlobExists) ///< Outlook rule blob present and not to be removed
 	ERR(RulesOverQuota) ///< Rule limit of the folder reached

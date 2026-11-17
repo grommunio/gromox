@@ -2993,7 +2993,7 @@ tFreeBusyView::tFreeBusyView(const char *username, const char *dir,
 	std::vector<freebusy_event> fb_data;
 	auto err = get_freebusy(username, dir, org, start_time, end_time, fb_data);
 	if (err == ecAccessDenied)
-		throw EWSError::AccessDenied(E3627);
+		throw EWSError::NoFreeBusyAccess(E3627);
 	if (err != ecSuccess)
 		throw EWSError::FreeBusyGenerationFailed(E3144);
 
