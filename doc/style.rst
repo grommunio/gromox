@@ -1,9 +1,8 @@
 
 Just try to follow the existing code. A few points of note:
 
-* The TAB control character is used to represent indentation (nesting level) of
-  a block of control. They are superior to spaces because they allow users to
-  set the rendering width as narrow or wide as they wish.
+* TABs represent the nesting level of a block of control. Users can set
+  a custom render width, which makes tabs superior to spaces.
 
 * Use spaces to justify, i.e.: When long statements are folded to become
   multiple lines AND the dev decides to align around a particular feature (such
@@ -14,13 +13,16 @@ Just try to follow the existing code. A few points of note:
 * Preferred max line length is 80 columns. Comments should aim for it more so
   than C++ statements (these are known to be verbose). In commit messages,
   70/72 is preferred, so as to leave room for `> ` indentations when text is
-  quoted in an e-mail reply.
+  quoted in an e-mail reply or when shown as part of `git log`.
 
 * `LKCS <https://www.kernel.org/doc/html/v7.1/process/coding-style.html>`_ has
   a lot of good points still.
 
-* Do not duplicate notes/comments across both source code and the commit
-  message. Each serves a different purpose.
+* Do not repeat notes/comments across both source code and the commit message,
+  nor the pull request description. They all serve different purposes.
 
-* Do not overload sentences with too many subclauses.
-  Avoid ';', em dashes and parenthesized inserts.
+* Avoid overloading sentences with too many subclauses (run-on sentences).
+  Avoid ';', em dashes and parenthesized inserts. Do not blather, be concise.
+  The `LK submission guideline
+  <https://www.kernel.org/doc/html/v7.1/process/submitting-patches.html>`_ has
+  remarks for descriptions and splitting.
