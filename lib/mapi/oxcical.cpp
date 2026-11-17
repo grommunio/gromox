@@ -4353,7 +4353,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		}
 	}
 
-	ical_component *ptz_component = nullptr;
+	const ical_component *ptz_component = nullptr;
 	if (!b_exceptional) {
 
 		if (*method != '\0')
@@ -4441,6 +4441,23 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 				}
 			}
 		}
+		bin = ptz_component == nullptr && b_recurrence ?
+		      pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids[l_tzdefstart])) : nullptr;
+		if (bin != nullptr) {
+			auto tzdef = EXT_PULL::bin_to_tzdef(*bin);
+			if (tzdef) {
+				new_tzid = tzdef->keyname;
+				tzid = new_tzid.c_str();
+				TZSTRUCT tz_struct;
+				oxcical_convert_to_tzstruct(*tzdef, tz_struct);
+				ptz_component = oxcical_export_timezone(pical, year - 1, tzid, &tz_struct);
+				if (ptz_component == nullptr)
+					mlog(LV_ERR, "E-2798: %s: export_timezone returned an unspecified error and won't be exported", log_id);
+			}
+		}
+	} else if (tzid != nullptr) {
+		/* An exception carries no zone; the series already emitted one */
+		ptz_component = oxcical_find_vtimezone(pical, tzid);
 	}
 
 	auto snum = pmsg->proplist.get<const uint8_t>(PROP_TAG(PT_BOOLEAN, propids[l_subtype]));
