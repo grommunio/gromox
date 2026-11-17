@@ -4441,18 +4441,22 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 				}
 			}
 		}
-		bin = ptz_component == nullptr && b_recurrence ?
-		      pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids[l_tzdefstart])) : nullptr;
+		bin = nullptr;
+		if (b_recurrence && ptz_component == nullptr)
+			bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids[l_tzdefstart]));
 		if (bin != nullptr) {
 			auto tzdef = EXT_PULL::bin_to_tzdef(*bin);
 			if (tzdef) {
-				new_tzid = tzdef->keyname;
-				tzid = new_tzid.c_str();
 				TZSTRUCT tz_struct;
 				oxcical_convert_to_tzstruct(*tzdef, tz_struct);
-				ptz_component = oxcical_export_timezone(pical, year - 1, tzid, &tz_struct);
-				if (ptz_component == nullptr)
+				ptz_component = oxcical_export_timezone(pical,
+				                year - 1, tzdef->keyname.c_str(), &tz_struct);
+				if (ptz_component == nullptr) {
 					mlog(LV_ERR, "E-2798: %s: export_timezone returned an unspecified error and won't be exported", log_id);
+				} else {
+					new_tzid = std::move(tzdef->keyname);
+					tzid = new_tzid.c_str();
+				}
 			}
 		}
 	}
