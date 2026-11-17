@@ -3572,6 +3572,12 @@ static bool is_meeting_response(const char *s)
 	       class_match_prefix(s, "IPM.Schedule.Meeting.Resp.Tent") == 0;
 }
 
+static constexpr addr_tags tags_sent_repr = {
+	PR_SENT_REPRESENTING_NAME, PR_SENT_REPRESENTING_ADDRTYPE,
+	PR_SENT_REPRESENTING_EMAIL_ADDRESS,
+	PR_SENT_REPRESENTING_SMTP_ADDRESS, PR_SENT_REPRESENTING_ENTRYID,
+};
+
 static bool oxcical_export_recipient_table(ical_component &pevent_component,
     const char *org_name, cvt_id2user id2user, EXT_BUFFER_ALLOC alloc,
     const char *partstat, bool meeting, const MESSAGE_CONTENT *pmsg) try
@@ -3590,9 +3596,11 @@ static bool oxcical_export_recipient_table(ical_component &pevent_component,
 	if (appt && !meeting)
 		return true;
 	if (is_meeting_response(str)) {
-		str = pmsg->proplist.get<char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
-		if (str == nullptr)
+		std::string addr;
+		if (!oxcmail_get_smtp_address(pmsg->proplist, &tags_sent_repr,
+		    org_name, id2user, addr))
 			return true;
+		str = addr.c_str();
 		auto piline = &pevent_component.append_line("ATTENDEE");
 		piline->append_param("PARTSTAT", partstat);
 		/*
@@ -3900,11 +3908,6 @@ static bool oxcical_export_rdate(const char *tzid, bool b_date,
 static void oxcical_export_organizer(const MESSAGE_CONTENT &msg,
     ical_component &com, const char *org_name, cvt_id2user id2user)
 {
-	static constexpr addr_tags tags_sent_repr = {
-		PR_SENT_REPRESENTING_NAME, PR_SENT_REPRESENTING_ADDRTYPE,
-		PR_SENT_REPRESENTING_EMAIL_ADDRESS,
-		PR_SENT_REPRESENTING_SMTP_ADDRESS, PR_SENT_REPRESENTING_ENTRYID,
-	};
 	std::string buf;
 	if (!oxcmail_get_smtp_address(msg.proplist, &tags_sent_repr, org_name,
 	    id2user, buf))
