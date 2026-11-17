@@ -803,12 +803,14 @@ static int ical_exception_roundtrip()
 	/* only the real deletion, given in local time; the moved one is a VEVENT */
 	if (icstr.find("EXDATE;TZID=Europe/Berlin:20261021T100000\r\n") == std::string::npos ||
 	    icstr.find("EXDATE;TZID=Europe/Berlin:\r\n") != std::string::npos ||
-	    icstr.find("RDATE") != std::string::npos) {
+	    icstr.find("RDATE") != std::string::npos ||
+	    icstr.find("RECURRENCE-ID;TZID=Europe/Berlin:20261022T100000\r\n") == std::string::npos ||
+	    icstr.find("DTSTART;TZID=Europe/Berlin:20261022T140000\r\n") == std::string::npos) {
 		fprintf(stderr, "%s", icstr.c_str());
 		return EXIT_FAILURE;
 	}
 
-	/* the export writes the exception in UTC; the local time must survive */
+	/* the local time of the exception must survive */
 	auto msg2 = ical_load(std::move(icstr));
 	assert(msg2 != nullptr);
 	APPOINTMENT_RECUR_PAT apr2{};
