@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2023–2026 grommunio GmbH
 // This file is part of Gromox.
+#include <algorithm>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -14,6 +15,7 @@
 #include <gromox/defs.h>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
+#include <gromox/ext_buffer.hpp>
 #include <gromox/freebusy.hpp>
 #include <gromox/ical.hpp>
 #include <gromox/mapidefs.h>
@@ -33,7 +35,7 @@ struct freebusy_tags {
 	uint32_t apptstartwhole = 0, apptendwhole = 0, busystatus = 0, recurring = 0,
 		apptrecur = 0, apptsubtype = 0, private_flag = 0, apptstateflags = 0,
 		clipend = 0, location = 0, reminderset = 0, globalobjectid = 0,
-		timezonestruct = 0, exreplacetime = 0;
+		timezonestruct = 0, tzdefrecur = 0, exreplacetime = 0;
 	bool init_ok = false;
 };
 
@@ -55,6 +57,7 @@ freebusy_tags::freebusy_tags(const char *dir)
 		{MNID_ID, PSETID_Common,      PidLidReminderSet},
 		{MNID_ID, PSETID_Meeting,     PidLidGlobalObjectId},
 		{MNID_ID, PSETID_Appointment, PidLidTimeZoneStruct},
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentTimeZoneDefinitionRecur},
 		{MNID_ID, PSETID_Appointment, PidLidExceptionReplaceTime},
 	};
 
@@ -75,7 +78,8 @@ freebusy_tags::freebusy_tags(const char *dir)
 		reminderset    = PROP_TAG(PT_BOOLEAN, ids[10]);
 		globalobjectid = PROP_TAG(PT_BINARY,  ids[11]);
 		timezonestruct = PROP_TAG(PT_BINARY,  ids[12]);
-		exreplacetime  = PROP_TAG(PT_SYSTIME, ids[13]);
+		tzdefrecur     = PROP_TAG(PT_BINARY,  ids[13]);
+		exreplacetime  = PROP_TAG(PT_SYSTIME, ids[14]);
 		init_ok = true;
 	}
 }
@@ -578,7 +582,7 @@ ec_error_t get_freebusy(const char *username, const char *dir, const char *org,
 		ptag.apptstartwhole, ptag.apptendwhole, ptag.busystatus,
 		ptag.recurring, ptag.apptsubtype, ptag.private_flag,
 		ptag.apptstateflags, ptag.location, ptag.reminderset,
-		PR_SUBJECT, PidTagMid, PR_SENSITIVITY,
+		ptag.clipend, PR_SUBJECT, PidTagMid, PR_SENSITIVITY,
 	};
 	TARRAY_SET rows;
 	if (!exmdb_client->query_table(dir, nullptr, CP_ACP, table_id,
@@ -636,26 +640,77 @@ ec_error_t get_freebusy(const char *username, const char *dir, const char *org,
 			continue;
 		}
 		// recurring appointments
+		auto clip = rows.pparray[i]->get<const uint64_t>(ptag.clipend);
+		/* ClipEnd is in local time, 2 days cover any UTC offset */
+		auto unreadable = [&](const char *why) {
+			mlog(LV_ERR, "E-2747: %s: %s of \"%s\"; reported busy "
+				"over the span of the series", dir, why, uid_buf.c_str());
+			auto span_start = start_time >= 0 ?
+			                  std::max(start_whole, start_time) : start_whole;
+			auto span_end = end_time >= 0 ? end_time : end_whole;
+			if (clip != nullptr) {
+				auto last = rop_util_nttime_to_unix(*clip) + 2 * 86400 +
+				            (end_whole - start_whole);
+				span_end = end_time >= 0 ? std::min(last, end_time) : last;
+			}
+			if (span_end <= span_start)
+				return;
+			fb_data.push_back(FBE{
+				.start_time = span_start, .end_time = span_end,
+				.id = id, .subject = FBE::optnul(subject),
+				.location = FBE::optnul(location),
+				.busy_status = static_cast<uint32_t>(busy_type),
+				.has_details = detailed,
+				.is_meeting = is_meeting, .is_recurring = true,
+				.is_exception = false, .is_reminderset = is_reminder,
+				.is_private = is_private});
+		};
 		EXT_PULL ext_pull;
 		std::optional<ical_component> tzcom;
 		auto bin = ctnt->proplist.get<BINARY>(ptag.timezonestruct);
+		if (bin == nullptr || bin->cb == 0) {
+			auto zdef = ctnt->proplist.get<const BINARY>(ptag.tzdefrecur);
+			if (zdef != nullptr && zdef->cb > 0) {
+				auto def = EXT_PULL::bin_to_tzdef(*zdef);
+				if (def && !def->rules.empty()) {
+					TZSTRUCT tz{};
+					auto &rule = def->rules.back();
+					tz.bias = rule.bias;
+					tz.standardbias = rule.standardbias;
+					tz.daylightbias = rule.daylightbias;
+					tz.standarddate = rule.standarddate;
+					tz.daylightdate = rule.daylightdate;
+					tz.standardyear = tz.standarddate.year;
+					tz.daylightyear = tz.daylightdate.year;
+					tzcom = tz_to_vtimezone(1600, "timezone", tz);
+				}
+			}
+		}
 		if (bin != nullptr) {
 			TZSTRUCT tz;
 			ext_pull.init(bin->pb, bin->cb, exmdb_rpc_alloc, EXT_FLAG_UTF16);
-			if (ext_pull.g_tzstruct(&tz) != pack_result::ok)
+			if (ext_pull.g_tzstruct(&tz) != pack_result::ok) {
+				unreadable("cannot read PidLidTimeZoneStruct");
 				continue;
+			}
 			tzcom = tz_to_vtimezone(1600, "timezone", tz);
-			if (!tzcom.has_value())
+			if (!tzcom.has_value()) {
+				unreadable("cannot build a VTIMEZONE from PidLidTimeZoneStruct");
 				continue;
+			}
 		}
 
 		bin = ctnt->proplist.get<BINARY>(ptag.apptrecur);
-		if (bin == nullptr)
+		if (bin == nullptr) {
+			unreadable("no PidLidAppointmentRecur");
 			continue;
+		}
 		APPOINTMENT_RECUR_PAT apprecurr;
 		ext_pull.init(bin->pb, bin->cb, nullptr, EXT_FLAG_UTF16);
-		if (ext_pull.g_apptrecpat(&apprecurr) != pack_result::ok)
+		if (ext_pull.g_apptrecpat(&apprecurr) != pack_result::ok) {
+			unreadable("cannot read PidLidAppointmentRecur");
 			continue;
+		}
 
 		std::vector<fb_instance> event_list;
 		if (!fb_recur_times(tzcom.has_value() ? &*tzcom : nullptr,
