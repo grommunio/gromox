@@ -5170,8 +5170,20 @@ void EWSContext::validate_sendas_perms(const MESSAGE_CONTENT &content) const
 	if (addr == nullptr) {
 		auto type = pl.get<const char>(PR_SENT_REPRESENTING_ADDRTYPE);
 		auto email = pl.get<const char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
-		if (email == nullptr)
+		if (email == nullptr) {
+			/* The exporter resolves From from the entryid too */
+			std::string repr;
+			auto err = cvt_entryid_to_smtpaddr(
+			           pl.get<const BINARY>(PR_SENT_REPRESENTING_ENTRYID),
+			           m_plugin.x500_org_name.c_str(),
+			           mysql_adaptor_userid_to_name, repr);
+			if (err == ecNullObject)
+				return;
+			if (err != ecSuccess)
+				throw EWSError::SendAsDenied(E3474);
+			validate_sendas_perms(repr);
 			return;
+		}
 		if (type != nullptr && strcasecmp(type, "EX") == 0) {
 			validate_sendas_perms(essdn_to_username(email));
 			return;
