@@ -696,6 +696,21 @@ static int t_string()
 	return EXIT_SUCCESS;
 }
 
+static int t_midstr()
+{
+	using namespace std::string_view_literals;
+	for (auto s : {"R-ab/0123456789abcdef0123456789abcdef"sv,
+	     "1653903210.4.midb"sv, "1753630532.n1.mail.example.com"sv,
+	     "1700000000.g0123456789abcdef0123456789abcdef"sv,
+	     "1700000000.5.h\xc3\xb6st"sv, "a/b.c/d..e"sv})
+		assert(midstr_ok(s));
+	for (auto s : {""sv, "."sv, ".."sv, "../x"sv, "a/../b"sv, "a/./b"sv,
+	     "a/.b"sv, "a/.."sv, ".hidden"sv, "/abs"sv, "a//b"sv, "a/"sv, "/"sv,
+	     "a b"sv, " a"sv, "a\nb"sv, "a\r"sv, "a\tb"sv, "a\x7f"sv, "a\0b"sv})
+		assert(!midstr_ok(s));
+	return EXIT_SUCCESS;
+}
+
 static int t_unfold()
 {
 	static constexpr std::pair<const char *, const char *> tbl[] = {
@@ -1204,7 +1219,7 @@ static int runner()
 		t_id7, t_id8, t_id9, t_seq,
 		t_cmp_binary, t_cmp_guid, t_cmp_svreid, t_cmp_icaltime,
 		t_wildcard, t_utf8_prefix, t_eidcvt, t_bin2cstr, t_log_escape,
-		t_string, t_unfold, t_time, t_tzdef, t_floating_dt, t_essdn, t_fb_recur,
+		t_string, t_midstr, t_unfold, t_time, t_tzdef, t_floating_dt, t_essdn, t_fb_recur,
 		t_res_mvprop, t_srchkey_words, t_array_growth, t_rfc822_years, t_stream_skip,
 		t_lang_charset,
 	};

@@ -1039,6 +1039,26 @@ int gx_mkbasedir(const char *file, unsigned int mode)
 	return HX_mkdir(base.get(), mode);
 }
 
+/**
+ * A midstr names a file relative to <maildir>/eml and <maildir>/ext, e.g.
+ * "R-ab/<guid32>" or (older) "<time>.<seq>.<host>".
+ *
+ * Mid strings are relayed in the space-delimited midb protocol, where
+ * whitespace and control characters break the response lines.
+ */
+bool midstr_ok(std::string_view s)
+{
+	if (s.empty() || s.front() == '/' || s.back() == '/' ||
+	    s.find("//") != s.npos)
+		return false;
+	/* no ".", "..", or hidden components */
+	if (s.front() == '.' || s.find("/.") != s.npos)
+		return false;
+	return std::none_of(s.cbegin(), s.cend(), [](unsigned char c) {
+		return c <= 0x20 || c == 0x7f;
+	});
+}
+
 }
 
 static errno_t read_file_by_line(FILE *fp, std::vector<std::string> &out)

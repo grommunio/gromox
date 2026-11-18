@@ -120,6 +120,7 @@ extern GX_EXPORT errno_t gx_decompress_file(const char *, std::string &);
 extern GX_EXPORT errno_t gx_compress_tofd(std::string_view, int fd, uint8_t complvl = 0);
 extern GX_EXPORT errno_t gx_compress_tofile(std::string_view, const char *outfile, uint8_t complvl = 0, unsigned int mode = FMODE_PRIVATE);
 extern GX_EXPORT int gx_mkbasedir(const char *file, unsigned int mode);
+extern GX_EXPORT bool midstr_ok(std::string_view);
 
 extern GX_EXPORT int popenfd_keepfd_marker;
 enum {

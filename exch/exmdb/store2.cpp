@@ -982,11 +982,9 @@ BOOL exmdb_server::recalc_store_size(const char *dir, uint32_t flags)
 
 static bool imapfile_name_ok(const std::string &type, const std::string &mid)
 {
-	if (mid.empty() || mid[0] == '.' || mid.find("/.") != mid.npos)
-		return false;
 	if (type != "eml" && type != "ext" && type != "tmp/imap.rfc822")
 		return false;
-	return true;
+	return midstr_ok(mid);
 }
 
 BOOL exmdb_server::imapfile_read(const char *dir, const std::string &type,
