@@ -2657,27 +2657,13 @@ const char *RulesEnv::resolve_folder(const Rules::FolderRef &f, MOVECOPY_ACTION 
 	BOOL exist = false;
 	if (!exmdb.is_folder_present(tdir.c_str(), spec.folderId, &exist) || !exist)
 		return "FolderDoesNotExist";
-	if (tdir == dir) {
-		auto sv = EWSContext::construct<SVREID>();
-		sv->folder_id = eid_t(spec.folderId);
-		mc.same_store = 1;
-		mc.pfolder_eid = sv;
-		return nullptr;
-	}
-	/* Another mailbox, ruleproc checks the owner's rights on delivery */
-	std::string essdn;
-	if (cvt_username_to_essdn(spec.target->c_str(), ctx.plugin().x500_org_name.c_str(),
-	    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids, essdn) != ecSuccess)
-		return "InvalidFolderId";
-	auto se = EWSContext::construct<STORE_ENTRYID>();
-	se->wrapped_provider_uid = g_muidStorePrivate;
-	se->wrapped_type = OPENSTORE_HOME_LOGON | OPENSTORE_TAKE_OWNERSHIP;
-	se->pserver_name = EWSContext::cpystr(*spec.target);
-	se->pmailbox_dn = EWSContext::cpystr(essdn);
-	auto eid = ctx.getFolderEntryId(tdir, spec.folderId);
-	mc.same_store = 0;
-	mc.pstore_eid = se;
-	mc.pfolder_eid = eid.pvalue;
+	/* Like Exchange, no move into another mailbox */
+	if (tdir != dir)
+		return "InvalidValue";
+	auto sv = EWSContext::construct<SVREID>();
+	sv->folder_id = eid_t(spec.folderId);
+	mc.same_store = 1;
+	mc.pfolder_eid = sv;
 	return nullptr;
 } catch (const std::exception &) {
 	return "InvalidFolderId";
