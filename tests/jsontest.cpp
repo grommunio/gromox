@@ -3,6 +3,7 @@
 // This file is part of Gromox.
 #include <cstdio>
 #include <cstring>
+#include <string>
 #include <json/value.h>
 #include <gromox/json.hpp>
 #include <gromox/mjson.hpp>
@@ -68,6 +69,23 @@ static int t_digest()
 	printf("digest test >%s<\n", out);
 	if (strcmp(out, "YA") != 0)
 		printf("test failure\n");
+
+	Json::Value jv;
+	std::string sout;
+	if (!str_to_json(line, jv) || !get_digest(jv, "xy", sout) || sout != "15")
+		return EXIT_FAILURE;
+	/* objects and arrays have no string form: refusal, no exception */
+	for (const char *s : {"{\"file\":{}}", "{\"file\":[]}",
+	     "{\"file\":{\"a\":1}}", "{\"file\":[\"a\"]}"})
+		if (!str_to_json(s, jv) || get_digest(jv, "file", sout) ||
+		    get_digest(jv, "file", out, std::size(out)) ||
+		    get_digest(s, "file", out, std::size(out)))
+			return EXIT_FAILURE;
+	/* not an object at all */
+	for (const char *s : {"[]", "5", "\"file\"", "null"})
+		if (!str_to_json(s, jv) || get_digest(jv, "file", sout) ||
+		    get_digest(jv, "file", out, std::size(out)))
+			return EXIT_FAILURE;
 	return EXIT_SUCCESS;
 }
 

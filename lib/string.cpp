@@ -770,7 +770,10 @@ bool get_digest(const Json::Value &jval, const char *key, std::string &out) try
 {
 	if (jval.type() != Json::ValueType::objectValue || !jval.isMember(key))
 		return false;
-	out = jval[key].asString();
+	auto &memb = jval[key];
+	if (!memb.isConvertibleTo(Json::ValueType::stringValue))
+		return false;
+	out = memb.asString();
 	return TRUE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
@@ -782,6 +785,8 @@ bool get_digest(const Json::Value &jval, const char *key, char *out, size_t outm
 	if (jval.type() != Json::ValueType::objectValue || !jval.isMember(key))
 		return false;
 	auto &memb = jval[key];
+	if (!memb.isConvertibleTo(Json::ValueType::stringValue))
+		return false;
 	if (memb.isString())
 		gx_strlcpy(out, memb.asCString(), outmax);
 	else
