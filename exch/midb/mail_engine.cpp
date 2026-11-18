@@ -1289,8 +1289,8 @@ static void me_extract_digest_fields(const Json::Value &digest,
 		rcpt = temp_address.addr;
 	}
 	*psize = 0;
-	if (get_digest(digest, "size", val))
-		*psize = strtoull(val.c_str(), nullptr, 0);
+	if (digest.isObject() && digest["size"].isUInt64())
+		*psize = digest["size"].asUInt64();
 }
 
 static inline bool atom_special(char c)
