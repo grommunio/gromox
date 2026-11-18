@@ -909,11 +909,14 @@ int ssllog(const char *str, size_t len, void *lvp)
 	return 1;
 }
 
-bool str_to_json(std::string_view sv, Json::Value &jv)
+bool str_to_json(std::string_view sv, Json::Value &jv) try
 {
 	using reader_t = decltype(Json::CharReaderBuilder().newCharReader());
 	std::unique_ptr<std::remove_pointer_t<reader_t>> rd(Json::CharReaderBuilder().newCharReader());
 	return rd->parse(sv.data(), sv.data() + sv.size(), &jv, nullptr);
+} catch (const Json::Exception &) {
+	/* e.g. nesting beyond the reader's stackLimit */
+	return false;
 }
 
 std::string json_to_str(const Json::Value &jv)

@@ -71,6 +71,22 @@ static int t_digest()
 	return EXIT_SUCCESS;
 }
 
+static int t_digest_2()
+{
+	/* nesting too deep for the reader: parse failure, no exception */
+	Json::Value jv;
+	std::string out, deep(4000, '[');
+	if (str_to_json(deep, jv) || get_digest(deep.c_str(), "file", out))
+		return EXIT_FAILURE;
+	deep.append(4000, ']');
+	if (str_to_json(deep, jv) || get_digest(deep.c_str(), "file", out))
+		return EXIT_FAILURE;
+	deep = "{\"file\":\"a\",\"x\":" + deep + "}";
+	if (str_to_json(deep, jv) || get_digest(deep.c_str(), "file", out))
+		return EXIT_FAILURE;
+	return EXIT_SUCCESS;
+}
+
 static int t_extparse(const char *s)
 {
 	Json::Value json;
@@ -122,6 +138,8 @@ int main()
 	if (t_extparse(tdata2) != EXIT_SUCCESS)
 		return EXIT_FAILURE;
 	if (t_digest() != EXIT_SUCCESS)
+		return EXIT_FAILURE;
+	if (t_digest_2() != EXIT_SUCCESS)
 		return EXIT_FAILURE;
 	return EXIT_SUCCESS;
 }
