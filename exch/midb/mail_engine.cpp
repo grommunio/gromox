@@ -2258,16 +2258,36 @@ static void *midbme_scanwork(void *param)
 			continue;
 		}
 		count = 0;
+		std::vector<std::string> reload_list;
 		std::unique_lock hhold(g_hash_lock);
 		for (auto it = g_hash_table.begin(); it != g_hash_table.end(); ) {
 			auto pidb = &it->second;
 			auto now_time = time(nullptr);
 			auto last_diff = now_time - pidb->last_time;
 			auto load_diff = now_time - pidb->load_time;
+			bool idle = std::cmp_greater(last_diff,
+			            g_midb_cache_interval);
+			bool stale = std::cmp_greater(load_diff,
+			             g_midb_reload_interval);
+			if (pidb->reference == 0 && pidb->sub_id != 0 &&
+			    !idle && stale) {
+				/*
+				 * Dropping a store still in use would also
+				 * drop its subscription until the next client
+				 * access, and IDLE sessions never make one.
+				 * The resync queue reloads and resubscribes
+				 * it instead, at a bounded rate.
+				 */
+				try {
+					reload_list.emplace_back(it->first);
+				} catch (const std::bad_alloc &) {
+					mlog(LV_ERR, "%s: ENOMEM", __func__);
+				}
+				++it;
+				continue;
+			}
 			bool do_clean = pidb->reference == 0 &&
-			             (pidb->sub_id == 0 ||
-			             std::cmp_greater(last_diff, g_midb_cache_interval) ||
-			             std::cmp_greater(load_diff, g_midb_reload_interval));
+			             (pidb->sub_id == 0 || idle || stale);
 			if (!do_clean) {
 				++it;
 				continue;
@@ -2284,6 +2304,8 @@ static void *midbme_scanwork(void *param)
 			it = g_hash_table.erase(it);
 		}
 		hhold.unlock();
+		for (const auto &dir : reload_list)
+			midb_notif_rearm(dir.c_str());
 		for (auto &&e : unsub_list) {
 			if (cu_build_environment(e.first.c_str())) {
 				exmdb_client->unsubscribe_notification(e.first.c_str(), e.second);

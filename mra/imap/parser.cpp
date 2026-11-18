@@ -50,9 +50,13 @@
 #	define OLD_SSL 1
 #endif
 #define SLEEP_BEFORE_CLOSE true
-#define SCAN_INTERVAL			3600
-
-#define SELECT_INTERVAL			20*60
+/*
+ * midb unloads a store that went unused for midb_cache_interval, 30min by
+ * default, and its notification subscription goes with it. IDLE sessions do
+ * not use midb, so selected stores are pinged well before that.
+ */
+#define SCAN_INTERVAL			60
+#define SELECT_INTERVAL			10*60
 
 using namespace std::string_literals;
 using namespace gromox;
