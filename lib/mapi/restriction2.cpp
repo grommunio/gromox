@@ -847,29 +847,35 @@ void gi_print(unsigned int depth, const TAGGED_PROPVAL &tp,
 	tlog("%08xh:%s\n", tp.proptag, tp.value_repr(true).c_str());
 }
 
-void gi_print(unsigned int depth, const TPROPVAL_ARRAY &props,
+void gi_print(unsigned int depth, const TPROPVAL_ARRAY &iprops,
     const PROPERTY_XNAME *(*get_propname)(uint16_t))
 {
-	if (props.count == 0)
+	if (iprops.count == 0)
 		return;
+	std::vector<const TAGGED_PROPVAL *> props;
+	for (auto &el : iprops)
+		props.emplace_back(&el);
+	std::sort(props.begin(), props.end(), [](const TAGGED_PROPVAL *a, const TAGGED_PROPVAL *b) {
+		return a->proptag < b->proptag;
+	});
 	tree(depth);
-	tlog("props(%d):", props.count);
+	tlog("props(%zu):", props.size());
 	tlog(g_show_props ? "\n" : " {");
-	for (size_t i = 0; i < props.count; ++i)
-		gi_print(depth + 1, props.ppropval[i], get_propname);
+	for (size_t i = 0; i < props.size(); ++i)
+		gi_print(depth + 1, *props[i], get_propname);
 	if (!g_show_props)
 		tlog("}\n");
-	auto p = props.get<const char>(PR_DISPLAY_NAME);
+	auto p = iprops.get<const char>(PR_DISPLAY_NAME);
 	if (p != nullptr) {
 		tree(depth);
 		tlog("display_name=\"%s\"\n", p);
 	}
-	p = props.get<char>(PR_SUBJECT);
+	p = iprops.get<char>(PR_SUBJECT);
 	if (p != nullptr) {
 		tree(depth);
 		tlog("subject=\"%s\"\n", p);
 	}
-	p = props.get<char>(PR_ATTACH_LONG_FILENAME);
+	p = iprops.get<char>(PR_ATTACH_LONG_FILENAME);
 	if (p != nullptr) {
 		tree(depth);
 		tlog("filename=\"%s\"\n", p);
