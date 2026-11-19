@@ -512,7 +512,7 @@ errno_t mysql_plugin::get_homeserver_for_dir(const char *dir, bool *is_pvt,
 	 */
 	auto qstr = "SELECT sv.hostname, 1 AS pvt FROM users AS u "
 	            "LEFT JOIN servers AS sv ON u.homeserver=sv.id "
-	            "WHERE u.maildir='"s + dir + "' UNION "
+	            "WHERE u.maildir='"s + qent + "' UNION "
 	            "SELECT sv.hostname, 0 AS pvt FROM domains AS d "
 	            "LEFT JOIN servers AS sv ON d.homeserver=sv.id "
 	            "WHERE d.homedir='" + qent + "' LIMIT 2";
