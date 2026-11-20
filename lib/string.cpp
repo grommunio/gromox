@@ -780,34 +780,6 @@ bool get_digest(const Json::Value &jval, const char *key, std::string &out) try
 	return false;
 }
 
-bool get_digest(const Json::Value &jval, const char *key, char *out, size_t outmax) try
-{
-	if (jval.type() != Json::ValueType::objectValue || !jval.isMember(key))
-		return false;
-	auto &memb = jval[key];
-	if (!memb.isConvertibleTo(Json::ValueType::stringValue))
-		return false;
-	if (memb.isString())
-		gx_strlcpy(out, memb.asCString(), outmax);
-	else
-		gx_strlcpy(out, memb.asString().c_str(), outmax);
-	return TRUE;
-} catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
-	return false;
-}
-
-bool get_digest(const char *json, const char *key, char *out, size_t outmax) try
-{
-	Json::Value jval;
-	if (!gromox::str_to_json(json, jval))
-		return false;
-	return get_digest(jval, key, out, outmax);
-} catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
-	return false;
-}
-
 static enum output_mode mlog_typical_mode(const char *filename)
 {
 	if (filename == nullptr || *filename == '\0' || strcmp(filename, "-") == 0) {

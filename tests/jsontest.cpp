@@ -50,41 +50,39 @@ static constexpr char tdata2[] =
 
 static int t_digest()
 {
-	static char line[] = "{\"foo\": \"bar\", \"OH\": \"NO\", \"bar\": \"result\", \"xy\": 15}";
-	char out[128];
-	out[0] = '\0';
-	if (!get_digest(line, "bar", out, std::size(out)))
-		return EXIT_FAILURE;
-	printf("digest test >%s<\n", out);
-	if (strcmp(out, "result") != 0)
-		printf("test failure\n");
-	if (!get_digest(line, "xy", out, std::size(out)))
-		return EXIT_FAILURE;
-	printf("digest test >%s<\n", out);
-	if (strcmp(out, "15") != 0)
-		printf("test failure\n");
-
-	if (!get_digest(line, "bar", out, std::size(out)))
-		return EXIT_FAILURE;
-	printf("digest test >%s<\n", out);
-	if (strcmp(out, "YA") != 0)
-		printf("test failure\n");
-
+	static constexpr char raw_line[] = "{\"foo\": \"bar\", \"OH\": \"NO\", \"bar\": \"result\", \"xy\": 15}";
 	Json::Value jv;
-	std::string sout;
-	if (!str_to_json(line, jv) || !get_digest(jv, "xy", sout) || sout != "15")
+	if (!str_to_json(raw_line, jv))
 		return EXIT_FAILURE;
+
+	std::string sout;
+	if (!get_digest(jv, "bar", sout))
+		return EXIT_FAILURE;
+	printf("digest test >%s<\n", sout.c_str());
+	if (sout != "result")
+		printf("test failure\n");
+	if (!get_digest(jv, "xy", sout))
+		return EXIT_FAILURE;
+	printf("digest test >%s<\n", sout.c_str());
+	if (sout != "15")
+		printf("test failure\n");
+	if (!get_digest(jv, "bar", sout))
+		return EXIT_FAILURE;
+	printf("digest test >%s<\n", sout.c_str());
+	if (sout != "YA")
+		printf("test failure\n");
+
 	/* objects and arrays have no string form: refusal, no exception */
 	for (const char *s : {"{\"file\":{}}", "{\"file\":[]}",
 	     "{\"file\":{\"a\":1}}", "{\"file\":[\"a\"]}"})
 		if (!str_to_json(s, jv) || get_digest(jv, "file", sout) ||
-		    get_digest(jv, "file", out, std::size(out)) ||
-		    get_digest(s, "file", out, std::size(out)))
+		    get_digest(jv, "file", sout) ||
+		    get_digest(s, "file", sout))
 			return EXIT_FAILURE;
 	/* not an object at all */
 	for (const char *s : {"[]", "5", "\"file\"", "null"})
 		if (!str_to_json(s, jv) || get_digest(jv, "file", sout) ||
-		    get_digest(jv, "file", out, std::size(out)))
+		    get_digest(jv, "file", sout))
 			return EXIT_FAILURE;
 	return EXIT_SUCCESS;
 }

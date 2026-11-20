@@ -2437,7 +2437,6 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 {
 	uint64_t fid_val;
 	BINARY searchkey_bin;
-	char mid_string[128];
 	std::string account, display_name;
 
 	if (exmdb_server::is_private()) {
@@ -2601,13 +2600,14 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 		return TRUE;
 	}
 	std::optional<Json::Value> digest;
+	std::string mid_string;
 	if (pdigest != nullptr) {
 		digest.emplace();
 		if (!str_to_json(pdigest, *digest))
 			digest.reset();
 	}
 	if (digest.has_value() &&
-	    get_digest(*digest, "file", mid_string, std::size(mid_string))) {
+	    get_digest(*digest, "file", mid_string)) {
 		Json::Value newdigest = *digest;
 		newdigest["file"] = "";
 		auto ext_path = exmdb_server::get_dir() + "/ext/"s + mid_string;
@@ -2629,8 +2629,9 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 				return false;
 			}
 			if (!common_util_set_mid_string(pdb->psqlite,
-			    message_id, mid_string)) {
-				mlog(LV_ERR, "deliver_message %s: set_mid_str %s failed", dir, mid_string);
+			    message_id, mid_string.c_str())) {
+				mlog(LV_ERR, "deliver_message %s: set_mid_str %s failed",
+					dir, mid_string.c_str());
 				return FALSE;
 			}
 		}
