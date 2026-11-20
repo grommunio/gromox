@@ -19,6 +19,13 @@ Behavior changes:
 
 Enhancements:
 
+* exmdb: new optional per-mailbox full-text index (``exmdb/fts.sqlite3``,
+  ``exmdb_provider.cfg:exmdb_fts``) that narrows content restrictions on
+  private stores. Results are identical with or without it; a missing or
+  stale index only costs speed.
+* ews: FindItem now evaluates ``QueryString`` (words, phrases, AND/OR/NOT,
+  ``subject:``, ``from:``, ``to:``, ``cc:``, ``body:``, ``attachment:``,
+  ``hasattachment:`` and ``isread:``) instead of ignoring it.
 * mbck: new check that reports stored PR_SOURCE_KEY/PR_PARENT_SOURCE_KEY rows
   and, with ``-p``, deletes them.
 * ruleproc: the TwoStep processor now reports failed rules with deferred error
