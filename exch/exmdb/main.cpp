@@ -42,6 +42,7 @@
 #include <gromox/util.hpp>
 #include "bounce_producer.hpp"
 #include "db_engine.hpp"
+#include "fts.hpp"
 #include "parser.hpp"
 
 using namespace std::string_literals;
@@ -70,6 +71,9 @@ static constexpr cfg_directive exmdb_cfg_defaults[] = {
 	{"exmdb_body_autosynthesis", "1", CFG_BOOL},
 	{"exmdb_eph_prefix", ""},
 	{"exmdb_file_compression", "zstd-6"},
+	{"exmdb_fts", "0", CFG_BOOL},
+	{"exmdb_fts_max_body", "1M", CFG_SIZE},
+	{"exmdb_fts_nice", "10"},
 	{"exmdb_hosts_allow", ""}, /* ::1 default set later during startup */
 	{"exmdb_max_sqlite_spares", "3", CFG_SIZE},
 	{"exmdb_pf_read_per_user", "1"},
@@ -128,6 +132,9 @@ static bool exmdb_provider_reload(std::shared_ptr<config_file> gxcfg = nullptr,
 	g_exmdb_search_pacing = pconfig->get_ll("exmdb_search_pacing");
 	g_exmdb_search_yield = pconfig->get_ll("exmdb_search_yield");
 	g_exmdb_search_nice = pconfig->get_ll("exmdb_search_nice");
+	g_exmdb_fts = pconfig->get_ll("exmdb_fts");
+	g_exmdb_fts_max_body = pconfig->get_ll("exmdb_fts_max_body");
+	g_exmdb_fts_nice = pconfig->get_ll("exmdb_fts_nice");
 	g_exmdb_search_pacing_time = pconfig->get_ll("exmdb_search_pacing_time");
 	g_exmdb_max_sqlite_spares = pconfig->get_ll("exmdb_max_sqlite_spares");
 	g_sqlite_busy_timeout_ns = pconfig->get_ll("sqlite_busy_timeout");

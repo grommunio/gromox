@@ -3772,7 +3772,7 @@ struct mFindItemRequest {
 	std::optional<std::vector<tFieldOrder>> SortOrder;
 	//<xs:element name="SortOrder" type="t:NonEmptyArrayOfFieldOrdersType" minOccurs="0"/>
 	std::vector<sFolderId> ParentFolderIds;
-	//<xs:element name="QueryString" type="m:QueryStringType" minOccurs="0" maxOccurs="1"/>
+	std::optional<std::string> QueryString; /* AQS; attributes are ignored */
 	Enum::ItemQueryTraversalType Traversal; // Attribute
 };
 
