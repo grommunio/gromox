@@ -693,7 +693,7 @@ int main(int argc, char **argv) try
 		return EXIT_FAILURE;
 	}
 	textmaps_init();
-	if (g_username != nullptr && gi_setup_from_user(g_username) != EXIT_SUCCESS)
+	if (g_username != nullptr && gi_setup_by_user(g_username) != EXIT_SUCCESS)
 		return EXIT_FAILURE;
 	if (gi_startup_client() != EXIT_SUCCESS)
 		return EXIT_FAILURE;

@@ -1091,10 +1091,14 @@ static int do_item(unsigned int depth, const parent_desc &parent, libpff_item_t 
 	return 0;
 }
 
-static uint32_t az_nid_from_mst(libpff_item_t *item, proptag_t proptag)
+/**
+ * Inspect a mailstore property that contains an entryid and extract the
+ * object ID ("nodeid") from that.
+ */
+static uint32_t az_mst_to_nid(libpff_item_t &item, proptag_t proptag)
 {
 	libpff_record_entry_ptr rent;
-	if (az_item_get_propv(item, proptag, &~unique_tie(rent)) < 1)
+	if (az_item_get_propv(&item, proptag, &~unique_tie(rent)) < 1)
 		return 0;
 	char eid[24];
 	if (libpff_record_entry_get_data(rent.get(),
@@ -1123,19 +1127,19 @@ static void az_fmap_splice_mst(libpff_file_t *file)
 	libpff_item_ptr mst;
 	if (libpff_file_get_message_store(file, &~unique_tie(mst), nullptr) < 1)
 		return;
-	auto nid = az_nid_from_mst(mst.get(), PR_IPM_SUBTREE_ENTRYID);
+	auto nid = az_mst_to_nid(*mst, PR_IPM_SUBTREE_ENTRYID);
 	if (nid != 0)
 		g_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_IPMSUBTREE, "FID_IPMSUBTREE"});
-	nid = az_nid_from_mst(mst.get(), PR_IPM_OUTBOX_ENTRYID);
+	nid = az_mst_to_nid(*mst, PR_IPM_OUTBOX_ENTRYID);
 	if (nid != 0)
 		g_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_OUTBOX, "FID_OUTBOX"});
-	nid = az_nid_from_mst(mst.get(), PR_IPM_WASTEBASKET_ENTRYID);
+	nid = az_mst_to_nid(*mst, PR_IPM_WASTEBASKET_ENTRYID);
 	if (nid != 0)
 		g_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_DELETED_ITEMS, "FID_DELETED_ITEMS"});
-	nid = az_nid_from_mst(mst.get(), PR_IPM_SENTMAIL_ENTRYID);
+	nid = az_mst_to_nid(*mst, PR_IPM_SENTMAIL_ENTRYID);
 	if (nid != 0)
 		g_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_SENT_ITEMS, "FID_SENT_ITEMS"});
-	nid = az_nid_from_mst(mst.get(), PR_FINDER_ENTRYID);
+	nid = az_mst_to_nid(*mst, PR_FINDER_ENTRYID);
 	if (nid != 0)
 		g_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_FINDER, "FID_FINDER"});
 }

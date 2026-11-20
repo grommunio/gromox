@@ -84,9 +84,9 @@ struct driver final {
 	int open_by_user(const char *);
 	DB_RESULT query(const std::string_view &);
 	DB_RESULT lookup_by_mro(const char *);
-	uint32_t hid_from_eid(const BINARY &);
-	uint32_t hid_from_mst(kdb_item &, uint32_t);
-	uint32_t hid_from_ren(kdb_item &, unsigned int);
+	uint32_t eid_to_hid(const BINARY &);
+	uint32_t mst_to_hid(kdb_item &, uint32_t);
+	uint32_t ren_to_hid(kdb_item &, unsigned int);
 	std::unique_ptr<kdb_item> get_store_item();
 	std::unique_ptr<kdb_item> get_root_folder();
 	void fmap_setup_standard(const char *title);
@@ -738,7 +738,10 @@ DB_RESULT driver::query(const std::string_view &q)
 	return res;
 }
 
-uint32_t driver::hid_from_eid(const BINARY &eid)
+/***
+ * Inspect an entryid and extract the object ID ("hierarchyid") from that.
+ */
+uint32_t driver::eid_to_hid(const BINARY &eid)
 {
 	if (eid.cb == 0)
 		return 0;
@@ -752,22 +755,30 @@ uint32_t driver::hid_from_eid(const BINARY &eid)
 	return strtoul(row[0], nullptr, 0);
 }
 
-uint32_t driver::hid_from_mst(kdb_item &item, proptag_t proptag)
+/**
+ * Inspect a mailstore property that contains an entryid and extract the
+ * hierarchyid from that.
+ */
+uint32_t driver::mst_to_hid(kdb_item &item, proptag_t proptag)
 {
 	auto &props = item.get_props();
 	auto eid = props->get<BINARY>(proptag);
 	if (eid == nullptr)
 		return 0;
-	return hid_from_eid(*eid);
+	return eid_to_hid(*eid);
 }
 
-uint32_t driver::hid_from_ren(kdb_item &item, unsigned int idx)
+/**
+ * Inspect the REN_ENTRYIDS multi-value property at @idx and extract the
+ * hierarchyid from that.
+ */
+uint32_t driver::ren_to_hid(kdb_item &item, unsigned int idx)
 {
 	auto &props = item.get_props();
 	auto ba = props->get<BINARY_ARRAY>(PR_ADDITIONAL_REN_ENTRYIDS);
 	if (ba == nullptr || idx >= ba->count)
 		return 0;
-	return hid_from_eid(ba->pbin[idx]);
+	return eid_to_hid(ba->pbin[idx]);
 }
 
 void driver::fmap_setup_splice()
@@ -776,41 +787,41 @@ void driver::fmap_setup_splice()
 	auto store = get_store_item();
 	auto root = get_root_folder();
 	m_folder_map.emplace(root->m_hid, tgt_folder{false, PRIVATE_FID_ROOT, "FID_ROOT"});
-	auto nid = hid_from_mst(*store, PR_IPM_SUBTREE_ENTRYID);
+	auto nid = mst_to_hid(*store, PR_IPM_SUBTREE_ENTRYID);
 	if (nid != 0)
 		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_IPMSUBTREE, "FID_IPMSUBTREE"});
-	nid = hid_from_mst(*store, PR_IPM_OUTBOX_ENTRYID);
+	nid = mst_to_hid(*store, PR_IPM_OUTBOX_ENTRYID);
 	if (nid != 0)
 		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_OUTBOX, "FID_OUTBOX"});
-	nid = hid_from_mst(*store, PR_IPM_WASTEBASKET_ENTRYID);
+	nid = mst_to_hid(*store, PR_IPM_WASTEBASKET_ENTRYID);
 	if (nid != 0)
 		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_DELETED_ITEMS, "FID_DELETED_ITEMS"});
-	nid = hid_from_mst(*store, PR_IPM_SENTMAIL_ENTRYID);
+	nid = mst_to_hid(*store, PR_IPM_SENTMAIL_ENTRYID);
 	if (nid != 0)
 		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_SENT_ITEMS, "FID_SENT_ITEMS"});
-	nid = hid_from_mst(*store, PR_FINDER_ENTRYID);
+	nid = mst_to_hid(*store, PR_FINDER_ENTRYID);
 	if (nid != 0)
 		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_FINDER, "FID_FINDER"});
-	nid = hid_from_mst(*store, PR_SCHEDULE_FOLDER_ENTRYID);
+	nid = mst_to_hid(*store, PR_SCHEDULE_FOLDER_ENTRYID);
 	if (nid != 0)
 		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_SCHEDULE, "FID_SCHEDULE"});
 
-	nid = hid_from_mst(*root, PR_IPM_APPOINTMENT_ENTRYID);
+	nid = mst_to_hid(*root, PR_IPM_APPOINTMENT_ENTRYID);
 	if (nid != 0)
 		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_CALENDAR, "FID_CALENDAR"});
-	nid = hid_from_mst(*root, PR_IPM_CONTACT_ENTRYID);
+	nid = mst_to_hid(*root, PR_IPM_CONTACT_ENTRYID);
 	if (nid != 0)
 		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_CONTACTS, "FID_CONTACTS"});
-	nid = hid_from_mst(*root, PR_IPM_JOURNAL_ENTRYID);
+	nid = mst_to_hid(*root, PR_IPM_JOURNAL_ENTRYID);
 	if (nid != 0)
 		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_JOURNAL, "FID_JOURNAL"});
-	nid = hid_from_mst(*root, PR_IPM_NOTE_ENTRYID);
+	nid = mst_to_hid(*root, PR_IPM_NOTE_ENTRYID);
 	if (nid != 0)
 		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_NOTES, "FID_NOTES"});
-	nid = hid_from_mst(*root, PR_IPM_TASK_ENTRYID);
+	nid = mst_to_hid(*root, PR_IPM_TASK_ENTRYID);
 	if (nid != 0)
 		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_TASKS, "FID_TASKS"});
-	nid = hid_from_mst(*root, PR_IPM_DRAFTS_ENTRYID);
+	nid = mst_to_hid(*root, PR_IPM_DRAFTS_ENTRYID);
 	if (nid != 0)
 		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_DRAFT, "FID_DRAFT"});
 
@@ -821,19 +832,19 @@ void driver::fmap_setup_splice()
 	 * as regular folders rather than the special folder.)
 	 * Skeletor returns next week with more useful hints.
 	 */
-	nid = hid_from_ren(*root, sfConflicts);
+	nid = ren_to_hid(*root, sfConflicts);
 	if (nid != 0)
 		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_CONFLICTS, "FID_CONFLICTS"});
-	nid = hid_from_ren(*root, sfSyncFailures);
+	nid = ren_to_hid(*root, sfSyncFailures);
 	if (nid != 0)
 		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_SYNC_ISSUES, "FID_SYNC_ISSUES"});
-	nid = hid_from_ren(*root, sfLocalFailures);
+	nid = ren_to_hid(*root, sfLocalFailures);
 	if (nid != 0)
 		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_LOCAL_FAILURES, "FID_LOCAL_FAIL"});
-	nid = hid_from_ren(*root, sfServerFailures);
+	nid = ren_to_hid(*root, sfServerFailures);
 	if (nid != 0)
 		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_SERVER_FAILURES, "FID_SERVER_FAIL"});
-	nid = hid_from_ren(*root, sfJunkEmail);
+	nid = ren_to_hid(*root, sfJunkEmail);
 	if (nid != 0)
 		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_JUNK, "FID_JUNK"});
 
@@ -867,13 +878,13 @@ void driver::fmap_setup_splice_public()
 	auto store = get_store_item();
 	auto root = get_root_folder();
 	m_folder_map.emplace(root->m_hid, tgt_folder{false, PUBLIC_FID_ROOT, "FID_ROOT"});
-	auto nid = hid_from_mst(*store, PR_IPM_SUBTREE_ENTRYID);
+	auto nid = mst_to_hid(*store, PR_IPM_SUBTREE_ENTRYID);
 	if (nid != 0)
 		m_folder_map.emplace(nid, tgt_folder{false, PUBLIC_FID_IPMSUBTREE, "FID_IPM"});
-	nid = hid_from_mst(*store, PR_NON_IPM_SUBTREE_ENTRYID);
+	nid = mst_to_hid(*store, PR_NON_IPM_SUBTREE_ENTRYID);
 	if (nid != 0)
 		m_folder_map.emplace(nid, tgt_folder{false, PUBLIC_FID_NONIPMSUBTREE, "FID_NONIPM"});
-	nid = hid_from_mst(*store, PR_EFORMS_REGISTRY_ENTRYID);
+	nid = mst_to_hid(*store, PR_EFORMS_REGISTRY_ENTRYID);
 	if (nid != 0)
 		m_folder_map.emplace(nid, tgt_folder{false, PUBLIC_FID_EFORMSREGISTRY, "FID_EFORMS"});
 }

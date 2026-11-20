@@ -86,8 +86,8 @@ extern void gi_name_map_write(const gi_name_map &);
 extern gromox::propid_t gi_resolve_namedprop(const PROPERTY_XNAME &);
 extern int exm_set_change_keys(TPROPVAL_ARRAY *props, eid_t cn, const BINARY *oldpcl = nullptr);
 extern int exm_permissions(eid_t, const std::vector<PERMISSION_DATA> &);
-extern int gi_setup_from_user(const char *);
-extern int gi_setup_from_dir(const char *);
+extern int gi_setup_by_user(const char *);
+extern int gi_setup_by_dir(const char *);
 extern int gi_startup_client(unsigned int maxconn = 1);
 extern eid_t gi_lookup_eid_by_name(const char *dir, const char *name);
 extern eid_t gi_lookup_eid_any_way(const char *dir, const char *name); /* also accepts numeric folder ID */

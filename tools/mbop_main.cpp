@@ -476,10 +476,10 @@ static int single_user_wrap(int argc, char **argv)
 	}
 
 	if (g_arg_username != nullptr) {
-		if (gi_setup_from_user(g_arg_username) != EXIT_SUCCESS)
+		if (gi_setup_by_user(g_arg_username) != EXIT_SUCCESS)
 			return EXIT_FAILURE;
 	} else if (g_arg_userdir != nullptr) {
-		if (gi_setup_from_dir(g_arg_userdir) != EXIT_SUCCESS)
+		if (gi_setup_by_dir(g_arg_userdir) != EXIT_SUCCESS)
 			return EXIT_FAILURE;
 	}
 
