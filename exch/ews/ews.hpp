@@ -320,6 +320,7 @@ class EWSContext {
 	TAGGED_PROPVAL getFolderEntryId(const std::string&, uint64_t) const;
 	template<typename T> const T *getFolderProp(const std::string &, uint64_t, proptag_t) const;
 	TPROPVAL_ARRAY getFolderProps(const std::string&, uint64_t, proptag_cspan) const;
+	void addEventChangeKeys(const std::string &, const GUID &, std::list<Structures::sNotificationEvent> &) const;
 	std::pair<std::list<Structures::sNotificationEvent>, bool> getEvents(const Structures::tSubscriptionId&) const;
 	TAGGED_PROPVAL getFolderEntryId(const Structures::sFolderSpec&) const;
 	TPROPVAL_ARRAY getFolderProps(const Structures::sFolderSpec&, const PROPTAG_ARRAY&) const;
