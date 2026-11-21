@@ -408,13 +408,13 @@ MhNspPlugin::ProcRes MhNspPlugin::loadCookies(MhNspContext& ctx)
 	if (pparser.add(ctx.orig.f_cookie) != ecSuccess)
 		return ctx.error_responsecode(resp_code::enomem);
 	auto string = pparser["sid"];
-	if (string == nullptr || strlen(string) >= std::size(ctx.session_string))
+	if (string == nullptr || string->size() >= std::size(ctx.session_string))
 		return ctx.error_responsecode(resp_code::invalid_ctx_cookie);
-	gx_strlcpy(ctx.session_string, string, std::size(ctx.session_string));
+	gx_strlcpy(ctx.session_string, string->c_str(), std::size(ctx.session_string));
 	if (strcasecmp(ctx.request_value, "PING") != 0 &&
 	    strcasecmp(ctx.request_value, "Unbind") != 0) {
 		string = pparser["sequence"];
-		if (string == nullptr || !ctx.sequence_guid.from_str(string))
+		if (string == nullptr || !ctx.sequence_guid.from_str(string->c_str()))
 			return ctx.error_responsecode(resp_code::invalid_ctx_cookie);
 	}
 

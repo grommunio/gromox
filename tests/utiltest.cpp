@@ -42,19 +42,19 @@ static int t_cookie_jar()
 	jar.add("a=1+; b=\"1+\"; d=1\"2\"3; e=%40+%4@%41%4; f= space ; g+ =5; g+ =6; Secure;");
 	assert(jar.size() == 7);
 	auto val = jar["a"];
-	assert(val != nullptr && strcmp(val, "1+") == 0);
+	assert(val != nullptr && *val == "1+");
 	val = jar["b"];
-	assert(val != nullptr && strcmp(val, "1+") == 0);
+	assert(val != nullptr && *val == "1+");
 	val = jar["d"];
-	assert(val != nullptr && (strcmp(val, "1") == 0 || strcmp(val, "123") == 0 || strcmp(val, "1\"2\"3") == 0));
+	assert(val != nullptr && (*val == "1" || *val == "123" || *val == "1\"2\"3"));
 	val = jar["e"];
-	assert(val != nullptr && strcmp(val, "\x40+\x41") == 0);
+	assert(val != nullptr && *val == "\x40+\x41");
 	val = jar["f"];
-	assert(val != nullptr && strstr(val, "space") != nullptr);
+	assert(val != nullptr && strstr(val->c_str(), "space") != nullptr);
 	val = jar["g+"];
 	if (val == nullptr)
 		val = jar["g+ "];
-	assert(val != nullptr && strcmp(val, "6") == 0);
+	assert(val != nullptr && *val == "6");
 	assert(jar["Secure"] != nullptr);
 	return EXIT_SUCCESS;
 }

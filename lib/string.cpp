@@ -1237,10 +1237,10 @@ ec_error_t cookie_jar::add(std::string_view sv) try
 	return ecServerOOM;
 }
 
-const char *cookie_jar::operator[](const char *name) const
+const std::string *cookie_jar::operator[](const char *name) const
 {
 	auto i = map::find(name);
-	return i != cend() ? i->second.c_str() : nullptr;
+	return i != cend() ? &i->second : nullptr;
 }
 
 std::vector<std::string> gx_split(std::string_view sv, char sep)
