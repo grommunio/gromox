@@ -396,7 +396,7 @@ static bool authmgr_reload()
 	auto pfile = config_file_initd("gromox.cfg", get_config_path(),
 	             authmgr_cfg_defaults);
 	if (pfile == nullptr) {
-		mlog(LV_ERR, "authmgr: confing_file_initd authmgr.cfg: %s",
+		mlog(LV_ERR, "authmgr: confing_file_initd gromox.cfg: %s",
 		        strerror(errno));
 		return false;
 	}
