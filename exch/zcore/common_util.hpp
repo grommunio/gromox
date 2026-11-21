@@ -104,7 +104,7 @@ BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid);
 extern BINARY *common_util_guid_to_binary(FLATUID);
 BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	const BINARY *pchange_key);
-extern void common_util_notify_receipt(const char *username, int type, message_content *brief);
+extern void common_util_notify_receipt(const char *username, int type, const message_content &brief);
 BOOL common_util_convert_from_zrule(const store_object &, TPROPVAL_ARRAY *);
 BOOL common_util_load_file(const char *path, BINARY *pbin);
 extern bool cu_convert_to_zrule_data(store_object &, TPROPVAL_ARRAY *);

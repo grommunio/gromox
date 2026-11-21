@@ -6694,7 +6694,7 @@ void EWSContext::notifyReadReceipt(const std::string &dir,
 	std::vector<std::string> rcpt_list = {str};
 	vmime::shared_ptr<vmime::message> imail;
 	if (!exch_bouncer_make(mysql_adaptor_get_user_displayname,
-	    mysql_adaptor_meta, m_auth_info.username, pbrief,
+	    mysql_adaptor_meta, m_auth_info.username, *pbrief,
 	    "notify_read", imail))
 		return;
 	auto ret = cu_send_vmail(std::move(imail), m_plugin.smtp_url.c_str(),

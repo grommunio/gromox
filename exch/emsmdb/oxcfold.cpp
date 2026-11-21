@@ -761,7 +761,7 @@ static ec_error_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
 		ids.emplace_back(msgid);
 		if (pbrief != nullptr)
 			common_util_notify_receipt(dir,
-				NOTIFY_RECEIPT_NON_READ, pbrief);
+				NOTIFY_RECEIPT_NON_READ, *pbrief);
 	}
 	if (!exmdb_client->delete_messages(dir, pinfo->cpid, username,
 	    pfolder->folder_id, ids, b_hard, &b_partial1))

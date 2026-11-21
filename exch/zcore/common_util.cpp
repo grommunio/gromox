@@ -1319,9 +1319,9 @@ ec_error_t cu_send_message(store_object &store, message_object &msg,
 }
 
 void common_util_notify_receipt(const char *username, int type,
-    MESSAGE_CONTENT *pbrief) try
+    const message_content &brief) try
 {
-	auto str = pbrief->proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
+	auto str = brief.proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 	if (str == nullptr)
 		return;
 	std::vector<std::string> rcpt_list = {str};
@@ -1329,7 +1329,7 @@ void common_util_notify_receipt(const char *username, int type,
 	                   "notify_read" : "notify_non_read";
 	vmime::shared_ptr<vmime::message> imail;
 	if (!exch_bouncer_make(mysql_adaptor_get_user_displayname,
-	    mysql_adaptor_meta, username, pbrief, bounce_type, imail))
+	    mysql_adaptor_meta, username, brief, bounce_type, imail))
 		return;
 	imail->getHeader()->getField("X-Mailer")->setValue(vmime::text(ZCORE_UA));
 	auto ret = cu_send_vmail(std::move(imail), g_smtp_url.c_str(),

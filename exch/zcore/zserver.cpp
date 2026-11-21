@@ -1727,7 +1727,7 @@ ec_error_t zs_deletemessages(GUID hsession, uint32_t hfolder,
 		ids1.pids[ids1.count++] = i_eid;
 		if (pbrief != nullptr)
 			common_util_notify_receipt(pstore->get_account(),
-				NOTIFY_RECEIPT_NON_READ, pbrief);
+				NOTIFY_RECEIPT_NON_READ, *pbrief);
 	}
 	return exmdb_client->delete_messages(pstore->get_dir(), pinfo->cpid,
 	       username, pfolder->folder_id, ids1, b_hard, &b_partial) ?
@@ -1985,7 +1985,7 @@ ec_error_t zs_setreadflags(GUID hsession, uint32_t hfolder,
 			return ecRpcFailed;
 		if (pbrief != nullptr)
 			common_util_notify_receipt(pstore->get_account(),
-				NOTIFY_RECEIPT_READ, pbrief);
+				NOTIFY_RECEIPT_READ, *pbrief);
 		propvals.count = 2;
 		propvals.ppropval = propval_buff;
 		propval_buff[0].proptag = PR_READ_RECEIPT_REQUESTED;
