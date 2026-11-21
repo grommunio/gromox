@@ -962,7 +962,6 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 		            PRIVATE_FID_ROOT : PUBLIC_FID_ROOT);
 		message_id = eid_t(0);
 	} else {
-		eid_t eid{};
 		std::string essdn_s;
 		int account_id = 0;
 		BOOL b_private = TRUE;
