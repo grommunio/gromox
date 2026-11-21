@@ -1114,7 +1114,7 @@ ec_error_t message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 		    pmessage->message_id, &pbrief))
 			return ecRpcFailed;
 		if (pbrief != nullptr)
-			common_util_notify_receipt(pmessage->pstore->get_account(),
+			common_util_notify_receipt(*pmessage->pstore,
 				NOTIFY_RECEIPT_READ, *pbrief);
 		propvals.count = 2;
 		propvals.ppropval = propval_buff;

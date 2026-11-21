@@ -126,7 +126,7 @@ BOOL common_util_convert_tagged_propval(
 	BOOL to_unicode, TAGGED_PROPVAL *ppropval);
 BOOL common_util_convert_restriction(BOOL to_unicode, RESTRICTION *pres);
 BOOL common_util_convert_rule_actions(BOOL to_unicode, RULE_ACTIONS *pactions);
-extern void common_util_notify_receipt(const char *username, int type, const message_content &brief);
+extern void common_util_notify_receipt(logon_object &, unsigned int type, const message_content &brief);
 extern ec_error_t ems_send_vmail(vmime::shared_ptr<vmime::message>, const char *sender, const std::vector<std::string> &rcpts);
 extern ec_error_t cu_send_message(logon_object &, message_object &, const char *actor, const char *delegator, gromox::repr_grant);
 extern bool bounce_producer_make(bool (*)(const char *, char *, size_t), bool (*)(const char *, char *, size_t), bool (*)(const char *, char *, size_t), const char *user, message_content *, const char *bounce_type, MAIL *);

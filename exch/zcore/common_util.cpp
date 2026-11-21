@@ -1318,9 +1318,10 @@ ec_error_t cu_send_message(store_object &store, message_object &msg,
 	return ecServerOOM;
 }
 
-void common_util_notify_receipt(const char *username, int type,
+void common_util_notify_receipt(store_object &store, unsigned int type,
     const message_content &brief) try
 {
+	auto username = store.get_account();
 	auto str = brief.proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 	if (str == nullptr)
 		return;

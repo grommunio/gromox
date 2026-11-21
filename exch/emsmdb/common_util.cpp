@@ -1324,9 +1324,10 @@ ec_error_t ems_send_vmail(vmime::shared_ptr<vmime::message> m,
 	return cu_send_vmail(std::move(m), g_smtp_url.c_str(), sender, rcpts);
 }
 
-void common_util_notify_receipt(const char *username, int type,
+void common_util_notify_receipt(logon_object &logon, unsigned int type,
     const message_content &brief) try
 {
+	auto username = logon.get_account();
 	auto str = brief.proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 	if (str == nullptr)
 		return;

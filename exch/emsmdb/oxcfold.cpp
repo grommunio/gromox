@@ -760,7 +760,7 @@ static ec_error_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
 		}
 		ids.emplace_back(msgid);
 		if (pbrief != nullptr)
-			common_util_notify_receipt(dir,
+			common_util_notify_receipt(*plogon,
 				NOTIFY_RECEIPT_NON_READ, *pbrief);
 	}
 	if (!exmdb_client->delete_messages(dir, pinfo->cpid, username,
