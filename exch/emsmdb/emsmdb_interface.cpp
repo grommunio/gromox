@@ -116,7 +116,7 @@ static void emsmdb_report_one_ses(emsmdb_session &h, report_stats &st)
 		auto li = ei.logmap.p[i].get();
 		if (li == nullptr)
 			continue;
-		auto root = li->root.get();
+		auto root = li->m_root.get();
 		if (root == nullptr || root->type != ems_objtype::logon) {
 			mlog(LV_INFO, "%5u  null", i);
 			continue;

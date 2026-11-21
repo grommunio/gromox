@@ -183,7 +183,7 @@ int32_t LOGON_ITEM::add_object_handle(int32_t parent_handle,
 {
 	auto plogitem = this;
 	auto eiuser = username.c_str();
-	auto root = plogitem->root.get();
+	auto root = plogitem->m_root.get();
 	const char *target = "";
 	if (root != nullptr && root->type == ems_objtype::logon) {
 		auto lo = static_cast<logon_object *>(root->pobject);
@@ -199,7 +199,7 @@ int32_t LOGON_ITEM::add_object_handle(int32_t parent_handle,
 
 	std::shared_ptr<object_node> parent;
 	if (parent_handle < 0) {
-		if (plogitem->root != nullptr) {
+		if (plogitem->m_root != nullptr) {
 			mlog(LV_ERR, "E-2356: \"%s\" on \"%s\": duplicate root object", eiuser, target);
 			return -EEXIST;
 		}
@@ -221,7 +221,7 @@ int32_t LOGON_ITEM::add_object_handle(int32_t parent_handle,
 	if (!xp.second)
 		return -ENOMEM;
 	if (parent == nullptr)
-		plogitem->root = pobjnode;
+		plogitem->m_root = pobjnode;
 	else if (g_emsmdb_full_parenting || object_dep(parent->type, pobjnode->type))
 		pobjnode->parent = std::move(parent);
 	if (pobjnode->type == ems_objtype::icsupctx) {
@@ -249,8 +249,8 @@ void *LOGON_ITEM::get_object(uint32_t obj_handle, ems_objtype *ptype)
 	if (obj_handle >= INT32_MAX)
 		return NULL;
 	auto plogitem = this;
-	if (g_rop_debug >= 1 && plogitem->root != nullptr) {
-		auto lo = static_cast<logon_object *>(plogitem->root->pobject);
+	if (g_rop_debug >= 1 && plogitem->m_root != nullptr) {
+		auto lo = static_cast<logon_object *>(plogitem->m_root->pobject);
 		if (lo != nullptr)
 			g_last_rop_dir = lo->get_dir();
 	}
@@ -276,7 +276,7 @@ void LOGON_ITEM::release_object_handle(uint32_t obj_handle)
 		return;
 	auto plogitem = this;
 	if (g_rop_debug > 0) {
-		auto root = plogitem->root;
+		auto root = plogitem->m_root;
 		if (root != nullptr) {
 			auto obj = static_cast<logon_object *>(root->pobject);
 			/* obj->dir may go away with .erase */
@@ -307,7 +307,7 @@ void LOGMAP::release_object_handle(uint8_t logon_id, uint32_t obj_handle)
 logon_object *LOGON_ITEM::get_logon_object()
 {
 	auto plogitem = this;
-	auto proot = plogitem->root;
+	auto proot = plogitem->m_root;
 	if (proot == nullptr)
 		return nullptr;
 	auto obj = static_cast<logon_object *>(proot->pobject);

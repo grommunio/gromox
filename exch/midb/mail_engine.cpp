@@ -1403,8 +1403,8 @@ static bool me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
 		std::string emlcontent;
 		try {
 			emlcontent = vmail_to_string(*imail);
-		} catch (const vmime::exception &e) {
-			mlog(LV_ERR, "E-1771: vmail_to_string failed: %s", e.what());
+		} catch (const vmime::exception &exc) {
+			mlog(LV_ERR, "E-1771: vmail_to_string failed: %s", exc.what());
 			return false;
 		}
 		vmime::message vparsed;

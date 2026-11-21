@@ -1350,14 +1350,14 @@ static ec_error_t rx_fwd_body(const message_content &orig, const char *lang,
 		auto cset = cpid != nullptr && *cpid != CP_UTF8 ?
 		            cpid_to_cset(static_cast<cpid_t>(*cpid)) : nullptr;
 		if (cset != nullptr && !s.empty()) {
-			auto conv = iconvtext(s, cset, "UTF-8");
-			if (conv.empty()) {
+			auto sconv = iconvtext(s, cset, "UTF-8");
+			if (sconv.empty()) {
 				/* Charset unknown to iconv, pass the HTML on unchanged */
 				if ((err = out.set(PR_HTML, html)) != ecSuccess)
 					return err;
 				return out.set(PR_INTERNET_CPID, cpid);
 			}
-			s = std::move(conv);
+			s = std::move(sconv);
 		}
 		if ((err = quote_html(hdr, s)) != ecSuccess)
 			return err;

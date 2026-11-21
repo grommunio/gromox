@@ -32,7 +32,7 @@ class LOGON_ITEM {
 	void *get_object(uint32_t obj_handle, ems_objtype *);
 
 	std::unordered_map<uint32_t, std::shared_ptr<object_node>> phash;
-	std::shared_ptr<object_node> root;
+	std::shared_ptr<object_node> m_root;
 	std::string username;
 };
 

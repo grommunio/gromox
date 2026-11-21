@@ -1142,11 +1142,11 @@ void sCalendarMeetingRequestCommon::update(const sShape &shape)
 				std::vector<tOccurrenceInfoType> modOccs;
 				std::vector<tDeletedOccurrenceInfoType> delOccs;
 				std::chrono::seconds tz_offset{0};
-				auto sp = shape.get<uint64_t>(PR_START_DATE);
-				if (!sp)
-					sp = shape.get<uint64_t>(NtCommonStart);
-				if (sp) {
-					auto su = rop_util_nttime_to_unix(*sp);
+				auto sp2 = shape.get<uint64_t>(PR_START_DATE);
+				if (!sp2)
+					sp2 = shape.get<uint64_t>(NtCommonStart);
+				if (sp2) {
+					auto su = rop_util_nttime_to_unix(*sp2);
 					auto sl = rop_util_rtime_to_unix(apprecurr.recur_pat.startdate + apprecurr.starttimeoffset);
 					tz_offset = std::chrono::seconds(su - sl);
 				}
@@ -1898,19 +1898,19 @@ void sShape::properties(const TPROPVAL_ARRAY& properties)
  */
 void sShape::deriveSmtp()
 {
-	static constexpr proptag_t tags[][3] = {
+	static constexpr proptag_t atags[][3] = {
 		{PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS, PR_SENDER_SMTP_ADDRESS},
 		{PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_EMAIL_ADDRESS, PR_SENT_REPRESENTING_SMTP_ADDRESS},
 		{PR_RECEIVED_BY_ADDRTYPE, PR_RECEIVED_BY_EMAIL_ADDRESS, PR_RECEIVED_BY_SMTP_ADDRESS},
 		{PR_RCVD_REPRESENTING_ADDRTYPE, PR_RCVD_REPRESENTING_EMAIL_ADDRESS, PR_RCVD_REPRESENTING_SMTP_ADDRESS},
 	};
-	static_assert(std::size(tags) == std::extent_v<decltype(smtpProps)>);
-	for (size_t i = 0; i < std::size(tags); ++i) {
-		auto it = props.find(tags[i][2]);
+	static_assert(std::size(atags) == std::extent_v<decltype(smtpProps)>);
+	for (size_t i = 0; i < std::size(atags); ++i) {
+		auto it = props.find(atags[i][2]);
 		if (it == props.end() || it->second.prop != nullptr)
 			continue;
-		auto type = get<char>(tags[i][0], FL_ANY);
-		auto addr = get<char>(tags[i][1], FL_ANY);
+		auto type = get<char>(atags[i][0], FL_ANY);
+		auto addr = get<char>(atags[i][1], FL_ANY);
 		if (type == nullptr || addr == nullptr || strcasecmp(type, "EX") != 0)
 			continue;
 		const char *smtp = nullptr;
@@ -1933,7 +1933,7 @@ void sShape::deriveSmtp()
 			smtp = get<char>(PR_SENDER_SMTP_ADDRESS, FL_ANY);
 		if (smtp == nullptr)
 			continue;
-		smtpProps[i] = TAGGED_PROPVAL{tags[i][2], deconst(smtp)};
+		smtpProps[i] = TAGGED_PROPVAL{atags[i][2], deconst(smtp)};
 		it->second.prop = &smtpProps[i];
 	}
 }
