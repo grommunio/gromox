@@ -479,6 +479,96 @@ static int nth_matching_mday(int year, int month, unsigned int order,
 	return 0;
 }
 
+using occdate_callback = std::function<bool(uint32_t)>;
+
+static bool walk_occdates_visit(const APPOINTMENT_RECUR_PAT &apr,
+    const occdate_callback &cb, uint32_t date, uint32_t last, bool all)
+{
+	if (date > last)
+		return true;
+	if (!all && isTrulyDeleted(apr, date))
+		return false;
+	return cb(date);
+}
+
+static void walk_occdates_week(const APPOINTMENT_RECUR_PAT &apr,
+    const occdate_callback &cb, unsigned int count, unsigned int last, bool all)
+{
+	auto &rp = apr.recur_pat;
+	auto start_unix = rop_util_rtime_to_unix(rp.startdate);
+	struct tm tm;
+
+	if ((rp.pts.weekrecur & 0x7f) == 0 || gmtime_r(&start_unix, &tm) == nullptr)
+		return;
+
+	int start_wday = tm.tm_wday;
+	int days_back = (start_wday - static_cast<int>(rp.firstdow) + 7) % 7;
+	uint32_t week_start = rp.startdate - days_back * 1440;
+	uint32_t raw = 0;
+	for (uint32_t week = week_start; raw < count; week += rp.period * 7 * 1440) {
+		for (int d = 0; d < 7 && raw < count; ++d) {
+			int wday = (rp.firstdow + d) % 7;
+			uint32_t date = week + d * 1440;
+			if (date < rp.startdate)
+				continue;
+			if (!(rp.pts.weekrecur & (1 << wday)))
+				continue;
+			++raw;
+			if (walk_occdates_visit(apr, cb, date, last, all))
+				return;
+		}
+	}
+}
+
+static void walk_occdates_month(const APPOINTMENT_RECUR_PAT &apr,
+    const occdate_callback &cb, unsigned int count, unsigned int last, bool all)
+{
+	auto &rp = apr.recur_pat;
+	/* Hijri patterns are expanded as Gregorian, as freebusy does */
+	bool nth = rp.patterntype == rptMonthNth ||
+	           rp.patterntype == rptHjMonthNth;
+	const auto &mn = rp.pts.monthnth;
+	auto start_unix = rop_util_rtime_to_unix(rp.startdate);
+	struct tm tm;
+	if (rp.period == 0 || rp.period > 99 * 12 ||
+	    gmtime_r(&start_unix, &tm) == nullptr ||
+	    (nth && (mn.recurnum < 1 || mn.recurnum > 5 ||
+	    (mn.weekrecur & 0x7f) == 0)))
+		return;
+
+	int year = tm.tm_year + 1900, month = tm.tm_mon + 1;
+	if (rp.period % 12 == 0) {
+		/* yearly: the month is in FirstDateTime (MS-OXOCAL) */
+		ical_time it;
+		ical_get_itime_from_yearday(1601,
+			rp.firstdatetime / 1440 + 1, &it);
+		if (it.month >= 1 && it.month <= 12)
+			month = it.month;
+	}
+
+	for (uint32_t raw = 0; raw < count; month += rp.period) {
+		while (month > 12) {
+			month -= 12;
+			++year;
+		}
+		struct tm occ = {};
+		occ.tm_year = year - 1900;
+		occ.tm_mon  = month - 1;
+		if (nth)
+			occ.tm_mday = nth_matching_mday(year, month,
+			              mn.recurnum, mn.weekrecur);
+		else
+			occ.tm_mday = std::min<int>(rp.pts.dayofmonth,
+			              ical_get_monthdays(year, month));
+		auto date = rop_util_unix_to_rtime(timegm(&occ));
+		if (date < rp.startdate)
+			continue;
+		++raw;
+		if (walk_occdates_visit(apr, cb, date, last, all))
+			return;
+	}
+}
+
 /**
  * @brief      Enumerate the visible occurrence dates of a recurrence pattern
  *
@@ -498,101 +588,32 @@ static int nth_matching_mday(int year, int month, unsigned int order,
  * @param      all    Include deleted occurrences
  */
 static void walkOccurrenceDates(const APPOINTMENT_RECUR_PAT &apr,
-    const std::function<bool(uint32_t)> &cb, bool all = false)
+    const occdate_callback &cb, bool all = false)
 {
 	auto &rp = apr.recur_pat;
 	auto bycount = rp.endtype == IDC_RCEV_PAT_ERB_AFTERNOCCUR;
 	uint32_t count = bycount ? rp.occurrencecount : UINT32_MAX;
 	uint32_t last = bycount ? UINT32_MAX :
 	                rp.endtype == IDC_RCEV_PAT_ERB_END ? rp.enddate : ENDDATE_MISSING;
-	auto visit = [&](uint32_t date) -> bool {
-		if (date > last)
-			return true;
-		if (!all && isTrulyDeleted(apr, date))
-			return false;
-		return cb(date);
-	};
-
 	switch (rp.patterntype) {
 	case rptMinute:
 		/* Daily: period is in minutes (day count * 1440) */
 		for (uint32_t i = 0; i < count; ++i)
-			if (visit(rp.startdate + i * rp.period))
+			if (walk_occdates_visit(apr, cb,
+			    rp.startdate + i * rp.period, last, all))
 				return;
 		break;
-	case rptWeek: {
-		auto start_unix = rop_util_rtime_to_unix(rp.startdate);
-		struct tm tm;
-		if ((rp.pts.weekrecur & 0x7f) == 0 || gmtime_r(&start_unix, &tm) == nullptr)
-			break;
-		int start_wday = tm.tm_wday;
-		int days_back = (start_wday - static_cast<int>(rp.firstdow) + 7) % 7;
-		uint32_t week_start = rp.startdate - days_back * 1440;
-		uint32_t raw = 0;
-		for (uint32_t week = week_start; raw < count; week += rp.period * 7 * 1440) {
-			for (int d = 0; d < 7 && raw < count; ++d) {
-				int wday = (rp.firstdow + d) % 7;
-				uint32_t date = week + d * 1440;
-				if (date < rp.startdate)
-					continue;
-				if (!(rp.pts.weekrecur & (1 << wday)))
-					continue;
-				++raw;
-				if (visit(date))
-					return;
-			}
-		}
+	case rptWeek:
+		walk_occdates_week(apr, cb, count, last, all);
 		break;
-	}
 	case rptMonth:
 	case rptMonthEnd:
 	case rptMonthNth:
 	case rptHjMonth:
 	case rptHjMonthEnd:
-	case rptHjMonthNth: {
-		/* Hijri patterns are expanded as Gregorian, as freebusy does */
-		bool nth = rp.patterntype == rptMonthNth ||
-		           rp.patterntype == rptHjMonthNth;
-		const auto &mn = rp.pts.monthnth;
-		auto start_unix = rop_util_rtime_to_unix(rp.startdate);
-		struct tm tm;
-		if (rp.period == 0 || rp.period > 99 * 12 ||
-		    gmtime_r(&start_unix, &tm) == nullptr ||
-		    (nth && (mn.recurnum < 1 || mn.recurnum > 5 ||
-		    (mn.weekrecur & 0x7f) == 0)))
-			break;
-		int year = tm.tm_year + 1900, month = tm.tm_mon + 1;
-		if (rp.period % 12 == 0) {
-			/* yearly: the month is in FirstDateTime (MS-OXOCAL) */
-			ical_time it;
-			ical_get_itime_from_yearday(1601,
-				rp.firstdatetime / 1440 + 1, &it);
-			if (it.month >= 1 && it.month <= 12)
-				month = it.month;
-		}
-		for (uint32_t raw = 0; raw < count; month += rp.period) {
-			while (month > 12) {
-				month -= 12;
-				++year;
-			}
-			struct tm occ = {};
-			occ.tm_year = year - 1900;
-			occ.tm_mon  = month - 1;
-			if (nth)
-				occ.tm_mday = nth_matching_mday(year, month,
-				              mn.recurnum, mn.weekrecur);
-			else
-				occ.tm_mday = std::min<int>(rp.pts.dayofmonth,
-				              ical_get_monthdays(year, month));
-			auto date = rop_util_unix_to_rtime(timegm(&occ));
-			if (date < rp.startdate)
-				continue;
-			++raw;
-			if (visit(date))
-				return;
-		}
+	case rptHjMonthNth:
+		walk_occdates_month(apr, cb, count, last, all);
 		break;
-	}
 	}
 }
 
