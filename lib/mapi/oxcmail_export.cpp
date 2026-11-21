@@ -1066,7 +1066,7 @@ ec_error_t oxcmail_converter::export_attachment(const attachment_content &atc,
 	auto bv = atc.proplist.get<const BINARY>(PR_ATTACH_DATA_BIN);
 	if (bv != nullptr) {
 		vpart.getBody()->setContents(
-			vmime::make_shared<vmime::stringContentHandler>(std::string(bv->pc, bv->cb)),
+			vmime::make_shared<vmime::stringContentHandler>(std::string(*bv)),
 			mtype);
 		vpart.getBody()->setEncoding(vmime::encoding(vmime::encodingTypes::BASE64));
 	} else {
@@ -1274,9 +1274,9 @@ ec_error_t oxcmail_converter::do_export(const message_content &mct,
 		if (bin == nullptr)
 			return ecSuccess;
 		if (skel.mail_type != oxcmail_type::encrypted)
-			return omv_smime_signed_fold(*pmime, std::string(bin->pc, bin->cb));
+			return omv_smime_signed_fold(*pmime, std::string(*bin));
 		pmime->getBody()->setContents(
-			vmime::make_shared<vmime::stringContentHandler>(std::string(bin->pc, bin->cb)),
+			vmime::make_shared<vmime::stringContentHandler>(std::string(*bin)),
 			mt_pkcs);
 		pmime->getBody()->setEncoding(vmime::encoding(vmime::encodingTypes::BASE64));
 		return ecSuccess;
@@ -1300,7 +1300,7 @@ ec_error_t oxcmail_converter::do_export(const message_content &mct,
 			return ecError;
 		auto cl_0 = HX::make_scope_exit([&]() { rop_util_free_binary(bin); });
 		pmime->getBody()->setContents(
-			vmime::make_shared<vmime::stringContentHandler>(std::string(bin->pc, bin->cb)),
+			vmime::make_shared<vmime::stringContentHandler>(std::string(*bin)),
 			vmime::mediaType(vmime::mediaTypes::APPLICATION, "ms-tnef"));
 		pmime->getBody()->setEncoding(vmime::encoding(vmime::encodingTypes::BASE64));
 		auto hdr = pmime->getHeader();

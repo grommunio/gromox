@@ -3118,7 +3118,7 @@ static BOOL cu_set_object_cid_value(sqlite3 *psqlite, mapi_object_type table_typ
 		return FALSE;
 	auto bv = static_cast<BINARY *>(ppropval->pvalue);
 	std::string cid, path;
-	if (cu_cid_writeout(dir, std::string_view(bv->pc, bv->cb), cid, path) != 0)
+	if (cu_cid_writeout(dir, *bv, cid, path) != 0)
 		return false;
 	if (!cu_update_object_cid(psqlite, table_type, message_id,
 	    ppropval->proptag, cid))

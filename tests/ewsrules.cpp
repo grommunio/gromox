@@ -259,8 +259,7 @@ class test_env final : public Env {
 	bool folder_ref(const MOVECOPY_ACTION &mc, FolderRef &f, bool &trash) override
 	{
 		if (!mc.same_store) {
-			auto b = static_cast<const BINARY *>(mc.pfolder_eid);
-			f.id.assign(b->pc, b->cb);
+			f.id = *static_cast<const BINARY *>(mc.pfolder_eid);
 			return true;
 		}
 		auto fid = rop_util_get_gc_value(static_cast<const SVREID *>(mc.pfolder_eid)->folder_id);

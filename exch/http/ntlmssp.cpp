@@ -1406,7 +1406,7 @@ bool ntlmssp_ctx::update(std::string &blob) try
 			__func__, ntlmssp_command);
 		return false;
 	}
-	blob.assign(tmp_blob.pc, tmp_blob.cb);
+	blob = tmp_blob;
 	return true;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);

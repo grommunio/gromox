@@ -3570,7 +3570,7 @@ static ec_error_t gxht_transform(std::string_view inbuf, std::string &outbuf,
 	}
 	if (atlist != nullptr)
 		std::swap(*atlist, *mc->children.pattachments);
-	outbuf.assign(bin->pc, bin->cb);
+	outbuf = *bin;
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	return ecMAPIOOM;

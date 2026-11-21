@@ -1261,7 +1261,7 @@ static bool cvidx_child(const BINARY *bin, uint64_t nt_time, std::string &out)
 {
 	if (bin == nullptr || bin->cb < 22)
 		return false;
-	out.assign(bin->pc, bin->cb);
+	out = *bin;
 	out.resize(bin->cb + 5);
 	/* Well that's just great, Y2057 problem */
 	auto oldtime = be64p_to_cpu(&out[1]) & 0xffffffffff000000ULL;
@@ -1346,7 +1346,7 @@ static ec_error_t rx_fwd_body(const message_content &orig, const char *lang,
 	/* As with EWS ForwardItem, the HTML part goes out in UTF-8 */
 	static constexpr uint32_t utf8_cpid = CP_UTF8;
 	if (html != nullptr && html->pc != nullptr) {
-		std::string s(html->pc, html->cb);
+		std::string s(*html);
 		auto cset = cpid != nullptr && *cpid != CP_UTF8 ?
 		            cpid_to_cset(static_cast<cpid_t>(*cpid)) : nullptr;
 		if (cset != nullptr && !s.empty()) {
