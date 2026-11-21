@@ -768,20 +768,14 @@ void sCalendarMeetingRequestCommon::firstLastOccurrence(const TAGGED_PROPVAL &ei
     const APPOINTMENT_RECUR_PAT &apr, const BINARY *tzbin, const uint64_t *start) try
 {
 	auto &rp = apr.recur_pat;
-	TZDEF tzdef;
-	bool have_tz = false;
-	if (tzbin != nullptr) {
-		EXT_PULL ep;
-		ep.init(tzbin->pb, tzbin->cb, nullptr, EXT_FLAG_UTF16);
-		have_tz = ep.g_tzdef(&tzdef) == pack_result::ok;
-	}
+	auto tzdef = EXT_PULL::bin_to_tzdef(*tzbin);
 	int64_t fixed = 0;
 	if (start != nullptr)
 		fixed = (rop_util_nttime_to_unix(*start) -
 		        rop_util_rtime_to_unix(rp.startdate + apr.starttimeoffset)) / 60;
 	auto toUtc = [&](uint32_t rtime) {
 		int64_t off = fixed;
-		if (have_tz && !tz_to_offset(tzdef, rop_util_rtime_to_unix(rtime), off))
+		if (tzdef && !tz_to_offset(*tzdef, rop_util_rtime_to_unix(rtime), off))
 			off = fixed;
 		return rop_util_rtime_to_unix2(rtime) + std::chrono::minutes(off);
 	};
@@ -2644,18 +2638,16 @@ void tCalendarItem::setDatetimeFields(sShape& shape)
 		if (to_start)
 			shape.write(NtAppointmentTimeZoneDefinitionRecur,
 				TAGGED_PROPVAL{PT_BINARY, tmp_bin});
-		EXT_PULL ext_pull;
-		TZDEF tzdef;
-		ext_pull.init(buf->data(), buf->size(), nullptr, EXT_FLAG_UTF16);
-		if (ext_pull.g_tzdef(&tzdef) != pack_result::ok)
+		auto tzdef = EXT_PULL::bin_to_tzdef(*buf);
+		if (!tzdef)
 			throw EWSError::InternalServerError(E3294);
 		/*
 		 * Write PidLidTimeZoneStruct for freebusy and
 		 * recurrence expansion code.
 		 */
-		if (to_start && tzdef.rules.size() > 0) {
+		if (to_start && tzdef->rules.size() > 0) {
 			TZSTRUCT tzs{};
-			auto &rule = tzdef.rules.back();
+			auto &rule = tzdef->rules.back();
 			tzs.bias = rule.bias;
 			tzs.daylightbias = rule.daylightbias;
 			tzs.standarddate = rule.standarddate;
@@ -2675,11 +2667,11 @@ void tCalendarItem::setDatetimeFields(sShape& shape)
 		auto tag = shape.tag(NtCommonStart);
 		if ((offsets & sShape::TZ_START) && tag != 0 &&
 		    startTime.has_value() && ct_contains(op, tag))
-			tz_to_offset(tzdef, rop_util_nttime_to_unix(startTime.value()), startOffset);
+			tz_to_offset(*tzdef, rop_util_nttime_to_unix(startTime.value()), startOffset);
 		tag = shape.tag(NtCommonEnd);
 		if ((offsets & sShape::TZ_END) && tag != 0 &&
 		    endTime.has_value() && ct_contains(op, tag))
-			tz_to_offset(tzdef, rop_util_nttime_to_unix(endTime.value()), endOffset);
+			tz_to_offset(*tzdef, rop_util_nttime_to_unix(endTime.value()), endOffset);
 	};
 	if (shape.tag(NtCalendarTimeZone) != 0) {
 		std::optional<std::string> calTimezone;
