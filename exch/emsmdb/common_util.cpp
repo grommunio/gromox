@@ -1335,9 +1335,15 @@ void common_util_notify_receipt(logon_object &logon, unsigned int type,
 	rcpt_list.emplace_back(str);
 	auto bounce_type = type == NOTIFY_RECEIPT_READ ?
 	                   "notify_read" : "notify_non_read";
+
+	const PROPERTY_NAME acpt_lang[] = {{MNID_STRING, PS_INTERNET_HEADERS, 0, deconst("Accept-Language")}};
+	propid_t lang_tgid = 0;
+	if (logon.get_named_propid(false, acpt_lang, &lang_tgid) != ecSuccess)
+		/* do without */;
+
 	vmime::shared_ptr<vmime::message> imail;
 	if (!exch_bouncer_make(mysql_adaptor_get_user_displayname,
-	    mysql_adaptor_meta, username, brief, bounce_type, imail))
+	    username, brief, PROP_TAG(PT_UNICODE, lang_tgid), bounce_type, imail))
 		return;
 	auto ret = ems_send_vmail(std::move(imail), username, rcpt_list);
 	if (ret != ecSuccess)

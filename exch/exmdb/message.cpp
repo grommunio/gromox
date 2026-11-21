@@ -893,11 +893,12 @@ BOOL exmdb_server::get_message_brief(const char *dir, cpid_t cpid,
 	*ppbrief = cu_alloc<MESSAGE_CONTENT>();
 	if (*ppbrief == nullptr)
 		return FALSE;
-	static constexpr proptag_t proptags[] = {
+	proptag_t proptags[] = {
 		PR_SUBJECT, PR_SENT_REPRESENTING_NAME,
 		PR_SENT_REPRESENTING_SMTP_ADDRESS, PR_CLIENT_SUBMIT_TIME,
 		PR_MESSAGE_SIZE, PR_INTERNET_CPID, PR_INTERNET_MESSAGE_ID,
-		PR_PARENT_KEY, PR_CONVERSATION_INDEX,
+		PR_PARENT_KEY, PR_CONVERSATION_INDEX, PR_MESSAGE_LOCALE_ID,
+		PROP_TAG(PT_UNICODE, cu_acceptlang_propid(pdb->psqlite)),
 	};
 	if (!cu_get_properties(MAPI_MESSAGE, mid_val, cpid,
 	    *pdb, proptags, &(*ppbrief)->proplist))

@@ -29,14 +29,9 @@ std::string bounce_gen_thrindex(const vmime::message &msg) try
 	return {};
 }
 
-std::string bounce_gen_charset(const vmime::message &msg)
+std::string bounce_gen_subject(const vmime::message &m)
 {
-	return msg.getBody()->getCharset().getName();
-}
-
-std::string bounce_gen_subject(const vmime::message &msg)
-{
-	auto hdr = &*msg.getHeader();
+	auto hdr = &*m.getHeader();
 	auto field = hdr->findField(vmime::fields::SUBJECT);
 	if (field == nullptr)
 		return {};

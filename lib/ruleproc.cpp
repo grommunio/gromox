@@ -1770,19 +1770,8 @@ static ec_error_t opx_forward(rxparam &par, const rule_node &rule,
 /* Body of a reply that uses STOCK_REPLY_TEMPLATE */
 static bool rx_stock_reply_body(rxparam &par, std::string &body) try
 {
-	const char *charset = nullptr;
-	sql_meta_result mres;
-	if (mysql_adaptor_meta(par.ev_from, WANTPRIV_METAONLY, mres) == 0)
-		charset = lang_to_charset(mres.lang.c_str());
 	auto &props = par.ctnt->proplist;
-	if (znoval(charset)) {
-		auto cpid = props.get<const uint32_t>(PR_INTERNET_CPID);
-		if (cpid != nullptr)
-			charset = cpid_to_cset(static_cast<cpid_t>(*cpid));
-		if (charset == nullptr)
-			charset = "ascii";
-	}
-	auto tp = bounce_gen_lookup(charset, "auto_response");
+	auto tp = bounce_gen_lookup(bounce_gen_langpref(*par.ctnt, PR_NULL), "auto_response");
 	if (tp == nullptr)
 		return false;
 	std::string parts;

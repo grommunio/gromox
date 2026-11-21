@@ -5658,4 +5658,13 @@ uint32_t common_util_calculate_attachment_size(
 	return attachment_size;
 }
 
+propid_t cu_acceptlang_propid(sqlite3 *db)
+{
+	const PROPERTY_NAME arr[] = {{MNID_STRING, PS_INTERNET_HEADERS, 0, deconst("Accept-Language")}};
+	const PROPNAME_ARRAY pn = {std::size(arr), deconst(arr)};
+	PROPID_ARRAY ids{};
+	return common_util_get_named_propids(db, false, &pn, &ids) &&
+	       ids.size() > 0 ? ids.front() : 0;
+}
+
 }

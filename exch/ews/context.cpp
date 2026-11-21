@@ -6663,6 +6663,15 @@ bool EWSContext::sendMeetingResponse(const tItemId &responseRef,
 	return true;
 }
 
+static propid_t acceptlang_propid(EWSPlugin &plugin, const std::string &dir)
+{
+	const PROPERTY_NAME arr[] = {{MNID_STRING, PS_INTERNET_HEADERS, 0, deconst("Accept-Language")}};
+	const PROPNAME_ARRAY pn = {std::size(arr), deconst(arr)};
+	PROPID_ARRAY ids{};
+	return plugin.exmdb.get_named_propids(dir.c_str(), false, &pn, &ids) &&
+	       ids.size() > 0 ? ids[0] : 0;
+}
+
 /**
  * @brief      Send read receipt if requested by the sender
  *
@@ -6694,7 +6703,8 @@ void EWSContext::notifyReadReceipt(const std::string &dir,
 	std::vector<std::string> rcpt_list = {str};
 	vmime::shared_ptr<vmime::message> imail;
 	if (!exch_bouncer_make(mysql_adaptor_get_user_displayname,
-	    mysql_adaptor_meta, m_auth_info.username, *pbrief,
+	    m_auth_info.username, *pbrief,
+	    PROP_TAG(PT_UNICODE, acceptlang_propid(m_plugin, dir)),
 	    "notify_read", imail))
 		return;
 	auto ret = cu_send_vmail(std::move(imail), m_plugin.smtp_url.c_str(),

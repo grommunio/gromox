@@ -23,10 +23,9 @@ namespace {
 using namespace std::string_literals;
 using namespace gromox;
 using buff_t = bool (*)(const char *, std::string &);
-using meta_t = errno_t (*)(const char *, unsigned int, sql_meta_result &);
 
-static bool bounce_producer_make_content(meta_t meta, const char *username,
-    const message_content &brief, const char *bounce_type,
+static bool bounce_producer_make_content(const char *username,
+    const message_content &brief, proptag_t lang_tag, const char *bounce_type,
     std::string &subject, std::string &content)
 {
 	char mixed_buf[64];
@@ -36,22 +35,11 @@ static bool bounce_producer_make_content(meta_t meta, const char *username,
 	auto from = brief.proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 	if (from == nullptr)
 		from = "";
-	sql_meta_result mres;
-	auto charset = meta(from, WANTPRIV_METAONLY, mres) == 0 ?
-	               lang_to_charset(mres.lang.c_str()) : nullptr;
 	make_rfc_date(mixed_buf, std::size(mixed_buf), ts);
 	auto message_size = brief.proplist.get<const uint32_t>(PR_MESSAGE_SIZE);
 	if (message_size == nullptr)
 		return false;
-	if (znoval(charset)) {
-		auto cpid = brief.proplist.get<const uint32_t>(PR_INTERNET_CPID);
-		if (cpid != nullptr)
-			charset = cpid_to_cset(static_cast<cpid_t>(*cpid));
-		if (charset == nullptr)
-			charset = "ascii";
-	}
-
-	auto tpptr = bounce_gen_lookup(charset, bounce_type);
+	auto tpptr = bounce_gen_lookup(bounce_gen_langpref(brief, lang_tag), bounce_type);
 	if (tpptr == nullptr)
 		return false;
 	auto &tp = *tpptr;
@@ -90,8 +78,8 @@ static bool bounce_producer_make_content(meta_t meta, const char *username,
  * @brief:    Original message. Contains the target of the bounce in
  *            PR_SENDER/PR_SENT_REPR.
  */
-bool exch_bouncer_make(buff_t gudn, meta_t meta,
-    const char *username, const message_content &brief,
+bool exch_bouncer_make(buff_t gudn, const char *username,
+    const message_content &brief, proptag_t lang_tag,
     const char *bounce_type, vmime::shared_ptr<vmime::message> &pmail) try
 {
 	std::string dispname;
@@ -102,7 +90,7 @@ bool exch_bouncer_make(buff_t gudn, meta_t meta,
 	expeditor.setEmail(username);
 
 	std::string subject, content_buff;
-	if (!bounce_producer_make_content(meta, username, brief,
+	if (!bounce_producer_make_content(username, brief, lang_tag,
 	    bounce_type, subject, content_buff))
 		return false;
 

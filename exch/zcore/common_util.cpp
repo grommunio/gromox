@@ -1318,6 +1318,15 @@ ec_error_t cu_send_message(store_object &store, message_object &msg,
 	return ecServerOOM;
 }
 
+static propid_t cu_acceptlang_propid(store_object &store)
+{
+	const PROPERTY_NAME arr[] = {{MNID_STRING, PS_INTERNET_HEADERS, 0, deconst("Accept-Language")}};
+	const PROPNAME_ARRAY pn = {std::size(arr), deconst(arr)};
+	PROPID_ARRAY ids{};
+	return store.get_named_propids(false, &pn, &ids) == ecSuccess &&
+	       ids.size() > 0 ? ids[0] : 0;
+}
+
 void common_util_notify_receipt(store_object &store, unsigned int type,
     const message_content &brief) try
 {
@@ -1330,7 +1339,8 @@ void common_util_notify_receipt(store_object &store, unsigned int type,
 	                   "notify_read" : "notify_non_read";
 	vmime::shared_ptr<vmime::message> imail;
 	if (!exch_bouncer_make(mysql_adaptor_get_user_displayname,
-	    mysql_adaptor_meta, username, brief, bounce_type, imail))
+	    username, brief, PROP_TAG(PT_UNICODE, cu_acceptlang_propid(store)),
+	    bounce_type, imail))
 		return;
 	imail->getHeader()->getField("X-Mailer")->setValue(vmime::text(ZCORE_UA));
 	auto ret = cu_send_vmail(std::move(imail), g_smtp_url.c_str(),

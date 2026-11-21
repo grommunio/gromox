@@ -50,22 +50,8 @@ bool exml_bouncer_make(const char *host_id, const char *from, const char *rcpt_t
     const char *bounce_type, MAIL *qmail) try
 {
 	char date_buff[32], size_buff[64];
-	sql_meta_result mres;
-	const char *charset = nullptr;
-
-	auto pdomain = strchr(from, '@');
-	if (NULL != pdomain) {
-		pdomain ++;
-		if (mysql_adaptor_domain_list_query(pdomain) >= 1 &&
-		    mysql_adaptor_meta(from, WANTPRIV_METAONLY, mres) == 0)
-			charset = lang_to_charset(mres.lang.c_str());
-	}
 	make_rfc_date(date_buff, std::size(date_buff), original_time);
-	auto mcharset = bounce_gen_charset(pmail_original);
-	if (charset == nullptr)
-		charset = mcharset.c_str();
-	charset = znul(charset);
-	auto tpptr = bounce_gen_lookup(charset, bounce_type);
+	auto tpptr = bounce_gen_lookup(bounce_gen_langpref(pmail_original), bounce_type);
 	if (tpptr == nullptr)
 		return false;
 	auto &tp = *tpptr;

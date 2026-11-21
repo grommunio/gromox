@@ -59,17 +59,8 @@ bool mlex_bouncer_make(const char *from, const char *rcpt_to,
     MAIL *qmail) try
 {
 	char mixed_buf[64];
-	sql_meta_result mres;
-	const char *charset = nullptr;
-
-	if (mysql_adaptor_meta(from, WANTPRIV_METAONLY, mres) == 0)
-		charset = lang_to_charset(mres.lang.c_str());
 	make_rfc_date(mixed_buf, std::size(mixed_buf), 0);
-	auto mcharset = bounce_gen_charset(pmail_original);
-	if (znoval(charset))
-		charset = mcharset.c_str();
-
-	auto tpptr = bounce_gen_lookup(charset, bounce_type);
+	auto tpptr = bounce_gen_lookup(bounce_gen_langpref(pmail_original), bounce_type);
 	if (tpptr == nullptr)
 		return false;
 	auto &tp = *tpptr;

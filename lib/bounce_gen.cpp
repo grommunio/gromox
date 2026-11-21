@@ -9,6 +9,7 @@
 #include <libHX/io.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
+#include <vmime/message.hpp>
 #include <gromox/bounce_gen.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/element_data.hpp>
@@ -16,6 +17,7 @@
 #include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mapitags.hpp>
+#include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 
 namespace gromox {
@@ -87,6 +89,7 @@ static constexpr cfg_directive bounce_gen_dflt[] = {
 
 errno_t bounce_gen_init(const char *cfgdir, const char *datadir) try
 {
+	textmaps_init();
 	/*
 	 * NOTE: bounce_gen_init may get called multiple times within a process
 	 * image (e.g. ews_init, PROC_exchange_emsmdb, SVC_exmdb_provider).
@@ -135,17 +138,98 @@ errno_t bounce_gen_init(const char *cfgdir, const char *datadir) try
 	return ENOMEM;
 }
 
-const bounce_template *bounce_gen_lookup(const char *cset, const char *tname)
+/**
+ * @sv: Accept-Language header value, e.g. "fr-CH, fr;q=0.7, *;q=0.5"
+ *
+ * Breaks down the list and returns the choice list in XPG form. q values are
+ * ignored, just send them in the right order to begin with.
+ */
+static std::vector<std::string> acceptlanguage_to_xpglist(std::string_view sv)
+{
+	std::vector<std::string> list;
+	for (auto &&ch : gx_split(sv, ',')) {
+		auto pos = ch.find(';');
+		if (pos != ch.npos)
+			ch.erase(pos);
+		pos = ch.find('-');
+		if (pos != ch.npos)
+			ch[pos] = '_';
+		list.emplace_back(std::move(ch));
+	}
+	return list;
+}
+
+/**
+ * @msg:    Original message that warrants a reply
+ * @al_tag: Property tag corresponding to PS_INTERNET_HEADERS:Accept-Language,
+ *          or 0 for foregoing this.
+ *
+ * Scans a message and return preferred languages (in XPG locale form) to
+ * respond with.
+ */
+std::vector<std::string> bounce_gen_langpref(const message_content &msg,
+    proptag_t al_tag)
+{
+	std::vector<std::string> list;
+	if (PROP_ID(al_tag) != PROP_ID(PR_NULL)) {
+		auto pv = msg.proplist.get<const char>(al_tag);
+		if (pv != nullptr)
+			list = acceptlanguage_to_xpglist(pv);
+	}
+	if (auto cpid = msg.proplist.get<const int32_t>(PR_MESSAGE_LOCALE_ID)) {
+		if (auto lang = lcid_to_ltag(*cpid)) {
+			auto l2 = acceptlanguage_to_xpglist({lang});
+			list.insert(list.end(), std::make_move_iterator(l2.begin()),
+				std::make_move_iterator(l2.end()));
+		}
+	}
+	list.emplace_back("en");
+	return list;
+}
+
+std::vector<std::string> bounce_gen_langpref(const vmime::message &msg)
+{
+	std::vector<std::string> list;
+	if (auto hdr = msg.getHeader()) {
+		if (auto fld = hdr->findField("Accept-Language"))
+			list = acceptlanguage_to_xpglist(fld->getValue()->generate());
+		if (auto fld = hdr->findField("X-Accept-Language")) {
+			auto l2 = acceptlanguage_to_xpglist(fld->getValue()->generate());
+			list.insert(list.end(), std::make_move_iterator(l2.begin()),
+				std::make_move_iterator(l2.end()));
+		}
+		if (auto fld = hdr->findField("Content-Language")) {
+			auto l2 = acceptlanguage_to_xpglist(fld->getValue()->generate());
+			list.insert(list.end(), std::make_move_iterator(l2.begin()),
+				std::make_move_iterator(l2.end()));
+		}
+	}
+	list.emplace_back("en");
+	return list;
+}
+
+/**
+ * @langlist: A list of languages to try
+ * @tname:    Message template to use
+ */
+const bounce_template *
+bounce_gen_lookup(std::vector<std::string> &&langlist, const char *tname)
 {
 	auto i = g_resource_list.find(tname);
 	if (i == g_resource_list.end())
 		return nullptr;
-	auto j = i->second.find(cset);
-	if (j != i->second.end())
-		return &j->second;
-	j = i->second.find("ascii");
-	if (j != i->second.end())
-		return &j->second;
+	for (auto &&choice : langlist) {
+		auto j = i->second.find(choice);
+		if (j != i->second.end())
+			return &j->second;
+		auto pos = choice.find('_');
+		if (pos == choice.npos)
+			continue;
+		choice.erase(pos);
+		j = i->second.find(choice);
+		if (j != i->second.end())
+			return &j->second;
+	}
 	return nullptr;
 }
 
