@@ -3919,6 +3919,11 @@ static bool oxcical_export_rdate(const char *tzid, bool b_date,
 static void oxcical_export_organizer(const MESSAGE_CONTENT &msg,
     ical_component &com, const char *org_name, cvt_id2user id2user)
 {
+	static constexpr addr_tags tags_sent_repr = {
+		PR_SENT_REPRESENTING_NAME, PR_SENT_REPRESENTING_ADDRTYPE,
+		PR_SENT_REPRESENTING_EMAIL_ADDRESS,
+		PR_SENT_REPRESENTING_SMTP_ADDRESS, PR_SENT_REPRESENTING_ENTRYID,
+	};
 	std::string buf;
 	if (!oxcmail_get_smtp_address(msg.proplist, &tags_sent_repr, org_name,
 	    id2user, buf))
