@@ -45,7 +45,6 @@
 #include <gromox/svc_common.h>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
-#include "bounce_producer.hpp"
 #include "db_engine.hpp"
 #include "parser.hpp"
 #define MIN_BATCH_MESSAGE_NUM 20
