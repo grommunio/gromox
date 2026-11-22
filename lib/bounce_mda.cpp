@@ -57,7 +57,7 @@ std::string bounce_gen_charset(const MAIL &m)
 	return result;
 }
 
-std::string bounce_gen_subject(const MAIL &m, const char *cset)
+std::string bounce_gen_subject(const MAIL &m)
 {
 	auto head = m.get_head();
 	if (head == nullptr)

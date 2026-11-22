@@ -80,7 +80,7 @@ bool exml_bouncer_make(const char *host_id, const char *from, const char *rcpt_t
 	    HXformat_add(fa, "rcpts", rcpt_to, HXTYPE_STRING) < 0 ||
 	    HXformat_add(fa, "postmaster", bounce_gen_postmaster(), HXTYPE_STRING) < 0)
 		return false;
-	auto str = bounce_gen_subject(*pmail_original, mcharset.c_str());
+	auto str = bounce_gen_subject(*pmail_original);
 	if (HXformat_add(fa, "subject", str.c_str(), HXTYPE_STRING | immed) < 0)
 		return false;
 	auto mail_len = pmail_original->get_length();
