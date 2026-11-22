@@ -148,11 +148,11 @@ void auto_response_reply(const char *user_home, const char *from,
 	hdr->Date()->setValue(vmime::datetime::now());
 	hdr->Subject()->setValue(vmime::text(subject_text, vmime::charsets::UTF_8));
 
-	vmime::encoding enc;
-	enc.setUsage(vmime::encoding::EncodingUsage::USAGE_TEXT);
-	vmsg.getBody()->setContents(vmime::make_shared<vmime::stringContentHandler>(message_text, std::move(enc)),
-                vmime::mediaType(vmime::mediaTypes::TEXT, vmime::mediaTypes::TEXT_HTML),
-                vmime::charsets::UTF_8);
+	auto cth = vmime::make_shared<vmime::stringContentHandler>(message_text);
+	auto enc = vmime::encoding::decide(cth, vmime::charsets::UTF_8, vmime::encoding::USAGE_TEXT);
+	vmsg.getBody()->setContents(std::move(cth),
+		vmime::mediaType(vmime::mediaTypes::TEXT, vmime::mediaTypes::TEXT_HTML),
+		vmime::charsets::UTF_8, std::move(enc));
 
 	auto ctx = get_context();
 	if (ctx == nullptr)
