@@ -672,7 +672,8 @@ pack_result tnef_pull::g_attr(TNEF_ATTRIBUTE *r)
 		}
 	}
 	TRY(pext->g_uint32(&len));
-	if (ext.m_offset + len > ext.m_data_size)
+	if (ext.m_offset > ext.m_data_size ||
+	    len > ext.m_data_size - ext.m_offset)
 		return pack_result::format;
 	uint32_t offset = ext.m_offset;
 	switch (r->attr_id) {
