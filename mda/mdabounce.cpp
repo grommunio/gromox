@@ -55,7 +55,8 @@ int mlex_bounce_init(const char *cfg_path, const char *data_path)
  *		pmail [out]			bounce mail object
  */
 bool mlex_bouncer_make(const char *from, const char *rcpt_to,
-    MAIL *pmail_original, const char *bounce_type, MAIL *qmail) try
+    const vmime::message &pmail_original, const char *bounce_type,
+    MAIL *qmail) try
 {
 	char mixed_buf[64];
 	sql_meta_result mres;
@@ -64,7 +65,7 @@ bool mlex_bouncer_make(const char *from, const char *rcpt_to,
 	if (mysql_adaptor_meta(from, WANTPRIV_METAONLY, mres) == 0)
 		charset = lang_to_charset(mres.lang.c_str());
 	make_rfc_date(mixed_buf, std::size(mixed_buf), 0);
-	auto mcharset = bounce_gen_charset(*pmail_original);
+	auto mcharset = bounce_gen_charset(pmail_original);
 	if (znoval(charset))
 		charset = mcharset.c_str();
 
@@ -83,15 +84,11 @@ bool mlex_bouncer_make(const char *from, const char *rcpt_to,
 	    HXformat_add(fa, "rcpts", rcpt_to, HXTYPE_STRING) < 0 ||
 	    HXformat_add(fa, "postmaster", bounce_gen_postmaster(), HXTYPE_STRING) < 0)
 		return false;
-	auto str = bounce_gen_subject(*pmail_original);
+	auto str = bounce_gen_subject(pmail_original);
 	if (HXformat_add(fa, "subject", str.c_str(), HXTYPE_STRING | immed) < 0)
 		return false;
-	auto mail_len = pmail_original->get_length();
-	if (mail_len < 0) {
-		mlog(LV_ERR, "mlist_expand: failed to get mail length");
-		mail_len = 0;
-	}
-	HX_unit_size(mixed_buf, std::size(mixed_buf), mail_len, 1000, 0);
+	HX_unit_size(mixed_buf, std::size(mixed_buf),
+		pmail_original.getParsedLength(), 1000, 0);
 	if (HXformat_add(fa, "length", mixed_buf, HXTYPE_STRING) < 0)
 		return false;
 
@@ -108,7 +105,7 @@ bool mlex_bouncer_make(const char *from, const char *rcpt_to,
 	hdr->ContentType()->setValue(vmime::mediaType(vmime::mediaTypes::MULTIPART, vmime::mediaTypes::MULTIPART_REPORT));
 	vmime::dynamicCast<vmime::contentTypeField>(hdr->ContentType())->setReportType("delivery-status");
 
-	str = bounce_gen_thrindex(*pmail_original);
+	str = bounce_gen_thrindex(pmail_original);
 	if (!str.empty())
 		hdr->getField("Thread-Index")->setValue(std::move(str));
 	vmime::mailbox expeditor, target;

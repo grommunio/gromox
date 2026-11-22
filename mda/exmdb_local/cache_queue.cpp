@@ -459,7 +459,7 @@ static void *mdl_thrwork(void *arg)
 						"mails to %s", temp_rcpt);
 					put_context(pbounce_context);
 				} else if (!exml_bouncer_make(get_host_ID(), temp_from,
-				    temp_rcpt, &pcontext->mail, original_time,
+				    temp_rcpt, *pcontext->vmail, original_time,
 				    bounce_type, &pbounce_context->mail)) {
 					exmdb_local_log_info(pcontext->ctrl, ptr, LV_ERR,
 						"error during exml_bouncer_make for %s",

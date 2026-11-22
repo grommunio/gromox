@@ -46,8 +46,8 @@ using namespace gromox;
  *		pmail [out]			bounce mail object
  */
 bool exml_bouncer_make(const char *host_id, const char *from, const char *rcpt_to,
-    MAIL *pmail_original, time_t original_time, const char *bounce_type,
-    MAIL *qmail) try
+    const vmime::message &pmail_original, time_t original_time,
+    const char *bounce_type, MAIL *qmail) try
 {
 	char date_buff[32], size_buff[64];
 	sql_meta_result mres;
@@ -61,7 +61,7 @@ bool exml_bouncer_make(const char *host_id, const char *from, const char *rcpt_t
 			charset = lang_to_charset(mres.lang.c_str());
 	}
 	make_rfc_date(date_buff, std::size(date_buff), original_time);
-	auto mcharset = bounce_gen_charset(*pmail_original);
+	auto mcharset = bounce_gen_charset(pmail_original);
 	if (charset == nullptr)
 		charset = mcharset.c_str();
 	charset = znul(charset);
@@ -80,15 +80,11 @@ bool exml_bouncer_make(const char *host_id, const char *from, const char *rcpt_t
 	    HXformat_add(fa, "rcpts", rcpt_to, HXTYPE_STRING) < 0 ||
 	    HXformat_add(fa, "postmaster", bounce_gen_postmaster(), HXTYPE_STRING) < 0)
 		return false;
-	auto str = bounce_gen_subject(*pmail_original);
+	auto str = bounce_gen_subject(pmail_original);
 	if (HXformat_add(fa, "subject", str.c_str(), HXTYPE_STRING | immed) < 0)
 		return false;
-	auto mail_len = pmail_original->get_length();
-	if (mail_len < 0) {
-		mlog(LV_ERR, "exmdb_local: failed to get mail length");
-		mail_len = 0;
-	}
-	HX_unit_size(size_buff, std::size(size_buff), mail_len, 1000, 0);
+	HX_unit_size(size_buff, std::size(size_buff),
+		pmail_original.getParsedLength(), 1000, 0);
 	if (HXformat_add(fa, "length", size_buff, HXTYPE_STRING) < 0)
 		return false;
 
@@ -105,7 +101,7 @@ bool exml_bouncer_make(const char *host_id, const char *from, const char *rcpt_t
 	hdr->ContentType()->setValue(vmime::mediaType(vmime::mediaTypes::MULTIPART, vmime::mediaTypes::MULTIPART_REPORT));
 	vmime::dynamicCast<vmime::contentTypeField>(hdr->ContentType())->setReportType("delivery-status");
 
-	str = bounce_gen_thrindex(*pmail_original);
+	str = bounce_gen_thrindex(pmail_original);
 	if (!str.empty())
 		hdr->getField("Thread-Index")->setValue(std::move(str));
 	vmime::mailbox expeditor, target;

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cstring>
 #include <string>
@@ -18,57 +18,32 @@ struct enum_parts {
 
 namespace gromox {
 
-std::string bounce_gen_thrindex(const MAIL &m) try
+std::string bounce_gen_thrindex(const vmime::message &msg) try
 {
-	auto h = m.get_head();
-	if (h == nullptr)
-		return {};
-	if (auto val = h->get_field("Thread-Index"))
-		return *val;
+	auto &hdr = *msg.getHeader();
+	if (auto field = hdr.findField("Thread-Index"))
+		return field->getValue()->generate();
 	return {};
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return {};
 }
 
-static void bp_enum_charset(const MIME *mime, void *arg)
+std::string bounce_gen_charset(const vmime::message &msg)
 {
-	auto &cset = *static_cast<std::string *>(arg);
-	if (!cset.empty())
-		return; /* found something earlier already */
-	if (!mime->get_content_param("charset", cset))
-		return;
-	auto start = cset.find('"');
-	if (start == cset.npos)
-		return; /* no further massage needed */
-	++start;
-	auto end = cset.find('"', start);
-	if (end == cset.npos)
-		return; /* no further massage needed */
-	cset = cset.substr(start, end - start);
+	return msg.getBody()->getCharset().getName();
 }
 
-std::string bounce_gen_charset(const MAIL &m)
+std::string bounce_gen_subject(const vmime::message &msg)
 {
-	std::string result;
-	m.enum_mime(bp_enum_charset, &result);
-	if (result.empty())
-		result = "ascii";
-	return result;
-}
-
-std::string bounce_gen_subject(const MAIL &m)
-{
-	auto head = m.get_head();
-	if (head == nullptr)
+	auto hdr = &*msg.getHeader();
+	auto field = hdr->findField(vmime::fields::SUBJECT);
+	if (field == nullptr)
 		return {};
-	auto subj = head->get_field("Subject");
-	if (subj == nullptr)
+	auto txt = vmime::dynamicCast<vmime::text>(field->getValue());
+	if (txt == nullptr)
 		return {};
-	std::string b2;
-	if (!mime_string_to_utf8(*subj, b2))
-		return {};
-	return b2;
+	return txt->getConvertedText(vmime::charsets::UTF_8);
 }
 
 }

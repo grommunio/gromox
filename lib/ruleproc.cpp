@@ -2231,12 +2231,17 @@ static ec_error_t op_bounce(rxparam &par, const rule_node &rule,
 			par.orig_dir.c_str());
 		return ecSuccess;
 	}
-	MAIL orig, ndr;
-	if (!orig.refonly_parse(eml->c_str(), eml->size()))
+	MAIL ndr;
+	vmime::message orig;
+	auto vpctx = vmail_default_parsectx();
+	try {
+		orig.parse(*eml);
+	} catch (const vmime::exception &) {
 		return ecError;
+	}
 	auto dtime = props.get<const uint64_t>(PR_MESSAGE_DELIVERY_TIME);
 	auto arrival = dtime != nullptr ? rop_util_nttime_to_unix(*dtime) : time(nullptr);
-	if (!exml_bouncer_make(get_host_ID(), par.ev_from, par.ev_to, &orig,
+	if (!exml_bouncer_make(get_host_ID(), par.ev_from, par.ev_to, orig,
 	    arrival, type, &ndr)) {
 		mlog(LV_ERR, "ruleproc: %s: OP_BOUNCE: no report for %s",
 			par.orig_dir.c_str(), type);

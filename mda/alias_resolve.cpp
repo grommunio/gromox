@@ -175,7 +175,7 @@ static hook_result xa_alias_subst(MESSAGE_CONTEXT *ctx) try
 			           "mlist_specified";
 			auto bnctx = get_context();
 			if (bnctx == nullptr || !mlex_bouncer_make(ctx->ctrl.from,
-			    todo[i].c_str(), &ctx->mail, tpl, &bnctx->mail)) {
+			    todo[i].c_str(), *ctx->vmail, tpl, &bnctx->mail)) {
 				output_rcpt.emplace_back(std::move(todo[i]));
 				break;
 			}
