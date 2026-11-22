@@ -15,7 +15,7 @@ struct GX_EXPORT bounce_template {
 	size_t ctlen = 0, body_start = 0;
 };
 
-extern GX_EXPORT gromox::errno_t bounce_gen_init(const char *cfgdir, const char *datadir, const char *bounce_class);
+extern GX_EXPORT gromox::errno_t bounce_gen_init(const char *cfgdir, const char *datadir);
 extern GX_EXPORT const bounce_template *bounce_gen_lookup(const char *cset, const char *tname);
 extern GX_EXPORT const char *bounce_gen_postmaster();
 

@@ -136,9 +136,9 @@ bool exch_bouncer_make(buff_t gudn, meta_t meta,
 	auto part2 = vmime::make_shared<vmime::bodyPart>();
 	vmime::header dsn;
 	dsn.getField("Final-Recipient")->setValue("rfc822;"s + username);
-	if (strcmp(bounce_type, "BOUNCE_NOTIFY_READ") == 0)
+	if (strcmp(bounce_type, "notify_read") == 0)
 		dsn.getField("Disposition")->setValue("automatic-action/MDN-sent-automatically; displayed");
-	else if (strcmp(bounce_type, "BOUNCE_NOTIFY_NON_READ") == 0)
+	else if (strcmp(bounce_type, "notify_non_read") == 0)
 		dsn.getField("Disposition")->setValue("manual-action/MDN-sent-automatically; deleted");
 	str = pbrief->proplist.get<char>(PR_INTERNET_MESSAGE_ID);
 	if (str != nullptr)

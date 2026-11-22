@@ -225,8 +225,7 @@ bool PROC_exchange_emsmdb(enum plugin_op reason, const struct dlfuncs &ppdata)
 			max_rule_len, std::move(smtp_url));
 		emsmdb_interface_init();
 		asyncemsmdb_interface_init(async_num);
-		if (bounce_gen_init(get_config_path(), get_data_path(),
-		    "notify_bounce") != 0) {
+		if (bounce_gen_init(get_config_path(), get_data_path()) != 0) {
 			mlog(LV_ERR, "emsmdb: failed to run bounce producer");
 			return FALSE;
 		}

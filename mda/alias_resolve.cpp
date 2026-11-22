@@ -170,9 +170,9 @@ static hook_result xa_alias_subst(MESSAGE_CONTEXT *ctx) try
 		case ML_XDOMAIN:
 		case ML_XINTERNAL:
 		case ML_XSPECIFIED: {
-			auto tpl = gmm_result == ML_XDOMAIN ? "BOUNCE_MLIST_DOMAIN" :
-			           gmm_result == ML_XINTERNAL ? "BOUNCE_MLIST_INTERNAL" :
-			           "BOUNCE_MLIST_SPECIFIED";
+			auto tpl = gmm_result == ML_XDOMAIN ? "mlist_domain" :
+			           gmm_result == ML_XINTERNAL ? "mlist_internal" :
+			           "mlist_specified";
 			auto bnctx = get_context();
 			if (bnctx == nullptr || !mlex_bouncer_make(ctx->ctrl.from,
 			    todo[i].c_str(), &ctx->mail, tpl, &bnctx->mail)) {
@@ -238,8 +238,7 @@ bool HOOK_alias_resolve(enum plugin_op reason, const struct dlfuncs &data)
 	textmaps_init();
 	if (service_run_library({"libgxs_mysql_adaptor.so", SVC_mysql_adaptor}) != PLUGIN_LOAD_OK)
 		return false;
-	if (mlex_bounce_init(get_config_path(), get_data_path(),
-	    "mlist_bounce") != 0) {
+	if (mlex_bounce_init(get_config_path(), get_data_path()) != 0) {
 		mlog(LV_ERR, "mlist_expand: failed to run bounce producer");
 		return FALSE;
 	}

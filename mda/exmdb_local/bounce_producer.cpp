@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021-2026 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cerrno>
@@ -140,7 +140,7 @@ bool exml_bouncer_make(const char *host_id, const char *from, const char *rcpt_t
 
 	dsn = vmime::header();
 	dsn.getField("Final-Recipient")->setValue("rfc822;"s + rcpt_to);
-	if (strcmp(bounce_type, "BOUNCE_MAIL_DELIVERED") != 0) {
+	if (strcmp(bounce_type, "mail_delivered") != 0) {
 		dsn.getField("Action")->setValue("failed");
 		dsn.getField("Status")->setValue("5.0.0");
 	} else {

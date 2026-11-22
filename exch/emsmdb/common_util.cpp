@@ -1333,7 +1333,7 @@ void common_util_notify_receipt(const char *username, int type,
 	std::vector<std::string> rcpt_list;
 	rcpt_list.emplace_back(str);
 	auto bounce_type = type == NOTIFY_RECEIPT_READ ?
-	                   "BOUNCE_NOTIFY_READ" : "BOUNCE_NOTIFY_NON_READ";
+	                   "notify_read" : "notify_non_read";
 	vmime::shared_ptr<vmime::message> imail;
 	if (!exch_bouncer_make(mysql_adaptor_get_user_displayname,
 	    mysql_adaptor_meta, username, pbrief, bounce_type, imail))

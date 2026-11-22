@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
+// This file is part of Gromox.
 #include <algorithm>
 #include <atomic>
 #include <cerrno>
@@ -383,7 +385,7 @@ static void *mdl_thrwork(void *arg)
 				if (static_cast<unsigned int>(g_retrying_times) <= times) {
 					need_bounce = TRUE;
 					need_remove = TRUE;
-					bounce_type = "BOUNCE_OPERATION_ERROR";
+					bounce_type = "operation_error";
 				} else {
 					need_bounce = FALSE;
 					need_remove = FALSE;
@@ -396,24 +398,24 @@ static void *mdl_thrwork(void *arg)
 				need_remove = TRUE;
 				break;
 			case delivery_status::bounce_sent:
-				bounce_type = "BOUNCE_MAIL_DELIVERED";
+				bounce_type = "mail_delivered";
 				need_bounce = TRUE;
 				need_remove = TRUE;
 				break;
 			case delivery_status::no_user:
 				exmdb_local_log_info(pcontext->ctrl, temp_rcpt, LV_ERR,
 					"<%s> has no mailbox here", temp_rcpt);
-				bounce_type = "BOUNCE_NO_USER";
+				bounce_type = "no_user";
 			    need_bounce = TRUE;
 				need_remove = TRUE;
 				break;
 			case delivery_status::mailbox_full:
-				bounce_type = "BOUNCE_MAILBOX_FULL";
+				bounce_type = "mailbox_full";
 			    need_bounce = TRUE;
 				need_remove = TRUE;
 			    break;
 			case delivery_status::perm_fail:
-				bounce_type = "BOUNCE_OPERATION_ERROR";
+				bounce_type = "operation_error";
 				need_bounce = TRUE;
 				need_remove = TRUE;
 				break;

@@ -43,10 +43,9 @@ using namespace gromox;
 DECLARE_HOOK_API(alias_resolve, extern);
 using namespace alias_resolve;
 
-int mlex_bounce_init(const char *cfg_path,
-    const char *data_path, const char *bounce_grp)
+int mlex_bounce_init(const char *cfg_path, const char *data_path)
 {
-	return bounce_gen_init(cfg_path, data_path, bounce_grp) == 0 ? 0 : -1;
+	return bounce_gen_init(cfg_path, data_path) == 0 ? 0 : -1;
 }
 
 /*

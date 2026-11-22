@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <dirent.h>
+#include <fcntl.h>
 #include <map>
 #include <netdb.h>
 #include <string>
 #include <libHX/io.h>
 #include <libHX/option.h>
+#include <libHX/string.h>
 #include <gromox/bounce_gen.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/element_data.hpp>
@@ -18,29 +20,38 @@
 
 namespace gromox {
 
-using template_map = std::map<std::string, bounce_template>;
+using template_map = std::map<std::string, bounce_template>; /* template name -> template details */
 static std::string g_bounce_postmaster;
-static std::map<std::string, template_map> g_resource_list;
+static std::map<std::string, template_map> g_resource_list; /* encoding -> group */
 
-static errno_t bounce_gen_load(const std::string &cset_path, template_map &tplist)
+/**
+ * @tpl_file: template filename
+ */
+static errno_t bounce_gen_load(int dfd, const char *de_name)
 {
-	auto di = opendir_sd(cset_path.c_str(), nullptr);
-	if (di.m_dir == nullptr)
-		return errno;
+	std::string tpl_name, tpl_encoding;
+	bounce_template bt;
 
-	struct dirent *de;
-	while ((de = readdir(di.m_dir.get())) != nullptr) {
-		if (*de->d_name == '.')
-			continue;
-		auto tpl_file = cset_path + "/" + de->d_name;
-		bounce_template bt;
-		bt.content.reset(HX_slurp_file(tpl_file.c_str(), &bt.ctlen));
+	{
+		tpl_name = de_name;
+		auto pos = tpl_name.find('.');
+		if (pos == tpl_name.npos)
+			return 0;
+		tpl_encoding = tpl_name.substr(pos + 1);
+		tpl_name.erase(pos);
+	}
+	{
+		wrapfd fd(::openat(dfd, de_name, O_RDONLY));
+		if (fd.get() < 0)
+			return -errno;
+		bt.content.reset(HX_slurp_fd(fd.get(), &bt.ctlen));
 		if (bt.content == nullptr) {
 			errno_t se = errno;
 			mlog(LV_ERR, "Bounce template %s: %s",
-				tpl_file.c_str(), strerror(se));
+				de_name, strerror(se));
 			return se;
 		}
+	}
 
 		size_t j = 0;
 		while (j < bt.ctlen) {
@@ -48,8 +59,7 @@ static errno_t bounce_gen_load(const std::string &cset_path, template_map &tplis
 			auto parsed = parse_mime_field(&bt.content[j], bt.ctlen - j, &mf);
 			j += parsed;
 			if (parsed == 0) {
-				mlog(LV_ERR, "Bounce template %s: Format error",
-					tpl_file.c_str());
+				mlog(LV_ERR, "Bounce template %s: Format error", de_name);
 				return EIO;
 			}
 			if (strcasecmp(mf.name.c_str(), "From") == 0)
@@ -65,8 +75,8 @@ static errno_t bounce_gen_load(const std::string &cset_path, template_map &tplis
 			}
 		}
 		bt.body_start = j;
-		tplist.emplace(de->d_name, std::move(bt));
-	}
+
+	g_resource_list[std::move(tpl_encoding)].emplace(std::move(tpl_name), std::move(bt));
 	return 0;
 }
 
@@ -75,8 +85,7 @@ static constexpr cfg_directive bounce_gen_dflt[] = {
 	CFG_TABLE_END,
 };
 
-errno_t bounce_gen_init(const char *cfgdir, const char *datadir,
-    const char *bounce_grp) try
+errno_t bounce_gen_init(const char *cfgdir, const char *datadir) try
 {
 	/*
 	 * NOTE: bounce_gen_init may get called multiple times within a process
@@ -105,10 +114,10 @@ errno_t bounce_gen_init(const char *cfgdir, const char *datadir,
 		mlog(LV_INFO, "bounce_gen: postmaster set to <%s>", g_bounce_postmaster.c_str());
 	}
 
-	auto di = opendir_sd(bounce_grp, datadir);
+	auto di = opendir_sd("bounces", datadir);
 	if (di.m_dir == nullptr) {
-		mlog(LV_ERR, "bounce_producer: opendir_sd(%s) %s: %s",
-			bounce_grp, di.m_path.c_str(), strerror(errno));
+		mlog(LV_ERR, "bounce_producer: opendir_sd(\"bounces\") %s: %s",
+			di.m_path.c_str(), strerror(errno));
 		return EIO;
 	}
 
@@ -116,8 +125,7 @@ errno_t bounce_gen_init(const char *cfgdir, const char *datadir,
 	while ((de = readdir(di.m_dir.get())) != nullptr) {
 		if (*de->d_name == '.')
 			continue;
-		auto ret = bounce_gen_load(di.m_path + "/" + de->d_name,
-		           g_resource_list[de->d_name]);
+		auto ret = bounce_gen_load(dirfd(di.m_dir.get()), de->d_name);
 		if (ret != 0)
 			return ret;
 	}

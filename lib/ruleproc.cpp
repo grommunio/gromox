@@ -1782,7 +1782,7 @@ static bool rx_stock_reply_body(rxparam &par, std::string &body) try
 		if (charset == nullptr)
 			charset = "ascii";
 	}
-	auto tp = bounce_gen_lookup(charset, "BOUNCE_AUTO_RESPONSE");
+	auto tp = bounce_gen_lookup(charset, "auto_response");
 	if (tp == nullptr)
 		return false;
 	std::string parts;
@@ -2201,13 +2201,13 @@ static ec_error_t op_bounce(rxparam &par, const rule_node &rule,
 	const char *type = nullptr;
 	switch (*code) {
 	case BOUNCE_CODE_MESSAGE_TOO_LARGE:
-		type = "BOUNCE_MAIL_TOO_LARGE";
+		type = "mail_too_large";
 		break;
 	case BOUNCE_CODE_MESSAGE_NOT_DISPLAYED:
-		type = "BOUNCE_CANNOT_DISPLAY";
+		type = "cannot_display";
 		break;
 	case BOUNCE_CODE_MESSAGE_DENIED:
-		type = "BOUNCE_GENERIC_ERROR";
+		type = "generic_error";
 		break;
 	default:
 		mlog(LV_WARN, "ruleproc: %s: OP_BOUNCE with unknown code %xh",
@@ -5041,7 +5041,7 @@ bool SVC_ruleproc(enum plugin_op reason, const struct dlfuncs &param)
 		return false;
 	g_ruleproc_debug = parse_bool(cfg->get_value("ruleproc_debug"));
 	/* Only needed for STOCK_REPLY_TEMPLATE */
-	if (bounce_gen_init(get_config_path(), get_data_path(), "mail_bounce") != 0)
+	if (bounce_gen_init(get_config_path(), get_data_path()) != 0)
 		mlog(LV_WARN, "ruleproc: stock reply templates unavailable");
 	auto org = cfg->get_value("x500_org_name");
 	std::shared_ptr<config_file> lcl;
