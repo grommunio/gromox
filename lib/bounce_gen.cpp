@@ -20,9 +20,9 @@
 
 namespace gromox {
 
-using template_map = std::map<std::string, bounce_template>; /* template name -> template details */
+using template_map = std::map<std::string, bounce_template>; /* encoding -> template details */
 static std::string g_bounce_postmaster;
-static std::map<std::string, template_map> g_resource_list; /* encoding -> group */
+static std::map<std::string, template_map> g_resource_list; /* template name -> encodings */
 
 /**
  * @tpl_file: template filename
@@ -76,7 +76,7 @@ static errno_t bounce_gen_load(int dfd, const char *de_name)
 		}
 		bt.body_start = j;
 
-	g_resource_list[std::move(tpl_encoding)].emplace(std::move(tpl_name), std::move(bt));
+	g_resource_list[std::move(tpl_name)].emplace(std::move(tpl_encoding), std::move(bt));
 	return 0;
 }
 
@@ -137,15 +137,16 @@ errno_t bounce_gen_init(const char *cfgdir, const char *datadir) try
 
 const bounce_template *bounce_gen_lookup(const char *cset, const char *tname)
 {
-	auto i = g_resource_list.find(cset);
-	if (i == g_resource_list.end())
-		i = g_resource_list.find("ascii");
+	auto i = g_resource_list.find(tname);
 	if (i == g_resource_list.end())
 		return nullptr;
-	auto j = i->second.find(tname);
-	if (j == i->second.end())
-		return nullptr;
-	return &j->second;
+	auto j = i->second.find(cset);
+	if (j != i->second.end())
+		return &j->second;
+	j = i->second.find("ascii");
+	if (j != i->second.end())
+		return &j->second;
+	return nullptr;
 }
 
 const char *bounce_gen_postmaster() { return g_bounce_postmaster.c_str(); }
