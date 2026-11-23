@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021-2026 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cerrno>
@@ -46,26 +46,12 @@ using namespace gromox;
  *		pmail [out]			bounce mail object
  */
 bool exml_bouncer_make(const char *host_id, const char *from, const char *rcpt_to,
-    MAIL *pmail_original, time_t original_time, const char *bounce_type,
-    MAIL *qmail) try
+    const vmime::message &pmail_original, time_t original_time,
+    const char *bounce_type, MAIL *qmail) try
 {
 	char date_buff[32], size_buff[64];
-	sql_meta_result mres;
-	const char *charset = nullptr;
-
-	auto pdomain = strchr(from, '@');
-	if (NULL != pdomain) {
-		pdomain ++;
-		if (mysql_adaptor_domain_list_query(pdomain) >= 1 &&
-		    mysql_adaptor_meta(from, WANTPRIV_METAONLY, mres) == 0)
-			charset = lang_to_charset(mres.lang.c_str());
-	}
 	make_rfc_date(date_buff, std::size(date_buff), original_time);
-	auto mcharset = bounce_gen_charset(*pmail_original);
-	if (charset == nullptr)
-		charset = mcharset.c_str();
-	charset = znul(charset);
-	auto tpptr = bounce_gen_lookup(charset, bounce_type);
+	auto tpptr = bounce_gen_lookup(bounce_gen_langpref(pmail_original), bounce_type);
 	if (tpptr == nullptr)
 		return false;
 	auto &tp = *tpptr;
@@ -80,15 +66,11 @@ bool exml_bouncer_make(const char *host_id, const char *from, const char *rcpt_t
 	    HXformat_add(fa, "rcpts", rcpt_to, HXTYPE_STRING) < 0 ||
 	    HXformat_add(fa, "postmaster", bounce_gen_postmaster(), HXTYPE_STRING) < 0)
 		return false;
-	auto str = bounce_gen_subject(*pmail_original, mcharset.c_str());
+	auto str = bounce_gen_subject(pmail_original);
 	if (HXformat_add(fa, "subject", str.c_str(), HXTYPE_STRING | immed) < 0)
 		return false;
-	auto mail_len = pmail_original->get_length();
-	if (mail_len < 0) {
-		mlog(LV_ERR, "exmdb_local: failed to get mail length");
-		mail_len = 0;
-	}
-	HX_unit_size(size_buff, std::size(size_buff), mail_len, 1000, 0);
+	HX_unit_size(size_buff, std::size(size_buff),
+		pmail_original.getParsedLength(), 1000, 0);
 	if (HXformat_add(fa, "length", size_buff, HXTYPE_STRING) < 0)
 		return false;
 
@@ -105,7 +87,7 @@ bool exml_bouncer_make(const char *host_id, const char *from, const char *rcpt_t
 	hdr->ContentType()->setValue(vmime::mediaType(vmime::mediaTypes::MULTIPART, vmime::mediaTypes::MULTIPART_REPORT));
 	vmime::dynamicCast<vmime::contentTypeField>(hdr->ContentType())->setReportType("delivery-status");
 
-	str = bounce_gen_thrindex(*pmail_original);
+	str = bounce_gen_thrindex(pmail_original);
 	if (!str.empty())
 		hdr->getField("Thread-Index")->setValue(std::move(str));
 	vmime::mailbox expeditor, target;
@@ -140,7 +122,7 @@ bool exml_bouncer_make(const char *host_id, const char *from, const char *rcpt_t
 
 	dsn = vmime::header();
 	dsn.getField("Final-Recipient")->setValue("rfc822;"s + rcpt_to);
-	if (strcmp(bounce_type, "BOUNCE_MAIL_DELIVERED") != 0) {
+	if (strcmp(bounce_type, "mail_delivered") != 0) {
 		dsn.getField("Action")->setValue("failed");
 		dsn.getField("Status")->setValue("5.0.0");
 	} else {

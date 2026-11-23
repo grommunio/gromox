@@ -23,35 +23,23 @@ namespace {
 using namespace std::string_literals;
 using namespace gromox;
 using buff_t = bool (*)(const char *, std::string &);
-using meta_t = errno_t (*)(const char *, unsigned int, sql_meta_result &);
 
-static bool bounce_producer_make_content(meta_t meta,
-    const char *username, MESSAGE_CONTENT *pbrief, const char *bounce_type,
+static bool bounce_producer_make_content(const char *username,
+    const message_content &brief, proptag_t lang_tag, const char *bounce_type,
     std::string &subject, std::string &content)
 {
 	char mixed_buf[64];
 
-	auto tsptr = pbrief->proplist.get<const uint64_t>(PR_CLIENT_SUBMIT_TIME);
+	auto tsptr = brief.proplist.get<const uint64_t>(PR_CLIENT_SUBMIT_TIME);
 	auto ts = tsptr == nullptr ? time(nullptr) : rop_util_nttime_to_unix(*tsptr);
-	auto from = pbrief->proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
+	auto from = brief.proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 	if (from == nullptr)
 		from = "";
-	sql_meta_result mres;
-	auto charset = meta(from, WANTPRIV_METAONLY, mres) == 0 ?
-	               lang_to_charset(mres.lang.c_str()) : nullptr;
 	make_rfc_date(mixed_buf, std::size(mixed_buf), ts);
-	auto message_size = pbrief->proplist.get<const uint32_t>(PR_MESSAGE_SIZE);
+	auto message_size = brief.proplist.get<const uint32_t>(PR_MESSAGE_SIZE);
 	if (message_size == nullptr)
 		return false;
-	if (znoval(charset)) {
-		auto cpid = pbrief->proplist.get<const uint32_t>(PR_INTERNET_CPID);
-		if (cpid != nullptr)
-			charset = cpid_to_cset(static_cast<cpid_t>(*cpid));
-		if (charset == nullptr)
-			charset = "ascii";
-	}
-
-	auto tpptr = bounce_gen_lookup(charset, bounce_type);
+	auto tpptr = bounce_gen_lookup(bounce_gen_langpref(brief, lang_tag), bounce_type);
 	if (tpptr == nullptr)
 		return false;
 	auto &tp = *tpptr;
@@ -65,11 +53,11 @@ static bool bounce_producer_make_content(meta_t meta,
 	    HXformat_add(fa, "from", from, HXTYPE_STRING) < 0 ||
 	    HXformat_add(fa, "user", username, HXTYPE_STRING) < 0 ||
 	    HXformat_add(fa, "rcpts",
-	    bounce_gen_rcpts(*pbrief->children.prcpts).c_str(),
+	    bounce_gen_rcpts(*brief.children.prcpts).c_str(),
 	    HXTYPE_STRING | immed) < 0 ||
 	    HXformat_add(fa, "postmaster", bounce_gen_postmaster(), HXTYPE_STRING) < 0)
 		return false;
-	auto subj = pbrief->proplist.get<const char>(PR_SUBJECT);
+	auto subj = brief.proplist.get<const char>(PR_SUBJECT);
 	if (HXformat_add(fa, "subject", znul(subj), HXTYPE_STRING) < 0)
 		return false;
 	HX_unit_size(mixed_buf, std::size(mixed_buf), *message_size, 1000, 0);
@@ -85,8 +73,13 @@ static bool bounce_producer_make_content(meta_t meta,
 	return true;
 }
 
-bool exch_bouncer_make(buff_t gudn, meta_t meta,
-    const char *username, MESSAGE_CONTENT *pbrief,
+/**
+ * @username: Identity which is sending the bounce.
+ * @brief:    Original message. Contains the target of the bounce in
+ *            PR_SENDER/PR_SENT_REPR.
+ */
+bool exch_bouncer_make(buff_t gudn, const char *username,
+    const message_content &brief, proptag_t lang_tag,
     const char *bounce_type, vmime::shared_ptr<vmime::message> &pmail) try
 {
 	std::string dispname;
@@ -97,7 +90,7 @@ bool exch_bouncer_make(buff_t gudn, meta_t meta,
 	expeditor.setEmail(username);
 
 	std::string subject, content_buff;
-	if (!bounce_producer_make_content(meta, username, pbrief,
+	if (!bounce_producer_make_content(username, brief, lang_tag,
 	    bounce_type, subject, content_buff))
 		return false;
 
@@ -107,14 +100,14 @@ bool exch_bouncer_make(buff_t gudn, meta_t meta,
 	hdr->ContentType()->setValue(vmime::mediaType(vmime::mediaTypes::MULTIPART, vmime::mediaTypes::MULTIPART_REPORT));
 	vmime::dynamicCast<vmime::contentTypeField>(hdr->ContentType())->setReportType("disposition-notification");
 
-	auto bv = pbrief->proplist.get<const BINARY>(PR_CONVERSATION_INDEX);
+	auto bv = brief.proplist.get<const BINARY>(PR_CONVERSATION_INDEX);
 	if (bv != nullptr)
 		hdr->getField("Thread-Index")->setValue(base64_encode(*bv));
 	hdr->From()->setValue(expeditor);
-	auto str = pbrief->proplist.get<const char>(PR_SENT_REPRESENTING_NAME);
+	auto str = brief.proplist.get<const char>(PR_SENT_REPRESENTING_NAME);
 	if (str != nullptr && *str != '\0')
 		target.setName(vmime::text(str, vmime::charsets::UTF_8));
-	str = pbrief->proplist.get<char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
+	str = brief.proplist.get<char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 	if (str != nullptr) {
 		vmime::addressList target_list;
 		target.setEmail(str);
@@ -136,14 +129,14 @@ bool exch_bouncer_make(buff_t gudn, meta_t meta,
 	auto part2 = vmime::make_shared<vmime::bodyPart>();
 	vmime::header dsn;
 	dsn.getField("Final-Recipient")->setValue("rfc822;"s + username);
-	if (strcmp(bounce_type, "BOUNCE_NOTIFY_READ") == 0)
+	if (strcmp(bounce_type, "notify_read") == 0)
 		dsn.getField("Disposition")->setValue("automatic-action/MDN-sent-automatically; displayed");
-	else if (strcmp(bounce_type, "BOUNCE_NOTIFY_NON_READ") == 0)
+	else if (strcmp(bounce_type, "notify_non_read") == 0)
 		dsn.getField("Disposition")->setValue("manual-action/MDN-sent-automatically; deleted");
-	str = pbrief->proplist.get<char>(PR_INTERNET_MESSAGE_ID);
+	str = brief.proplist.get<char>(PR_INTERNET_MESSAGE_ID);
 	if (str != nullptr)
 		dsn.getField("Original-Message-ID")->setValue(str);
-	bv = pbrief->proplist.get<BINARY>(PR_PARENT_KEY);
+	bv = brief.proplist.get<BINARY>(PR_PARENT_KEY);
 	if (bv != nullptr)
 		dsn.getField("X-MSExch-Correlation-Key")->setValue(base64_encode(*bv));
 	dsn.getField("X-Display-Name")->setValue(expeditor);

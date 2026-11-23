@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
+// This file is part of Gromox.
 #include <algorithm>
 #include <atomic>
 #include <cerrno>
@@ -313,6 +315,16 @@ static void *mdl_thrwork(void *arg)
 				mlog(LV_ERR, "exmdb_local: partial read from %s", temp_path.c_str());
 				continue;
 			}
+			try {
+				auto vpctx = vmail_default_parsectx();
+				pcontext->vmail = vmime::make_shared<vmime::message>();
+				pcontext->vmail->parse(vpctx, std::string(pbuff, mess_len));
+			} catch (const vmime::exception &) {
+				free(pbuff);
+				mlog(LV_ERR, "exmdb_local: failed to retrieve message %s in "
+				       "cache queue into mail object", temp_path.c_str());
+				continue;
+			}
 			if (!pcontext->mail.refonly_parse(pbuff, mess_len)) {
 				free(pbuff);
 				mlog(LV_ERR, "exmdb_local: failed to retrieve message %s in "
@@ -383,7 +395,7 @@ static void *mdl_thrwork(void *arg)
 				if (static_cast<unsigned int>(g_retrying_times) <= times) {
 					need_bounce = TRUE;
 					need_remove = TRUE;
-					bounce_type = "BOUNCE_OPERATION_ERROR";
+					bounce_type = "operation_error";
 				} else {
 					need_bounce = FALSE;
 					need_remove = FALSE;
@@ -396,24 +408,24 @@ static void *mdl_thrwork(void *arg)
 				need_remove = TRUE;
 				break;
 			case delivery_status::bounce_sent:
-				bounce_type = "BOUNCE_MAIL_DELIVERED";
+				bounce_type = "mail_delivered";
 				need_bounce = TRUE;
 				need_remove = TRUE;
 				break;
 			case delivery_status::no_user:
 				exmdb_local_log_info(pcontext->ctrl, temp_rcpt, LV_ERR,
 					"<%s> has no mailbox here", temp_rcpt);
-				bounce_type = "BOUNCE_NO_USER";
+				bounce_type = "no_user";
 			    need_bounce = TRUE;
 				need_remove = TRUE;
 				break;
 			case delivery_status::mailbox_full:
-				bounce_type = "BOUNCE_MAILBOX_FULL";
+				bounce_type = "mailbox_full";
 			    need_bounce = TRUE;
 				need_remove = TRUE;
 			    break;
 			case delivery_status::perm_fail:
-				bounce_type = "BOUNCE_OPERATION_ERROR";
+				bounce_type = "operation_error";
 				need_bounce = TRUE;
 				need_remove = TRUE;
 				break;
@@ -447,7 +459,7 @@ static void *mdl_thrwork(void *arg)
 						"mails to %s", temp_rcpt);
 					put_context(pbounce_context);
 				} else if (!exml_bouncer_make(get_host_ID(), temp_from,
-				    temp_rcpt, &pcontext->mail, original_time,
+				    temp_rcpt, *pcontext->vmail, original_time,
 				    bounce_type, &pbounce_context->mail)) {
 					exmdb_local_log_info(pcontext->ctrl, ptr, LV_ERR,
 						"error during exml_bouncer_make for %s",

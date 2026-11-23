@@ -349,7 +349,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 	if (bounce_gen_init(g_config_file->get_value("config_file_path"),
-	    g_config_file->get_value("data_file_path"), "notify_bounce") != 0) {
+	    g_config_file->get_value("data_file_path")) != 0) {
 		mlog(LV_ERR, "system: failed to start bounce producer");
 		return EXIT_FAILURE;
 	}

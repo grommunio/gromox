@@ -277,7 +277,7 @@ void transporter_stop()
 
 static gromox::hook_result remote_delivery_hook(MESSAGE_CONTEXT *ctx)
 {
-	auto err = cu_send_mail(ctx->mail, g_outgoing_smtp_url.c_str(),
+	auto err = cu_send_vmail(ctx->vmail, g_outgoing_smtp_url.c_str(),
 	           ctx->ctrl.from, ctx->ctrl.rcpt);
 	if (err != ecSuccess)
 		mlog(LV_ERR, "E-2134: cu_send_mail: %s", mapi_strerror(err));
@@ -374,8 +374,12 @@ static void *dxp_thrwork(void *arg)
 		} else {
 			cannot_served_times = 0;
 			pcontext = &pthr_data->mctx;
-			if (!pcontext->mail.refonly_parse(static_cast<char *>(pmessage->mail_begin),
-			    pmessage->mail_length)) {
+			auto vpctx = vmail_default_parsectx();
+			pcontext->eml = std::string(static_cast<char *>(pmessage->mail_begin), pmessage->mail_length);
+			pcontext->vmail = vmime::make_shared<vmime::message>();
+			pcontext->vmail->parse(vpctx, pcontext->eml);
+			if (!pcontext->mail.refonly_parse(pcontext->eml.c_str(),
+			    pcontext->eml.size())) {
 				mlog(LV_ERR, "QID %d: Failed to "
 					"load into mail object", pmessage->flush_ID);
 				auto ret = message_dequeue_save(pmessage);
@@ -414,6 +418,7 @@ static void *dxp_thrwork(void *arg)
 		}
 		if (pmessage != nullptr) {
 			pcontext->ctrl.rcpt.clear();
+			pcontext->vmail.reset();
 			pcontext->mail.clear();
 			if (pass_result == hook_result::proc_error)
 				message_dequeue_save(pmessage);
@@ -544,6 +549,7 @@ static void transporter_insert_ctx(MESSAGE_CONTEXT *pcontext)
 	pcontext->ctrl.bound_type = BOUND_UNKNOWN;
 	pcontext->ctrl.need_bounce = FALSE;
 	pcontext->ctrl.from[0] = '\0';
+	pcontext->vmail.reset();
 	pcontext->mail.clear();
 	std::lock_guard ctx_hold(g_context_lock);
 	g_free_list.emplace_back(pcontext);

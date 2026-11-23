@@ -1318,18 +1318,29 @@ ec_error_t cu_send_message(store_object &store, message_object &msg,
 	return ecServerOOM;
 }
 
-void common_util_notify_receipt(const char *username, int type,
-    MESSAGE_CONTENT *pbrief) try
+static propid_t cu_acceptlang_propid(store_object &store)
 {
-	auto str = pbrief->proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
+	const PROPERTY_NAME arr[] = {{MNID_STRING, PS_INTERNET_HEADERS, 0, deconst("Accept-Language")}};
+	const PROPNAME_ARRAY pn = {std::size(arr), deconst(arr)};
+	PROPID_ARRAY ids{};
+	return store.get_named_propids(false, &pn, &ids) == ecSuccess &&
+	       ids.size() > 0 ? ids[0] : 0;
+}
+
+void common_util_notify_receipt(store_object &store, unsigned int type,
+    const message_content &brief) try
+{
+	auto username = store.get_account();
+	auto str = brief.proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 	if (str == nullptr)
 		return;
 	std::vector<std::string> rcpt_list = {str};
 	auto bounce_type = type == NOTIFY_RECEIPT_READ ?
-	                   "BOUNCE_NOTIFY_READ" : "BOUNCE_NOTIFY_NON_READ";
+	                   "notify_read" : "notify_non_read";
 	vmime::shared_ptr<vmime::message> imail;
 	if (!exch_bouncer_make(mysql_adaptor_get_user_displayname,
-	    mysql_adaptor_meta, username, pbrief, bounce_type, imail))
+	    username, brief, PROP_TAG(PT_UNICODE, cu_acceptlang_propid(store)),
+	    bounce_type, imail))
 		return;
 	imail->getHeader()->getField("X-Mailer")->setValue(vmime::text(ZCORE_UA));
 	auto ret = cu_send_vmail(std::move(imail), g_smtp_url.c_str(),

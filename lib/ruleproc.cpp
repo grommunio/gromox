@@ -1771,19 +1771,8 @@ static ec_error_t opx_forward(rxparam &par, const rule_node &rule,
 /* Body of a reply that uses STOCK_REPLY_TEMPLATE */
 static bool rx_stock_reply_body(rxparam &par, std::string &body) try
 {
-	const char *charset = nullptr;
-	sql_meta_result mres;
-	if (mysql_adaptor_meta(par.ev_from, WANTPRIV_METAONLY, mres) == 0)
-		charset = lang_to_charset(mres.lang.c_str());
 	auto &props = par.ctnt->proplist;
-	if (znoval(charset)) {
-		auto cpid = props.get<const uint32_t>(PR_INTERNET_CPID);
-		if (cpid != nullptr)
-			charset = cpid_to_cset(static_cast<cpid_t>(*cpid));
-		if (charset == nullptr)
-			charset = "ascii";
-	}
-	auto tp = bounce_gen_lookup(charset, "BOUNCE_AUTO_RESPONSE");
+	auto tp = bounce_gen_lookup(bounce_gen_langpref(*par.ctnt, PR_NULL), "auto_response");
 	if (tp == nullptr)
 		return false;
 	std::string parts;
@@ -2202,13 +2191,13 @@ static ec_error_t op_bounce(rxparam &par, const rule_node &rule,
 	const char *type = nullptr;
 	switch (*code) {
 	case BOUNCE_CODE_MESSAGE_TOO_LARGE:
-		type = "BOUNCE_MAIL_TOO_LARGE";
+		type = "mail_too_large";
 		break;
 	case BOUNCE_CODE_MESSAGE_NOT_DISPLAYED:
-		type = "BOUNCE_CANNOT_DISPLAY";
+		type = "cannot_display";
 		break;
 	case BOUNCE_CODE_MESSAGE_DENIED:
-		type = "BOUNCE_GENERIC_ERROR";
+		type = "generic_error";
 		break;
 	default:
 		mlog(LV_WARN, "ruleproc: %s: OP_BOUNCE with unknown code %xh",
@@ -2232,12 +2221,17 @@ static ec_error_t op_bounce(rxparam &par, const rule_node &rule,
 			par.orig_dir.c_str());
 		return ecSuccess;
 	}
-	MAIL orig, ndr;
-	if (!orig.refonly_parse(eml->c_str(), eml->size()))
+	MAIL ndr;
+	vmime::message orig;
+	auto vpctx = vmail_default_parsectx();
+	try {
+		orig.parse(*eml);
+	} catch (const vmime::exception &) {
 		return ecError;
+	}
 	auto dtime = props.get<const uint64_t>(PR_MESSAGE_DELIVERY_TIME);
 	auto arrival = dtime != nullptr ? rop_util_nttime_to_unix(*dtime) : time(nullptr);
-	if (!exml_bouncer_make(get_host_ID(), par.ev_from, par.ev_to, &orig,
+	if (!exml_bouncer_make(get_host_ID(), par.ev_from, par.ev_to, orig,
 	    arrival, type, &ndr)) {
 		mlog(LV_ERR, "ruleproc: %s: OP_BOUNCE: no report for %s",
 			par.orig_dir.c_str(), type);
@@ -5042,7 +5036,7 @@ bool SVC_ruleproc(enum plugin_op reason, const struct dlfuncs &param)
 		return false;
 	g_ruleproc_debug = parse_bool(cfg->get_value("ruleproc_debug"));
 	/* Only needed for STOCK_REPLY_TEMPLATE */
-	if (bounce_gen_init(get_config_path(), get_data_path(), "mail_bounce") != 0)
+	if (bounce_gen_init(get_config_path(), get_data_path()) != 0)
 		mlog(LV_WARN, "ruleproc: stock reply templates unavailable");
 	auto org = cfg->get_value("x500_org_name");
 	std::shared_ptr<config_file> lcl;

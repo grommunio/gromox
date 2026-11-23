@@ -106,8 +106,8 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 			}
 			if (!bounce_audit_check(rcpt_buff) ||
 			    !exml_bouncer_make(get_host_ID(), pcontext->ctrl.from,
-			    rcpt_buff, &pcontext->mail, time(nullptr),
-			    "BOUNCE_MAIL_DELIVERED", &pbounce_context->mail)) {
+			    rcpt_buff, *pcontext->vmail, time(nullptr),
+			    "mail_delivered", &pbounce_context->mail)) {
 				exmdb_local_log_info(pcontext->ctrl, rcpt_buff, LV_ERR,
 					"delivery_status::bounce_sent %s", rcpt_buff);
 				put_context(pbounce_context);
@@ -142,8 +142,8 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 			}
 			if (!bounce_audit_check(rcpt_buff) ||
 			    !exml_bouncer_make(get_host_ID(), pcontext->ctrl.from,
-			    rcpt_buff, &pcontext->mail, time(nullptr),
-			    "BOUNCE_NO_USER", &pbounce_context->mail)) {
+			    rcpt_buff, *pcontext->vmail, time(nullptr),
+			    "no_user", &pbounce_context->mail)) {
 				exmdb_local_log_info(pcontext->ctrl, rcpt_buff, LV_ERR,
 					"No such user %s", rcpt_buff);
 				put_context(pbounce_context);
@@ -167,8 +167,8 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 			}
 			if (!bounce_audit_check(rcpt_buff) ||
 			    !exml_bouncer_make(get_host_ID(), pcontext->ctrl.from,
-			    rcpt_buff, &pcontext->mail, time(nullptr),
-			    "BOUNCE_MAILBOX_FULL", &pbounce_context->mail)) {
+			    rcpt_buff, *pcontext->vmail, time(nullptr),
+			    "mailbox_full", &pbounce_context->mail)) {
 				put_context(pbounce_context);
 				break;
 			}
@@ -191,8 +191,8 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 			}
 			if (!bounce_audit_check(rcpt_buff) ||
 			    !exml_bouncer_make(get_host_ID(), pcontext->ctrl.from,
-			    rcpt_buff, &pcontext->mail, time(nullptr),
-			    "BOUNCE_OPERATION_ERROR", &pbounce_context->mail)) {
+			    rcpt_buff, *pcontext->vmail, time(nullptr),
+			    "operation_error", &pbounce_context->mail)) {
 				exmdb_local_log_info(pcontext->ctrl, rcpt_buff, LV_ERR,
 					"Unspecified error during delivery to %s", rcpt_buff);
 				put_context(pbounce_context);
@@ -625,8 +625,7 @@ bool HOOK_exmdb_local(enum plugin_op reason, const struct dlfuncs &ppdata)
 		exmdb_rpc_free  = [](void *) STATIC_IN_CXX23 {};
 		exmdb_local_init(org_name);
 
-		if (bounce_gen_init(get_config_path(), get_data_path(),
-		    "local_bounce") != 0) {
+		if (bounce_gen_init(get_config_path(), get_data_path()) != 0) {
 			mlog(LV_ERR, "exmdb_local: failed to start bounce producer");
 			return FALSE;
 		}

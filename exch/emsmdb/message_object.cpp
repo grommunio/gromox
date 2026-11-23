@@ -1304,8 +1304,8 @@ ec_error_t message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 	    pmessage->cpid, pmessage->message_id, &pbrief))
 		return ecRpcFailed;
 	if (pbrief != nullptr)
-		common_util_notify_receipt(pmessage->plogon->get_account(),
-			NOTIFY_RECEIPT_READ, pbrief);
+		common_util_notify_receipt(*pmessage->plogon,
+			NOTIFY_RECEIPT_READ, *pbrief);
 	const TAGGED_PROPVAL propval_buff[] = {
 		{PR_READ_RECEIPT_REQUESTED, deconst(&byte_value_zero)},
 		{PR_NON_RECEIPT_NOTIFICATION_REQUESTED, deconst(&byte_value_zero)},

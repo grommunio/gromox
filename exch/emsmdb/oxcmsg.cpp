@@ -622,8 +622,8 @@ static BOOL oxcmsg_setreadflag(logon_object *plogon,
 	if (!exmdb_client->get_message_brief(dir, pinfo->cpid, message_id, &pbrief))
 		return FALSE;	
 	if (pbrief != nullptr)
-		common_util_notify_receipt(plogon->get_account(),
-			NOTIFY_RECEIPT_READ, pbrief);
+		common_util_notify_receipt(*plogon,
+			NOTIFY_RECEIPT_READ, *pbrief);
 	const TAGGED_PROPVAL propval_buff[] = {
 		{PR_READ_RECEIPT_REQUESTED, deconst(&byte_value_zero)},
 		{PR_NON_RECEIPT_NOTIFICATION_REQUESTED, deconst(&byte_value_zero)},

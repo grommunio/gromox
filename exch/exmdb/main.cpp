@@ -40,7 +40,6 @@
 #include <gromox/svc_loader.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
-#include "bounce_producer.hpp"
 #include "db_engine.hpp"
 #include "parser.hpp"
 
@@ -263,8 +262,7 @@ bool SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 		exmdb_client.emplace(connection_num);
 		exmdb_client->set_async_notif(exmdb_server::event_proc);
 		exmdb_client->m_allow_lpc = run_parser && g_istore_standalone == 0;
-		if (bounce_gen_init(get_config_path(), get_data_path(),
-		    "mail_bounce") != 0) {
+		if (bounce_gen_init(get_config_path(), get_data_path()) != 0) {
 			mlog(LV_ERR, "exmdb_provider: failed to start bounce producer");
 			return FALSE;
 		}
