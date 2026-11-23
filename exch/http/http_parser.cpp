@@ -717,9 +717,13 @@ tproc_status http_parser::rdhead_mt(http_context *pcontext, char *line,
 		pcontext->log(LV_DEBUG, "D-1925: request header has no colon");
 		return http_done(pcontext, http_status::bad_request_CL);
 	}
-
-	size_t tmp_len = ptoken - line;
 	char field_name[64];
+	size_t tmp_len = ptoken - line;
+	if (tmp_len > std::size(field_name) - 1) {
+		pcontext->log(LV_DEBUG, "%s: request header %.*s too long", __func__,
+			static_cast<int>(std::max(tmp_len, static_cast<size_t>(64))), line);
+		return http_done(pcontext, http_status::bad_request_CL);
+	}
 	memcpy(field_name, line, tmp_len);
 	field_name[tmp_len] = '\0';
 	HX_strrtrim(field_name);
