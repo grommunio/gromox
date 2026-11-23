@@ -16,9 +16,21 @@
 
 using namespace gromox;
 
-/* In PHP-MAPI, PT_STRING8 means UTF-8
- * string. We do not use PT_UNICODE,
-	there's no definition for ansi string */
+/*
+ * In MSMAPI, PT_UNICODE designates the use of the wide string API with UTF-16,
+ * and PT_STRING8 the narrow one with local encoding (system codepage).
+ *
+ * For php_mapi, the same. PHP has just narrow string APIs and you ought to
+ * only see PT_STRING8 props. type_conversion.cpp ought to convert the string
+ * data to the system codepage, but for simplicity of implementation and
+ * because nobody runs php_mapi on Windows, t_c will just always place
+ * utf-8/cp65001 data.)
+ *
+ * gromox-istore has a third meaning in its realm. Both PT_UNICODE and
+ * PT_STRING8 designate narrow mode and UTF-8. Necessary conversions are done
+ * at the boundary (e.g. rop_ext.cpp for MSMAPI, type_conversion.cpp for PHP
+ * scripts).
+ */
 proptag_t proptag_to_phptag(proptag_t proptag)
 {
 	switch (PROP_TYPE(proptag)) {
