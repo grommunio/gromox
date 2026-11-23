@@ -125,12 +125,12 @@ bool exch_bouncer_make(buff_t gudn, meta_t meta,
 	hdr->Date()->setValue(vmime::datetime::now());
 	hdr->Subject()->setValue(vmime::text(std::move(subject), vmime::charsets::UTF_8));
 
-	vmime::encoding enc;
-	enc.setUsage(vmime::encoding::EncodingUsage::USAGE_TEXT);
+	auto cth = vmime::make_shared<vmime::stringContentHandler>(std::move(content_buff));
+	auto enc = vmime::encoding::decide(cth, vmime::charsets::UTF_8, vmime::encoding::USAGE_TEXT);
 	auto part1 = vmime::make_shared<vmime::bodyPart>();
-	part1->getBody()->setContents(vmime::make_shared<vmime::stringContentHandler>(std::move(content_buff), std::move(enc)),
+	part1->getBody()->setContents(std::move(cth),
 		vmime::mediaType(vmime::mediaTypes::TEXT, vmime::mediaTypes::TEXT_PLAIN),
-		vmime::charsets::UTF_8);
+		vmime::charsets::UTF_8, std::move(enc));
 	pmail->getBody()->appendPart(std::move(part1));
 
 	auto part2 = vmime::make_shared<vmime::bodyPart>();

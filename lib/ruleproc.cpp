@@ -1594,11 +1594,12 @@ static ec_error_t op_sms_alert(rxparam &par, const rule_node &rule,
 	hdr->getField("X-Auto-Response-Suppress")->setValue("All");
 	for (const auto &r : rcpt_list)
 		hdr->appendField(vmime::headerFieldFactory::getInstance()->create("Delivered-To", r));
-	vmime::encoding enc;
-	enc.setUsage(vmime::encoding::EncodingUsage::USAGE_TEXT);
-	msg->getBody()->setContents(vmime::make_shared<vmime::stringContentHandler>(std::move(body), std::move(enc)),
+
+	auto cth = vmime::make_shared<vmime::stringContentHandler>(std::move(body));
+	auto enc = vmime::encoding::decide(cth, vmime::charsets::UTF_8, vmime::encoding::USAGE_TEXT);
+	msg->getBody()->setContents(std::move(cth),
 		vmime::mediaType(vmime::mediaTypes::TEXT, vmime::mediaTypes::TEXT_PLAIN),
-		vmime::charsets::UTF_8);
+		vmime::charsets::UTF_8, std::move(enc));
 	auto ret = cu_send_vmail(std::move(msg), rp_smtp_url.c_str(), par.ev_to, rcpt_list);
 	if (ret != ecSuccess)
 		mlog(LV_ERR, "ruleproc: SMS alert cu_send_vmail: %s", mapi_strerror(ret));
