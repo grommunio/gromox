@@ -140,7 +140,11 @@ static void defer_scan_all()
 			return;
 		if (u.maildir.empty())
 			continue;
-		/* Only stores homed on this node, else nodes duplicate sends. */
+		/*
+		 * Only arm stores that the current host is authoritative for.
+		 * Otherwise, multiple hosts would process the same deferred
+		 * send list at the same time.
+		 */
 		bool pvt = false;
 		if (exmdb_parser_is_local(u.maildir.c_str(), &pvt) != 0 || !pvt)
 			continue;
