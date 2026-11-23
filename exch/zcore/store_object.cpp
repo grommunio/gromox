@@ -823,7 +823,7 @@ ec_error_t store_object::get_props(proptag_cspan pproptags,
 		if (tmp_proptags.count == 0)
 			return ecSuccess;
 	}
-	if (!exmdb_client->get_store_properties(pstore->dir, pinfo->cpid,
+	if (!exmdb_client->get_store_properties(pstore->dir, CP_UTF8,
 	    tmp_proptags, &tmp_propvals))
 		return ecRpcFailed;
 	if (tmp_propvals.count == 0)

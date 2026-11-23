@@ -166,7 +166,7 @@ ec_error_t table_object::load()
 			new_table_flags |= TABLE_FLAG_SOFTDELETES;
 		if (ptable->table_flags & MAPI_ASSOCIATED)
 			new_table_flags |= TABLE_FLAG_ASSOCIATED;
-		if (!exmdb_client->load_content_table(ptable->pstore->get_dir(), pinfo->cpid,
+		if (!exmdb_client->load_content_table(ptable->pstore->get_dir(), CP_UTF8,
 		    static_cast<folder_object *>(ptable->pparent_obj)->folder_id,
 		    username, new_table_flags, ptable->prestriction,
 		    ptable->psorts, &new_table_id, &row_num))
@@ -550,7 +550,7 @@ static ec_error_t hierconttbl_query_rows(const table_object *ptable,
 		if (idx_rig != pcolumns.npos)
 			tmp_columns.pproptag[idx_rig] = PidTagFolderId;
 		if (!exmdb_client->query_table(ptable->pstore->get_dir(),
-		    username, pinfo->cpid, ptable->table_id, tmp_columns,
+		    username, CP_UTF8, ptable->table_id, tmp_columns,
 		    ptable->position, row_needed, &temp_set))
 			return ecRpcFailed;
 		if (idx_psk != pcolumns.npos &&
@@ -576,7 +576,7 @@ static ec_error_t hierconttbl_query_rows(const table_object *ptable,
 		}
 	} else {
 		if (!exmdb_client->query_table(ptable->pstore->get_dir(),
-		    username, pinfo->cpid, ptable->table_id,
+		    username, CP_UTF8, ptable->table_id,
 		    pcolumns, ptable->position, row_needed, &temp_set))
 			return ecRpcFailed;
 	}
@@ -655,7 +655,7 @@ ec_error_t table_object::query_rows(/*maybenull*/ const proptag_cspan *icols,
 		return u->query_member_table(cols, ptable->position, row_count, pset);
 	} else if (ptable->table_type == zcore_tbltype::rule) {
 		if (!exmdb_client->query_table(ptable->pstore->get_dir(),
-		    nullptr, pinfo->cpid, ptable->table_id, cols,
+		    nullptr, CP_UTF8, ptable->table_id, cols,
 		    ptable->position, row_count, pset))
 			return ecRpcFailed;
 		for (auto &row : *pset)
@@ -670,7 +670,7 @@ ec_error_t table_object::query_rows(/*maybenull*/ const proptag_cspan *icols,
 	    ptable->table_type == zcore_tbltype::hierarchy))
 		return hierconttbl_query_rows(ptable, cols, tmp_columns, pinfo, row_count, pset);
 	return exmdb_client->query_table(ptable->pstore->get_dir(),
-	       username, pinfo->cpid, ptable->table_id, cols,
+	       username, CP_UTF8, ptable->table_id, cols,
 	       ptable->position, row_count, pset) ? ecSuccess : ecRpcFailed;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
@@ -1033,7 +1033,7 @@ ec_error_t table_object::match_row(BOOL b_forward, const RESTRICTION *pres,
 	auto username = ptable->pstore->b_private ? nullptr : pinfo->get_username();
 	static constexpr proptag_t proptag_buff[] = {PidTagInstID, PidTagInstanceNum};
 	return exmdb_client->match_table(ptable->pstore->get_dir(), username,
-		pinfo->cpid, ptable->table_id, b_forward,
+		CP_UTF8, ptable->table_id, b_forward,
 		ptable->position, pres, proptag_buff, pposition,
 		&tmp_propvals) ? ecSuccess : ecRpcFailed;
 }

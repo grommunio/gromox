@@ -71,11 +71,6 @@ Convert a HTML document to RTF.
 \fB\-\-htmltotext\fP
 Convert a HTML document to plaintext.
 .TP
-\fB\-\-langtocset\fP
-Show the preferred 8-bit character set associated with a given language tag
-(identifier in the style of XPG4 locales, but only a few well-known fixed
-strings are accepted, e.g. "zh_TW").
-.TP
 \fB\-\-langtolcid\fP
 For a given language tag (RFC 5646 form, e.g. "en-US"), show the corresponding
 numeric Windows locale identifier (LCID).

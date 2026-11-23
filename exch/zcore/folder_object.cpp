@@ -439,9 +439,8 @@ ec_error_t folder_object::get_props(proptag_cspan pproptags,
 	}
 	if (tmp_proptags.count == 0)
 		return ecSuccess;
-	auto pinfo = zs_get_info();
 	if (!exmdb_client->get_folder_properties(pfolder->pstore->get_dir(),
-	    pinfo->cpid, pfolder->folder_id, tmp_proptags, &tmp_propvals))
+	    CP_UTF8, pfolder->folder_id, tmp_proptags, &tmp_propvals))
 		return ecRpcFailed;
 	if (tmp_propvals.count == 0)
 		return ecSuccess;
@@ -492,9 +491,8 @@ ec_error_t folder_object::set_props(const TPROPVAL_ARRAY *ppropvals)
 	tmp_propvals.ppropval[tmp_propvals.count++].pvalue = pbin_pcl;
 	tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_LAST_MODIFICATION_TIME;
 	tmp_propvals.ppropval[tmp_propvals.count++].pvalue = &last_time;
-	auto pinfo = zs_get_info();
 	if (!exmdb_client->set_folder_properties(pfolder->pstore->get_dir(),
-	    pinfo->cpid, pfolder->folder_id, &tmp_propvals, &tmp_problems))
+	    CP_UTF8, pfolder->folder_id, &tmp_propvals, &tmp_problems))
 		return ecRpcFailed;
 	auto delegates = ppropvals->get<const BINARY_ARRAY>(PR_SCHDINFO_DELEGATE_ENTRYIDS);
 	if (pfolder->pstore->b_private && delegates != nullptr)

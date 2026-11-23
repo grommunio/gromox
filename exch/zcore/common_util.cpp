@@ -91,6 +91,7 @@ static thread_local const char *g_dir_key;
 static thread_local unsigned int g_env_refcount;
 static thread_local std::unique_ptr<env_context> g_env_key;
 static constexpr char ZCORE_UA[] = PACKAGE_NAME "-zcore " PACKAGE_VERSION;
+static constexpr int32_t cpid_utf8 = CP_UTF8;
 
 bool cu_verify_columns_and_sorts(proptag_cspan cols, const SORTORDER_SET *psort_criteria)
 {
@@ -1168,13 +1169,11 @@ ec_error_t cu_send_message(store_object &store, message_object &msg,
 	TAGGED_PROPVAL *ppropval;
 	MESSAGE_CONTENT *pmsgctnt;
 	
-	auto pinfo = zs_get_info();
-	cpid_t cpid = pinfo == nullptr ? CP_UTF8 : pinfo->cpid;
-	if (!exmdb_client_get_message_property(store.get_dir(), nullptr, CP_ACP,
+	if (!exmdb_client_get_message_property(store.get_dir(), nullptr, CP_UTF8,
 	    message_id, PidTagParentFolderId, &pvalue) || pvalue == nullptr)
 		return ecNotFound;
 	auto parent_id = *static_cast<uint64_t *>(pvalue);
-	if (!exmdb_client->read_message(store.get_dir(), nullptr, cpid,
+	if (!exmdb_client->read_message(store.get_dir(), nullptr, CP_UTF8,
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
 		return ecRpcFailed;
 	if (!pmsgctnt->proplist.has(PR_INTERNET_CPID)) {
@@ -1184,7 +1183,7 @@ ec_error_t cu_send_message(store_object &store, message_object &msg,
 		memcpy(ppropval, pmsgctnt->proplist.ppropval,
 			sizeof(TAGGED_PROPVAL)*pmsgctnt->proplist.count);
 		ppropval[pmsgctnt->proplist.count].proptag = PR_INTERNET_CPID;
-		ppropval[pmsgctnt->proplist.count++].pvalue = &cpid;
+		ppropval[pmsgctnt->proplist.count++].pvalue = deconst(&cpid_utf8);
 		pmsgctnt->proplist.ppropval = ppropval;
 	}
 	auto num = pmsgctnt->proplist.get<const uint32_t>(PR_MESSAGE_FLAGS);
@@ -1242,6 +1241,7 @@ ec_error_t cu_send_message(store_object &store, message_object &msg,
 		subject = pmsgctnt->proplist.get<const char>(PR_NORMALIZED_SUBJECT);
 	if (subject == nullptr)
 		subject = "";
+	auto pinfo = zs_get_info();
 	auto audit_actor = pinfo == nullptr ? nullptr : pinfo->get_username();
 	auto sender = pmsgctnt->proplist.get<const char>(PR_SENDER_SMTP_ADDRESS);
 	auto representing = pmsgctnt->proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
@@ -1276,7 +1276,7 @@ ec_error_t cu_send_message(store_object &store, message_object &msg,
 		 * the emsmdb twin.
 		 */
 		const EID_ARRAY sole_ids = {1, &message_id};
-		if (!exmdb_client->delete_messages(store.get_dir(), cpid,
+		if (!exmdb_client->delete_messages(store.get_dir(), CP_UTF8,
 		    nullptr, parent_id, sole_ids, TRUE, &b_partial) || b_partial)
 			/* ignore, as in the PR_DELETE_AFTER_SUBMIT branch below */;
 		return ecSuccess;
@@ -1289,13 +1289,13 @@ ec_error_t cu_send_message(store_object &store, message_object &msg,
 			return ecWarnWithErrors;
 		if (!exmdb_client->clear_submit(store.get_dir(), message_id, false))
 			return ecWarnWithErrors;
-		if (!exmdb_client->movecopy_message(store.get_dir(), cpid,
+		if (!exmdb_client->movecopy_message(store.get_dir(), CP_UTF8,
 		    message_id, folder_id, new_id, TRUE, &b_partial) || b_partial)
 			return ecWarnWithErrors;
 		return ecSuccess;
 	} else if (b_delete) {
 		const EID_ARRAY ids = {1, &message_id};
-		if (!exmdb_client->delete_messages(store.get_dir(), cpid,
+		if (!exmdb_client->delete_messages(store.get_dir(), CP_UTF8,
 		    nullptr, parent_id, ids, TRUE, &b_partial) || b_partial)
 			/* ignore */;
 		return ecSuccess;
@@ -1309,7 +1309,7 @@ ec_error_t cu_send_message(store_object &store, message_object &msg,
 		folder_id = eid_t(1, PRIVATE_FID_SENT_ITEMS);
 
 	const EID_ARRAY ids = {1, &message_id};
-	if (!exmdb_client->movecopy_messages(store.get_dir(), cpid, false,
+	if (!exmdb_client->movecopy_messages(store.get_dir(), CP_UTF8, false,
 	    STORE_OWNER_GRANTED, parent_id, folder_id, false, ids, &b_partial) || b_partial)
 		return ecWarnWithErrors;
 	return ecSuccess;
@@ -1599,7 +1599,7 @@ ec_error_t cu_remote_copy_message(store_object &src_store, uint64_t message_id,
 	auto pinfo = zs_get_info();
 	auto username = src_store.b_private ? nullptr : pinfo->get_username();
 	if (!exmdb_client->read_message(src_store.get_dir(), username,
-	    pinfo->cpid, message_id, &pmsgctnt))
+	    CP_UTF8, message_id, &pmsgctnt))
 		return ecError;
 	if (pmsgctnt == nullptr)
 		return ecSuccess;
@@ -1635,7 +1635,7 @@ ec_error_t cu_remote_copy_message(store_object &src_store, uint64_t message_id,
 		return err;
 	err = ecError;
 	uint64_t outmid = 0, outcn = 0;
-	if (!exmdb_client->write_message(dst_store.get_dir(), pinfo->cpid,
+	if (!exmdb_client->write_message(dst_store.get_dir(), CP_UTF8,
 	    folder_id1, pmsgctnt, {}, &outmid, &outcn, &err) ||
 	    err != ecSuccess)
 		return err;
@@ -1699,7 +1699,7 @@ static ec_error_t cu_create_folder(store_object &store, uint64_t parent_id,
 		return err;
 	auto pinfo = zs_get_info();
 	err = ecSuccess;
-	if (!exmdb_client->create_folder(store.get_dir(), pinfo->cpid,
+	if (!exmdb_client->create_folder(store.get_dir(), CP_UTF8,
 	    pproplist, pfolder_id, &err))
 		return ecError;
 	if (err != ecSuccess)
@@ -1834,8 +1834,6 @@ ec_error_t cu_message_to_rfc822(store_object &store, uint64_t inst_id,
 	TAGGED_PROPVAL *ppropval;
 	MESSAGE_CONTENT msgctnt{}, *pmsgctnt = &msgctnt;
 	
-	auto pinfo = zs_get_info();
-	cpid_t cpid = pinfo == nullptr ? CP_UTF8 : pinfo->cpid;
 	if (!exmdb_client->read_message_instance(store.get_dir(),
 	    inst_id, &msgctnt))
 		return ecRpcFailed;
@@ -1846,7 +1844,7 @@ ec_error_t cu_message_to_rfc822(store_object &store, uint64_t inst_id,
 		memcpy(ppropval, pmsgctnt->proplist.ppropval,
 			sizeof(TAGGED_PROPVAL)*pmsgctnt->proplist.count);
 		ppropval[pmsgctnt->proplist.count].proptag = PR_INTERNET_CPID;
-		ppropval[pmsgctnt->proplist.count++].pvalue = &cpid;
+		ppropval[pmsgctnt->proplist.count++].pvalue = deconst(&cpid_utf8);
 		pmsgctnt->proplist.ppropval = ppropval;
 	}
 	common_util_set_dir(store.get_dir());
@@ -1896,10 +1894,8 @@ ec_error_t cu_message_to_ical(store_object &store, uint64_t message_id,
 	ical ical;
 	MESSAGE_CONTENT *pmsgctnt;
 	
-	auto pinfo = zs_get_info();
-	cpid_t cpid = pinfo == nullptr ? CP_UTF8 : pinfo->cpid;
 	auto dir = store.get_dir();
-	if (!exmdb_client->read_message(dir, nullptr, cpid,
+	if (!exmdb_client->read_message(dir, nullptr, CP_UTF8,
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
 		return ecRpcFailed;
 	common_util_set_dir(dir);
@@ -1981,9 +1977,7 @@ ec_error_t cu_message_to_vcf(message_object &msg, BINARY *pvcf_bin)
 	auto message_id = msg.get_id();
 	MESSAGE_CONTENT *pmsgctnt;
 	
-	auto pinfo = zs_get_info();
-	cpid_t cpid = pinfo == nullptr ? CP_UTF8 : pinfo->cpid;
-	if (!exmdb_client->read_message(store.get_dir(), nullptr, cpid,
+	if (!exmdb_client->read_message(store.get_dir(), nullptr, CP_UTF8,
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
 		return ecRpcFailed;
 	common_util_set_dir(store.get_dir());

@@ -31,7 +31,7 @@ enum {
 	CM_DEC_NTTIME, CM_DEC_RESTRICT, CM_DEC_UNIXTIME,
 	CM_BIN2HEX, CM_BIN2TXT, CM_LZXPDEC, CM_LZXPENC, CM_HTMLTORTF,
 	CM_HTMLTOTEXT, CM_RTFCP, CM_RTFTOHTML, CM_RTFTOGXHT,
-	CM_TEXTTOHTML, CM_UNRTFCP, CM_LANGTOCSET, CM_LCIDTOLTAG, CM_LTAGTOLCID,
+	CM_TEXTTOHTML, CM_UNRTFCP, CM_LCIDTOLTAG, CM_LTAGTOLCID,
 	CM_QPDECODE, CM_QPENCODE, CM_CSETTOCPID, CM_CPIDTOCSET,
 	CM_EXTTOMIME, CM_MIMETOEXT, CM_PROPTAG, CM_MDIGEST,
 };
@@ -51,7 +51,6 @@ static constexpr struct HXoption g_options_table[] = {
 	{"exttomime", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_EXTTOMIME, "Convert filename extension to MIME type"},
 	{"htmltortf", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_HTMLTORTF, "Convert HTML to RTF"},
 	{"htmltotext", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_HTMLTOTEXT, "Convert HTML to plaintext"},
-	{"langtocset", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_LANGTOCSET, "Show default charset for language"},
 	{"lcidtoltag", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_LCIDTOLTAG, "Convert locale ID to locale tag (RFC 5646)"},
 	{"ltagtolcid", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_LTAGTOLCID, "Convert locale tag to locale ID"},
 	{"lzxpdec", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_LZXPDEC, "LZXpress/XCA decompression"},
@@ -648,11 +647,6 @@ static int do_process_2(std::string_view &&data, const char *str)
 			perror("write");
 			return 01;
 		}
-		return 0;
-	}
-	case CM_LANGTOCSET: {
-		auto cset = lang_to_charset(str);
-		printf("%s: %s\n", str, cset != nullptr ? cset : "?");
 		return 0;
 	}
 	case CM_LCIDTOLTAG: {
