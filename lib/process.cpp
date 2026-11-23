@@ -1020,12 +1020,12 @@ void workqueue::mainloop()
 		auto now = tp_now();
 		auto tsk = m_tasklist.begin();
 		if (now < tsk->start_time)
-			continue; /* Not ready yet */
+			continue; /* Not ready to run */
 
 		/*
-		 * tsk is going invalid with lk.unlock. Move important parts to
-		 * the local scope. The task must stay in the list though, so
-		 * the duplicate name check still works.
+		 * The iterator is going invalid with lk.unlock. Move important
+		 * parts to the local scope. The task object must stay in the
+		 * list though, so the duplicate name check still works.
 		 */
 		auto func   = std::move(tsk->func);
 		auto obj    = std::move(tsk->obj);
@@ -1060,13 +1060,17 @@ void workqueue::mainloop()
 		auto next_time = tp_now() + period;
 		lk.lock();
 		/*
-		 * Position in vector may have changed, so a re-lookup is needed.
-		 * Comparing the name by pointer value is sufficient.
+		 * The position of the task object in the vector may have
+		 * changed, so re-obtain the iterator. Comparing the name by
+		 * pointer value is sufficient (there are no duplicated names,
+		 * so there won't be pointers to strings comparing equal).
 		 */
 		tsk = std::find_if(m_tasklist.begin(), m_tasklist.end(),
 		      [&](const wq_task &t) { return t.name == name; });
 		if (tsk == m_tasklist.end())
 			continue;
+
+		/* New insertion point for the next scheduled running time. */
 		auto ip = std::upper_bound(m_tasklist.begin(),
 		          m_tasklist.end(), next_time,
 		          [](time_point p, const wq_task &t) STATIC_IN_CXX23 { return p < t.start_time; });
