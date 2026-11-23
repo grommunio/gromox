@@ -222,7 +222,7 @@ ec_error_t container_object::load_user_table(const RESTRICTION *prestriction) tr
 		return ecSuccess;
 	auto pinfo = zs_get_info();
 	if (!exmdb_client->load_content_table(pinfo->get_maildir(),
-	    pinfo->cpid, pcontainer->id.exmdb_id.folder_id, nullptr, 0,
+	    CP_UTF8, pcontainer->id.exmdb_id.folder_id, nullptr, 0,
 	    nullptr, nullptr, &table_id, &row_num))
 		return ecRpcFailed;
 	auto handle = pinfo->ptree->get_store_handle(TRUE, pinfo->user_id);
@@ -245,7 +245,7 @@ ec_error_t container_object::load_user_table(const RESTRICTION *prestriction) tr
 		for (auto t : ntags)
 			proptags.emplace_back(t);
 		if (!exmdb_client->query_table(pinfo->get_maildir(), nullptr,
-		    pinfo->cpid, table_id, proptags, 0, row_num, &tmp_set))
+		    CP_UTF8, table_id, proptags, 0, row_num, &tmp_set))
 			return ecRpcFailed;
 		pparent_entryid = zcsab_prepend(cu_fid_to_entryid(*pstore,
 		                  pcontainer->id.exmdb_id.folder_id), MAPI_ABCONT, UINT32_MAX);
@@ -593,7 +593,7 @@ ec_error_t container_object::get_props(proptag_cspan pproptags,
 	if (pcontainer->type != CONTAINER_TYPE_ABTREE) {
 		auto pinfo = zs_get_info();
 		if (!exmdb_client->get_folder_properties(pinfo->get_maildir(),
-		    pinfo->cpid, pcontainer->id.exmdb_id.folder_id,
+		    CP_UTF8, pcontainer->id.exmdb_id.folder_id,
 		    container_object_get_folder_proptags, &tmp_propvals))
 			return ecRpcFailed;
 		return container_object_fetch_folder_properties(&tmp_propvals,
@@ -682,7 +682,7 @@ static ec_error_t container_object_query_folder_hierarchy(uint64_t folder_id,
 	if (row_num == 0)
 		tmp_set.count = 0;
 	else if (!exmdb_client->query_table(pinfo->get_maildir(), nullptr,
-	    pinfo->cpid, table_id, container_object_get_folder_proptags,
+	    CP_UTF8, table_id, container_object_get_folder_proptags,
 	    0, row_num, &tmp_set))
 		return ecRpcFailed;
 	exmdb_client->unload_table(pinfo->get_maildir(), table_id);
@@ -767,7 +767,7 @@ ec_error_t container_object::query_container_table(proptag_cspan pproptags,
 				return ecServerOOM;
 			auto pinfo = zs_get_info();
 			if (!exmdb_client->get_folder_properties(pinfo->get_maildir(),
-				pinfo->cpid, eid_t(1, PRIVATE_FID_CONTACTS),
+				CP_UTF8, eid_t(1, PRIVATE_FID_CONTACTS),
 			    container_object_get_folder_proptags, &tmp_propvals))
 				return ecRpcFailed;
 			err = container_object_fetch_folder_properties(&tmp_propvals,

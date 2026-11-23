@@ -67,7 +67,7 @@ ec_error_t icsdownctx_object::make_content(const BINARY &pstate_bin,
 	auto username = pctx->pstore->b_private ? nullptr : pinfo->get_username();
 	if (!exmdb_client->get_content_sync(pctx->pstore->get_dir(),
 	    pctx->folder_id, username, pctx->pstate->pgiven.get(), pseen, pseen_fai,
-	    pread, pinfo->cpid, prestriction, TRUE, &count_fai, &total_fai,
+	    pread, CP_UTF8, prestriction, TRUE, &count_fai, &total_fai,
 	    &count_normal, &total_normal, &updated_messages, &chg_messages,
 	    &pctx->last_changenum, &given_messages, &deleted_messages,
 	    &nolonger_messages, &read_messages, &unread_messages,

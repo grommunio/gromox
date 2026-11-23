@@ -87,8 +87,7 @@ USER_INFO::USER_INFO(USER_INFO &&o) noexcept :
 	org_id(o.org_id), privbits(o.privbits),
 	username(std::move(o.username)),
 	lang(std::move(o.lang)), maildir(std::move(o.maildir)),
-	homedir(std::move(o.homedir)), cpid(o.cpid),
-	last_query_at(o.last_query_at),
+	homedir(std::move(o.homedir)), last_query_at(o.last_query_at),
 	ptree(std::move(o.ptree)), sink_list(std::move(o.sink_list))
 {}
 
@@ -613,8 +612,6 @@ static ec_error_t zs_logon_phase2(sql_meta_result &&mres, GUID *phsession)
 	} catch (const std::bad_alloc &) {
 		return ecServerOOM;
 	}
-	auto c = lang_to_charset(tmp_info.lang.c_str());
-	tmp_info.cpid = c != nullptr ? cset_to_cpid(c) : CP_UTF8;
 	tmp_info.last_query_at = tp_now();
 	tmp_info.ptree = object_tree_create(tmp_info.maildir.c_str());
 	if (tmp_info.ptree == nullptr)
@@ -845,7 +842,7 @@ static ec_error_t zs_openstoreentry_1(store_object &store, eid_t folder_id,
 		return ret;
 	bool b_writable = tag_access & MAPI_ACCESS_MODIFY;
 	auto pmessage = message_object::create(&store, false,
-	                uinfo.cpid, message_id, &folder_id, tag_access,
+	                CP_UTF8, message_id, &folder_id, tag_access,
 	                b_writable ? TRUE : false, nullptr);
 	if (pmessage == nullptr)
 		return ecError;
@@ -1624,12 +1621,12 @@ ec_error_t zs_createmessage(GUID hsession,
 	    folder_id, &message_id))
 		return ecError;
 	auto pmessage = message_object::create(pstore, TRUE,
-			pinfo->cpid, message_id, &folder_id,
+			CP_UTF8, message_id, &folder_id,
 			tag_access, TRUE, NULL);
 	if (pmessage == nullptr)
 		return ecError;
 	BOOL b_fai = (flags & MAPI_ASSOCIATED) ? TRUE : false;
-	err = pmessage->init_message(b_fai, pinfo->cpid);
+	err = pmessage->init_message(b_fai, CP_UTF8);
 	if (err != ecSuccess)
 		return err;
 	/* add the store handle as the parent object handle
@@ -1693,7 +1690,7 @@ ec_error_t zs_deletemessages(GUID hsession, uint32_t hfolder,
 	BOOL b_hard = (flags & DELETE_HARD_DELETE) ? TRUE : false;
 	if (!notify_non_read) {
 		if (!exmdb_client->delete_messages(pstore->get_dir(),
-		    pinfo->cpid, username, pfolder->folder_id, ids, b_hard,
+		    CP_UTF8, username, pfolder->folder_id, ids, b_hard,
 		    &b_partial))
 			return ecError;
 		return ecSuccess;
@@ -1721,7 +1718,7 @@ ec_error_t zs_deletemessages(GUID hsession, uint32_t hfolder,
 			flag = tmp_propvals.get<uint8_t>(PR_READ);
 			if ((flag == nullptr || *flag == 0) &&
 			    !exmdb_client->get_message_brief(pstore->get_dir(),
-			    pinfo->cpid, i_eid, &pbrief))
+			    CP_UTF8, i_eid, &pbrief))
 				return ecError;
 		}
 		ids1.pids[ids1.count++] = i_eid;
@@ -1729,7 +1726,7 @@ ec_error_t zs_deletemessages(GUID hsession, uint32_t hfolder,
 			common_util_notify_receipt(*pstore,
 				NOTIFY_RECEIPT_NON_READ, *pbrief);
 	}
-	return exmdb_client->delete_messages(pstore->get_dir(), pinfo->cpid,
+	return exmdb_client->delete_messages(pstore->get_dir(), CP_UTF8,
 	       username, pfolder->folder_id, ids1, b_hard, &b_partial) ?
 	       ecSuccess : ecError;
 }
@@ -1806,7 +1803,7 @@ static ec_error_t zs_copymessages_other(const BINARY_ARRAY &entryids,
 			BOOL b_partial = false;
 			const EID_ARRAY ids = {1, &message_id};
 			if (!exmdb_client->delete_messages(src_store.get_dir(),
-			    uinfo.cpid, nullptr, src_folder.folder_id,
+			    CP_UTF8, nullptr, src_folder.folder_id,
 			    ids, false, &b_partial))
 				return ecError;
 		}
@@ -1870,7 +1867,7 @@ ec_error_t zs_copymessages(GUID hsession, uint32_t hsrcfolder,
 	}
 	BOOL b_partial = false;
 	return exmdb_client->movecopy_messages(src_store->get_dir(),
-	       pinfo->cpid, b_guest ? TRUE : false, pinfo->get_username(),
+	       CP_UTF8, b_guest ? TRUE : false, pinfo->get_username(),
 	       psrc_folder->folder_id, pdst_folder->folder_id,
 	       (flags & MAPI_MOVE) ? false : TRUE, ids,
 	       &b_partial) ? ecSuccess : ecError;
@@ -1981,7 +1978,7 @@ ec_error_t zs_setreadflags(GUID hsession, uint32_t hfolder,
 		if (!b_notify)
 			continue;
 		if (!exmdb_client->get_message_brief(pstore->get_dir(),
-		    pinfo->cpid, message_id, &pbrief))
+		    CP_UTF8, message_id, &pbrief))
 			return ecRpcFailed;
 		if (pbrief != nullptr)
 			common_util_notify_receipt(*pstore,
@@ -2080,7 +2077,7 @@ ec_error_t zs_createfolder(GUID hsession, uint32_t hparent_folder,
 		if (propval_buff[8].pvalue == nullptr)
 			return ecError;
 		ec_error_t err = ecSuccess;
-		if (!exmdb_client->create_folder(pstore->get_dir(), pinfo->cpid,
+		if (!exmdb_client->create_folder(pstore->get_dir(), CP_UTF8,
 		    &tmp_propvals, &folder_id, &err))
 			return ecError;
 		if (err != ecSuccess)
@@ -2192,7 +2189,7 @@ ec_error_t zs_deletefolder(GUID hsession,
 			goto DELETE_FOLDER;
 	}
 	if (flags & (DEL_FOLDERS | DEL_MESSAGES | DEL_ASSOCIATED)) {
-		if (!exmdb_client->empty_folder(pstore->get_dir(), pinfo->cpid,
+		if (!exmdb_client->empty_folder(pstore->get_dir(), CP_UTF8,
 		    username, folder_id, flags, &b_partial))
 			return ecError;
 		if (b_partial)
@@ -2200,7 +2197,7 @@ ec_error_t zs_deletefolder(GUID hsession,
 			return ecSuccess;
 	}
  DELETE_FOLDER:
-	return exmdb_client->delete_folder(pstore->get_dir(), pinfo->cpid,
+	return exmdb_client->delete_folder(pstore->get_dir(), CP_UTF8,
 	       folder_id, (flags & DELETE_HARD_DELETE) ? TRUE : false, &b_done) ?
 	       ecSuccess : ecError;
 }
@@ -2238,7 +2235,7 @@ ec_error_t zs_emptyfolder(GUID hsession, uint32_t hfolder, uint32_t flags)
 		username = pinfo->get_username();
 	}
 	return exmdb_client->empty_folder(pstore->get_dir(),
-	       pinfo->cpid, username, pfolder->folder_id,
+	       CP_UTF8, username, pfolder->folder_id,
 	       flags | DEL_MESSAGES | DEL_FOLDERS, &b_partial) ? ecSuccess : ecError;
 }
 
@@ -2311,14 +2308,14 @@ ec_error_t zs_copyfolder(GUID hsession, uint32_t hsrc_folder, BINARY entryid,
 			return ret;
 		if (!b_copy) {
 			if (!exmdb_client->empty_folder(src_store->get_dir(),
-			    pinfo->cpid, username, folder_id,
+			    CP_UTF8, username, folder_id,
 			    DEL_MESSAGES | DEL_ASSOCIATED | DEL_FOLDERS, &b_partial))
 				return ecError;
 			if (b_partial)
 				/* failure occurs, stop deleting folder */
 				return ecSuccess;
 			if (!exmdb_client->delete_folder(src_store->get_dir(),
-			    pinfo->cpid, folder_id, false, &b_done))
+			    CP_UTF8, folder_id, false, &b_done))
 				return ecError;
 		}
 		return ecSuccess;
@@ -2329,7 +2326,7 @@ ec_error_t zs_copyfolder(GUID hsession, uint32_t hsrc_folder, BINARY entryid,
 	if (b_cycle)
 		return ecRootFolder;
 	ec_error_t err = ecSuccess;
-	if (!exmdb_client->movecopy_folder(src_store->get_dir(), pinfo->cpid,
+	if (!exmdb_client->movecopy_folder(src_store->get_dir(), CP_UTF8,
 	    b_guest, pinfo->get_username(), psrc_parent->folder_id, folder_id,
 	    pdst_folder->folder_id, new_name, b_copy, &err))
 		return ecError;
@@ -3794,7 +3791,7 @@ ec_error_t zs_openembedded(GUID hsession,
 			return ecAccessDenied;
 		flags &= ~MAPI_BEST_ACCESS;
 	}
-	auto pmessage = message_object::create(pstore, false, pinfo->cpid, 0,
+	auto pmessage = message_object::create(pstore, false, CP_UTF8, 0,
 	                pattachment, tag_access, b_writable ? TRUE : false, nullptr);
 	if (pmessage == nullptr)
 		return ecError;
@@ -3803,11 +3800,11 @@ ec_error_t zs_openembedded(GUID hsession,
 			return ecNotFound;
 		if (!b_writable)
 			return ecAccessDenied;
-		pmessage = message_object::create(pstore, TRUE, pinfo->cpid, 0,
+		pmessage = message_object::create(pstore, TRUE, CP_UTF8, 0,
 		           pattachment, tag_access, TRUE, nullptr);
 		if (pmessage == nullptr)
 			return ecError;
-		auto err = pmessage->init_message(false, pinfo->cpid);
+		auto err = pmessage->init_message(false, CP_UTF8);
 		if (err != ecSuccess)
 			return err;
 	}
@@ -3960,7 +3957,7 @@ ec_error_t zs_copyto(GUID hsession, uint32_t hsrcobject,
 		if (b_sub || b_normal || b_fai) {
 			BOOL b_guest = username == STORE_OWNER_GRANTED ? false : TRUE;
 			if (!exmdb_client->copy_folder_internal(pstore->get_dir(),
-			    pinfo->cpid, b_guest, pinfo->get_username(),
+			    CP_UTF8, b_guest, pinfo->get_username(),
 			    folder->folder_id, b_normal, b_fai, b_sub,
 			    fdst->folder_id, &b_collid, &b_partial))
 				return ecError;
@@ -4360,13 +4357,13 @@ ec_error_t zs_importmessage(GUID hsession, uint32_t hctx,
 		    folder_id, &message_id))
 			return ecError;
 	}
-	auto pmessage = message_object::create(pstore, b_new, pinfo->cpid,
+	auto pmessage = message_object::create(pstore, b_new, CP_UTF8,
 	                message_id, &folder_id, tag_access,
 	                MAPI_MODIFY, pctx->pstate);
 	if (pmessage == nullptr)
 		return ecError;
 	if (b_new) {
-		auto err = pmessage->init_message(b_fai, pinfo->cpid);
+		auto err = pmessage->init_message(b_fai, CP_UTF8);
 		if (err != ecSuccess)
 			return err;
 	}
@@ -4528,7 +4525,7 @@ ec_error_t zs_importfolder(GUID hsession,
 			tmp_propvals.ppropval[tmp_propvals.count++].pvalue = &tmp_type;
 		}
 		ec_error_t err = ecSuccess;
-		if (!exmdb_client->create_folder(pstore->get_dir(), pinfo->cpid,
+		if (!exmdb_client->create_folder(pstore->get_dir(), CP_UTF8,
 		    &tmp_propvals, &tmp_fid, &err))
 			return ecError;
 		if (err != ecSuccess)
@@ -4568,7 +4565,7 @@ ec_error_t zs_importfolder(GUID hsession,
 		}
 		ec_error_t err = ecSuccess;
 		if (!exmdb_client->movecopy_folder(pstore->get_dir(),
-		    pinfo->cpid, b_guest, pinfo->get_username(), parent_id,
+		    CP_UTF8, b_guest, pinfo->get_username(), parent_id,
 		    folder_id, parent_id1,
 		    static_cast<char *>(pproplist->ppropval[3].pvalue), false,
 		    &err))
@@ -4592,7 +4589,7 @@ ec_error_t zs_importfolder(GUID hsession,
 	for (size_t i = 0; i < ppropvals->count; ++i)
 		tmp_propvals.ppropval[tmp_propvals.count++] = ppropvals->ppropval[i];
 	if (!exmdb_client->set_folder_properties(pstore->get_dir(),
-	    pinfo->cpid, folder_id, &tmp_propvals, &tmp_problems))
+	    CP_UTF8, folder_id, &tmp_propvals, &tmp_problems))
 		return ecError;
 	pctx->pstate->pseen->append(change_num);
 	return ecSuccess;
@@ -4724,18 +4721,18 @@ ec_error_t zs_importdeletion(GUID hsession,
 			unsigned int f = b_hard ? DELETE_HARD_DELETE : 0;
 			f |= DEL_MESSAGES | DEL_ASSOCIATED | DEL_FOLDERS;
 			if (!exmdb_client->empty_folder(pstore->get_dir(),
-			    pinfo->cpid, username, eid, f, &b_partial) ||
+			    CP_UTF8, username, eid, f, &b_partial) ||
 			    b_partial)
 				return ecError;
 			}
  DELETE_FOLDER:
 			if (!exmdb_client->delete_folder(pstore->get_dir(),
-			    pinfo->cpid, eid, b_hard, &b_result) || !b_result)
+			    CP_UTF8, eid, b_hard, &b_result) || !b_result)
 				return ecError;
 		}
 	}
 	if (sync_type == SYNC_TYPE_CONTENTS && message_ids.count > 0 &&
-	    (!exmdb_client->delete_messages(pstore->get_dir(), pinfo->cpid,
+	    (!exmdb_client->delete_messages(pstore->get_dir(), CP_UTF8,
 	    nullptr, folder_id, message_ids, b_hard, &b_partial) || b_partial))
 		return ecError;
 	return ecSuccess;
@@ -4909,7 +4906,7 @@ ec_error_t zs_setsearchcriteria(GUID hsession, uint32_t hfolder, uint32_t flags,
 				return ecAccessDenied;
 		}
 	}
-	if (!exmdb_client->set_search_criteria(pstore->get_dir(), pinfo->cpid,
+	if (!exmdb_client->set_search_criteria(pstore->get_dir(), CP_UTF8,
 	    pfolder->folder_id, flags, prestriction, folder_ids, &b_result))
 		return ecError;
 	return b_result ? ecSuccess : ecSearchFolderScopeViolation;
@@ -5165,12 +5162,11 @@ ec_error_t zs_link_messages(GUID hsession, BINARY search_entryid,
 	}
 
 	std::string maildir = store->get_dir();
-	auto cpid = info->cpid;
 	info.reset();
 	if (ids.count == 0)
 		return ecSuccess;
 	BOOL b_partial = false;
-	return exmdb_client->link_messages(maildir.c_str(), cpid, folder_id,
+	return exmdb_client->link_messages(maildir.c_str(), CP_UTF8, folder_id,
 	       ids, &b_partial) ? ecSuccess : ecError;
 }
 
