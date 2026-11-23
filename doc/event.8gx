@@ -12,6 +12,14 @@ multiple machines.
 .PP
 In practice, it is used by midb(8gx), pop3(8gx) and imap(8gx) to notify
 imap(8gx) instances of changed folder/message states.
+.PP
+The built-in config defaults are for a single-server setup, so the event bus
+daemon listens on just a locally-reachable AF_UNIX socket. In a multi-server
+setup, all IMAP, POP and MIDB daemons serving an indivisible user set must
+share an event daemon (running somewhere). An indivisible user set (formally an
+equivalence class) contains a starting user, u, and every other user who shares
+an IMAP, POP or MIDB node with u, or shares indirectly through an unbroken
+chain of shared nodes and (IMAP/POP/MIDB) services.
 .SH Options
 .TP
 \fB\-c\fP \fIconfig\fP
