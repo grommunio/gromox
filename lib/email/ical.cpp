@@ -355,6 +355,8 @@ static bool ical_retrieve_component(ical_component &comp,
 	LINE_ITEM tmp_item;
 	
 	ical_clear_component(pcomponent);
+	if (in_buff == nullptr)
+		return false;
 	pline = in_buff;
 	length = strlen(in_buff);
 	do {
