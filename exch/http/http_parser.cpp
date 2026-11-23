@@ -1385,6 +1385,11 @@ tproc_status http_parser::rdhead_st(http_context *pcontext, ssize_t actual_read)
 		char *line = nullptr;
 		auto line_length = pcontext->stream_in.readline(&line);
 		if (0 != line_length) {
+			if (memchr(line, '\0', line_length) != nullptr) {
+				/* RFC 9110 §5.5 */
+				pcontext->log(LV_DEBUG, "NUL bytes in request\n");
+				return http_done(pcontext, http_status::bad_request_CL);
+			}
 			auto ret = *pcontext->request.method == '\0' ?
 			           rdhead_no(pcontext, line, line_length) :
 			           rdhead_mt(pcontext, line, line_length);
