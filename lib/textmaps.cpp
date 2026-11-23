@@ -35,7 +35,7 @@ using folder_name_map_t = std::unordered_map<std::string, std::unordered_map<uns
 using mtg_prefix_map_t = std::unordered_map<std::string, str_to_str_t, icasehash, icasecmp>;
 static int_to_str_t g_cpid2name_map, g_lcid2tag_map;
 static str_to_int_t g_cpname2id_map, g_lctag2id_map;
-static str_to_str_t g_ext2mime_map, g_mime2ext_map, g_lang2cset_map, g_ignore_map;
+static str_to_str_t g_ext2mime_map, g_mime2ext_map, g_ignore_map;
 static folder_name_map_t folder_name_map;
 static mtg_prefix_map_t g_mtg_prefix_map;
 static std::once_flag g_textmaps_done;
@@ -220,12 +220,6 @@ const char *extension_to_mime(const char *s)
 {
 	auto i = g_ext2mime_map.find(s);
 	return i != g_ext2mime_map.cend() ? i->second.c_str() : nullptr;
-}
-
-const char *lang_to_charset(const char *s)
-{
-	auto i = g_lang2cset_map.find(s);
-	return i != g_lang2cset_map.cend() ? i->second.c_str() : nullptr;
 }
 
 /**
@@ -451,9 +445,6 @@ void textmaps_init(const char *datapath)
 		xmap_read("lcid.txt", datapath, g_lcid2tag_map, g_lctag2id_map);
 		mlog(LV_DEBUG, "textmaps: lcid: %zu IDs, %zu names",
 		        g_lcid2tag_map.size(), g_lctag2id_map.size());
-		smap_read("lang_charset.txt", datapath, g_lang2cset_map, g_ignore_map);
-		mlog(LV_DEBUG, "textmaps: lang_charset: %zu mappings",
-		        g_lang2cset_map.size());
 		smap_read("mime_extension.txt", datapath, g_ext2mime_map, g_mime2ext_map);
 
 		/*
