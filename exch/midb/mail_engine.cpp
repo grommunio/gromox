@@ -2200,6 +2200,7 @@ static void me_drain_resync_queue()
 	}
 	for (auto &dir : batch) {
 		uint32_t old_sub = 0;
+		time_t old_last = 0;
 		bool busy = false, present = false;
 		{
 			std::lock_guard hhold(g_hash_lock);
@@ -2209,6 +2210,7 @@ static void me_drain_resync_queue()
 					busy = true;
 				} else {
 					old_sub = it->second.sub_id;
+					old_last = it->second.last_time;
 					g_hash_table.erase(it);
 					present = true;
 				}
@@ -2225,7 +2227,24 @@ static void me_drain_resync_queue()
 		if (!present)
 			continue;
 		if (cu_build_environment(dir.c_str())) {
-			me_get_idb(dir.c_str());
+			auto pidb = me_get_idb(dir.c_str()).release();
+			if (pidb != nullptr) {
+				/*
+				 * A reload is no client access. Release the
+				 * reference like idb_item_del, but keep the
+				 * time of the last access, or a store nobody
+				 * uses would stay cached and be reloaded
+				 * forever when midb_reload_interval <=
+				 * midb_cache_interval. giant_lock is still
+				 * held, so a client access cannot be lost: it
+				 * either stamped the item before (kept by
+				 * max) or stamps it after.
+				 */
+				pidb->last_time = std::max(pidb->last_time, old_last);
+				pidb->giant_lock.unlock();
+				std::lock_guard hhold(g_hash_lock);
+				pidb->reference--;
+			}
 			cu_free_environment();
 		}
 		if (old_sub != 0) {
@@ -2258,16 +2277,36 @@ static void *midbme_scanwork(void *param)
 			continue;
 		}
 		count = 0;
+		std::vector<std::string> reload_list;
 		std::unique_lock hhold(g_hash_lock);
 		for (auto it = g_hash_table.begin(); it != g_hash_table.end(); ) {
 			auto pidb = &it->second;
 			auto now_time = time(nullptr);
 			auto last_diff = now_time - pidb->last_time;
 			auto load_diff = now_time - pidb->load_time;
+			bool idle = std::cmp_greater(last_diff,
+			            g_midb_cache_interval);
+			bool stale = std::cmp_greater(load_diff,
+			             g_midb_reload_interval);
+			if (pidb->reference == 0 && pidb->sub_id != 0 &&
+			    !idle && stale) {
+				/*
+				 * Dropping a store still in use would also
+				 * drop its subscription until the next client
+				 * access, and IDLE sessions never make one.
+				 * The resync queue reloads and resubscribes
+				 * it instead, at a bounded rate.
+				 */
+				try {
+					reload_list.emplace_back(it->first);
+				} catch (const std::bad_alloc &) {
+					mlog(LV_ERR, "%s: ENOMEM", __func__);
+				}
+				++it;
+				continue;
+			}
 			bool do_clean = pidb->reference == 0 &&
-			             (pidb->sub_id == 0 ||
-			             std::cmp_greater(last_diff, g_midb_cache_interval) ||
-			             std::cmp_greater(load_diff, g_midb_reload_interval));
+			             (pidb->sub_id == 0 || idle || stale);
 			if (!do_clean) {
 				++it;
 				continue;
@@ -2284,6 +2323,8 @@ static void *midbme_scanwork(void *param)
 			it = g_hash_table.erase(it);
 		}
 		hhold.unlock();
+		for (const auto &dir : reload_list)
+			midb_notif_rearm(dir.c_str());
 		for (auto &&e : unsub_list) {
 			if (cu_build_environment(e.first.c_str())) {
 				exmdb_client->unsubscribe_notification(e.first.c_str(), e.second);
