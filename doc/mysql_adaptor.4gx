@@ -91,8 +91,19 @@ machines, the basic default is to do nothing.
 .RS
 .TP
 \fBhost:\fP\fIxyz\fP
-Perform automatic schema upgrades if the program which has loaded mysql_adaptor
-is http(8gx) and only if http.cfg's \fBhost_id\fP value matches \fIxyz\fP.
+Perform automatic schema upgrades only in the istore director process, and only
+if the \fBhost_id\fP value of that process matches \fIxyz\fP. Which program is
+the istore director depends on bit 0x1 of \fBistore_standalone\fP in gromox.cfg:
+.RS
+.IP \(bu 4
+Bit 0x1 not set (default): http(8gx) is the istore director, and
+\fBhost_id\fP comes from http.cfg.
+.IP \(bu 4
+Bit 0x1 set: istore(8gx) is the istore director, and \fBhost_id\fP comes from
+gromox.cfg.
+.RE
+.IP
+In the 2 modes, the default value of \fBhost_id\fP is the system hostname.
 .TP
 (any other value)
 No automatic schema upgrades are performed in the process which has loaded the
@@ -103,7 +114,7 @@ working. However, there may be some caches, e.g. in the zcore(8gx) address book
 that could remain empty until the refresh timer expires or a manual reload is
 triggered.
 .PP
-Default: \fIhost:(system_hostname)\fP
+Default: (unset). The result is the same as for "any other value".
 .RE
 .SH Signals
 Upon receipt of SIGHUP, configuration files are re-read, but only a few select
