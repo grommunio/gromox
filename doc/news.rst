@@ -245,14 +245,21 @@ Gromox 3.13 (2026-10-28)
 
 Enhancements:
 
-* Added scripts to help convert E4A systems to Gromox
-* php_mapi can be combined with php-opcache again
+* php_mapi has been made compatible again with php-opcache.
+* Support for more EWS calendar and meeting tags.
 * midb/imap: Full synchronization of IMAP keywords from and to MAPI categories
   (both directions).
+* A credential verification cache has been added to reduce the query
+  pressure on the MySQL/LDAP servers.
 * `gromox-export --vcard` can be invoked with multiple message object IDs,
   generating a vCard bundle.
+* gromox-oxvcard recognizes vCard 4 data: URIs.
+* gromox-mbop has a new command `purge-orphan-perms`
 * Added audit logging to emsmdb and zcore. (Enabled as before via
   log_level >=5.)
+* Sped up message deletion.
+* Support LibreOffice lowriter as a rtf2html backend.
+* Added scripts to help convert E4A systems to Gromox.
 
 Fixes:
 
@@ -260,6 +267,7 @@ Fixes:
   EXDATE/RDATE lines.
 * oxcical: Conversions between iCal and MAPI no longer lose ATTENDEE and
   ORGANIZER.
+* oxvcard: Cease erroneous splitting of `N:Doe\, Jr.;John` at escaped commas.
 * exmdb: Avoid dangling body and attachment file references when
   mbop purge-datafiles races against a reinstantiation of a (de)duplicated
   attachment.
@@ -272,6 +280,11 @@ Fixes:
   rights on the meeting.
   Previously any user could answer, alter or move meeting requests and
   calendar items in other mailboxes.
+* mapihttp: do not lose sessions when a NotificationWait operation is pending.
+
+Behavioral changes:
+
+* The event(8gx) and timer(8gx) daemons listen on just AF_UNIX by default.
 
 
 Gromox 3.12 (2026-10-02)
