@@ -690,7 +690,7 @@ occurrenceDatesInRange(const APPOINTMENT_RECUR_PAT &apr, const TZDEF *tz,
 {
 	std::vector<uint32_t> out;
 	auto toUtc = [&](uint32_t rtime) -> time_t {
-		int64_t off;
+		int32_t off = 0;
 		if (tz != nullptr && tz_to_offset(*tz, rop_util_rtime_to_unix(rtime), off))
 			return rop_util_rtime_to_unix(rtime) + off * 60;
 		return rop_util_rtime_to_unix(rtime) + tz_offset.count();
@@ -782,7 +782,7 @@ static void local_date(time_point &date, std::optional<int32_t> &zone,
 	if (!zone)
 		return;
 	auto t = clock::to_time_t(date) - static_cast<time_t>(*zone) * 60;
-	int64_t b;
+	int32_t b = 0;
 	if (tz_to_offset(tz, t, b))
 		date = clock::from_time_t(unix_day(t - b * 60) * 86400);
 	zone.reset();
@@ -815,7 +815,7 @@ void shift_recurrence(tRecurrenceType &rec, const sRecurrenceFrame &frame,
 			local_date(r->EndDate, r->EndDateZone, tz);
 		return;
 	}
-	int64_t b;
+	int32_t b = 0;
 	if (!tz_to_offset(tz, start, b))
 		return;
 	auto day = unix_day(start - b * 60);
@@ -2833,7 +2833,7 @@ sItem EWSContext::loadItem(const std::string&dir, uint64_t fid, uint64_t mid, sS
  */
 clock::time_point EWSContext::sOccurrenceSeries::toUtc(uint32_t rtime) const
 {
-	int64_t off;
+	int32_t off = 0;
 	if (tzdef && tz_to_offset(*tzdef, rop_util_rtime_to_unix(rtime), off))
 		return rop_util_rtime_to_unix2(rtime) + std::chrono::minutes(off);
 	return rop_util_rtime_to_unix2(rtime) + tzOffset;
@@ -2848,7 +2848,7 @@ clock::time_point EWSContext::sOccurrenceSeries::toUtc(uint32_t rtime) const
 uint32_t EWSContext::sOccurrenceSeries::toLocal(uint64_t nttime) const
 {
 	auto utc = rop_util_nttime_to_unix(nttime);
-	int64_t off;
+	int32_t off = 0;
 	if (tzdef && tz_to_offset(*tzdef, utc, off) &&
 	    tz_to_offset(*tzdef, utc - off * 60, off))
 		return rop_util_unix_to_rtime(utc - off * 60);
@@ -4434,7 +4434,7 @@ lookup_tz_get_offset(const char *name, time_t local_start)
 	auto def = lookup_tz_get_tzdef(name);
 	if (!def)
 		return std::nullopt;
-	int64_t off = 0;
+	int32_t off = 0;
 	if (tz_to_offset(*def, local_start, off))
 		return off;
 	return std::nullopt;
@@ -4447,7 +4447,7 @@ lookup_tz_get_offset(const char *name, time_t local_start)
 static uint64_t clip_time(const std::optional<TZDEF> &tz, uint32_t rtime)
 {
 	time_t t = rop_util_rtime_to_unix(rtime);
-	int64_t off = 0;
+	int32_t off = 0;
 	if (rtime != ENDDATE_MISSING && tz && tz_to_offset(*tz, t, off))
 		t += off * 60;
 	return rop_util_unix_to_nttime(t);
@@ -4537,7 +4537,7 @@ void EWSContext::applyRecurrence(const std::string &dir, uint64_t mid,
 	 */
 	auto duration = localEndTime - localStartTime;
 	if (isAllDay) {
-		int64_t sb = 0, eb = 0;
+		int32_t sb = 0, eb = 0;
 		if (item_tz && (!tz_to_offset(*item_tz, localStartTime, sb) ||
 		    !tz_to_offset(*item_tz, localEndTime, eb)))
 			sb = eb = 0;
@@ -4572,7 +4572,7 @@ void EWSContext::applyRecurrence(const std::string &dir, uint64_t mid,
 		/* localStartTime is real UTC from NTTIME.  Convert to
 		 * the appointment's local timezone for the blob. */
 		time_t appt_local = localStartTime;
-		int64_t b;
+		int32_t b = 0;
 		if (item_tz && tz_to_offset(*item_tz, localStartTime, b))
 			appt_local = localStartTime - static_cast<time_t>(b) * 60;
 		struct tm start_tm{};
@@ -4866,7 +4866,7 @@ void EWSContext::moveRecurrence(const std::string &dir, uint64_t mid,
 	if (!oldtz)
 		oldtz = tz;
 	auto local_in = [&](const std::optional<TZDEF> &z, time_t t) {
-		int64_t b;
+		int32_t b = 0;
 		if (!z || !tz_to_offset(*z, t, b))
 			b = fallback;
 		return t - b * 60;
@@ -7093,7 +7093,7 @@ void EWSContext::toContent(const std::string &dir, tCalendarItem &item,
 	toContent(dir, static_cast<tItem&>(item), shape, content);
 	if (!item.ItemClass)
 		shape.write(TAGGED_PROPVAL{PR_MESSAGE_CLASS, deconst("IPM.Appointment")});
-	int64_t startOffset = 0, endOffset = 0;
+	int32_t startOffset = 0, endOffset = 0;
 	time_t startTime = 0, endTime = 0;
 	bool calcStartOffset = false, calcEndOffset = false;
 	if (item.Start) {
@@ -7161,7 +7161,7 @@ void EWSContext::toContent(const std::string &dir, tCalendarItem &item,
 			ezone = szone;
 		if (!isAllDay && ezone != szone) {
 			auto utc = [](time_t t, bool calc, time_t off, const std::string &z) -> time_t {
-				int64_t b;
+				int32_t b = 0;
 				auto tz = lookup_tz_get_tzdef(z.c_str());
 				if (!calc)
 					return t + off * 60;
@@ -7181,7 +7181,7 @@ void EWSContext::toContent(const std::string &dir, tCalendarItem &item,
 		if (auto tz = lookup_tz_get_tzdef(item.timezoneId().c_str());
 		    tz && m_recurrence_frame) {
 			time_t start = localStartTime;
-			int64_t b;
+			int32_t b = 0;
 			if (!calcStartOffset)
 				start += static_cast<time_t>(startOffset) * 60;
 			else if (tz_to_offset(*tz, start, b))

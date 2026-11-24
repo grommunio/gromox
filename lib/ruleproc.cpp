@@ -3902,7 +3902,7 @@ static ec_error_t mr_make_exception(const message_content &master,
 static int64_t mr_series_offset(const TPROPVAL_ARRAY &props,
     const PROPID_ARRAY &propids, const APPOINTMENT_RECUR_PAT &apr, int64_t lt)
 {
-	int64_t bias = 0;
+	int32_t bias = 0;
 	auto tzbin = props.get<const BINARY>(PROP_TAG(PT_BINARY, propids[l_tzdefrecur]));
 	auto tzdef = tzbin != nullptr ? EXT_PULL::bin_to_tzdef(*tzbin) : std::nullopt;
 	if (tzdef && tz_to_offset(*tzdef, rop_util_rtime_to_unix(lt), bias))
@@ -4007,7 +4007,7 @@ static ec_error_t mr_cancel_occurrence(rxparam &par, const PROPID_ARRAY &propids
 	 * and for an instance that kept its slot, from the cancellation's
 	 * own start.
 	 */
-	int64_t off = 0, bias = 0;
+	int32_t off = 0, bias = 0;
 	int64_t lorig = static_cast<int64_t>(basedate) + apr.starttimeoffset;
 	auto tzbin = props.get<const BINARY>(PROP_TAG(PT_BINARY, propids[l_tzdefrecur]));
 	auto tzdef = tzbin != nullptr ? EXT_PULL::bin_to_tzdef(*tzbin) : std::nullopt;

@@ -472,7 +472,7 @@ tRecurrenceRange get_recurrence_range(const RECURRENCE_PATTERN& recur_pat)
 static inline EWS::time_point
 rtime_to_tp(const TZDEF *tz, std::chrono::seconds tz_offset, uint32_t rtime)
 {
-	int64_t off;
+	int32_t off = 0;
 	if (tz != nullptr && tz_to_offset(*tz, rop_util_rtime_to_unix(rtime), off))
 		return rop_util_rtime_to_unix2(rtime) + std::chrono::minutes(off);
 	return rop_util_rtime_to_unix2(rtime) + tz_offset;
@@ -774,7 +774,7 @@ void sCalendarMeetingRequestCommon::firstLastOccurrence(const TAGGED_PROPVAL &ei
 		fixed = (rop_util_nttime_to_unix(*start) -
 		        rop_util_rtime_to_unix(rp.startdate + apr.starttimeoffset)) / 60;
 	auto toUtc = [&](uint32_t rtime) {
-		int64_t off = fixed;
+		int32_t off = fixed;
 		if (tzdef && !tz_to_offset(*tzdef, rop_util_rtime_to_unix(rtime), off))
 			off = fixed;
 		return rop_util_rtime_to_unix2(rtime) + std::chrono::minutes(off);
@@ -809,7 +809,7 @@ void sCalendarMeetingRequestCommon::firstLastOccurrence(const TAGGED_PROPVAL &ei
  */
 int32_t sRecurrenceFrame::offset(time_t t) const
 {
-	int64_t b;
+	int32_t b = 0;
 	if (tz && tz_to_offset(*tz, t, b))
 		return -static_cast<int32_t>(b);
 	return bias;
@@ -913,7 +913,7 @@ static void recurrence_zone(tRecurrenceType &rec,
 	auto first = rop_util_rtime_to_unix(apr.recur_pat.startdate + apr.starttimeoffset);
 	int64_t east = (first - start) / 60;
 	if (tz != nullptr) {
-		int64_t b;
+		int32_t b = 0;
 		if (!tz_to_offset(*tz, start, b) || -b != east)
 			return;
 	} else if (std::abs(east) > 14 * 60) {
@@ -921,7 +921,7 @@ static void recurrence_zone(tRecurrenceType &rec,
 	}
 	rec.zone(east);
 	auto r = std::get_if<tEndDateRecurrenceRange>(&rec.RecurrenceRange);
-	int64_t b;
+	int32_t b = 0;
 	if (r == nullptr || tz == nullptr ||
 	    !tz_to_offset(*tz, clock::to_time_t(r->EndDate), b) ||
 	    !tz_to_offset(*tz, clock::to_time_t(r->EndDate) + b * 60, b))
@@ -2611,7 +2611,7 @@ void tCalendarItem::update(const sShape& shape)
  */
 void tCalendarItem::setDatetimeFields(sShape& shape)
 {
-	int64_t startOffset = 0, endOffset = 0;
+	int32_t startOffset = 0, endOffset = 0;
 	std::optional<uint64_t> startTime, endTime;
 	fromProp(shape.writes(NtCommonStart), startTime);
 	fromProp(shape.writes(NtCommonEnd), endTime);

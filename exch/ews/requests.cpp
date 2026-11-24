@@ -5078,7 +5078,7 @@ struct occ_info {
 /* Local time of @utc, rechecked with the bias at that local time */
 static bool utc_to_local(const TZDEF &zone, time_t utc, time_t &local)
 {
-	int64_t bias;
+	int32_t bias = 0;
 	if (!tz_to_offset(zone, utc, bias))
 		return false;
 	local = utc - bias * 60;
@@ -5159,7 +5159,7 @@ static uint8_t upd_zone_times(const EWSContext &ctx, const std::string &dir,
 		if (!local)
 			return;
 		auto wall = rop_util_nttime_to_unix(*static_cast<const uint64_t *>(w->pvalue));
-		int64_t bias;
+		int32_t bias = 0;
 		if (!tz_to_offset(*zone, wall, bias))
 			return;
 		shape.write(TAGGED_PROPVAL{ttag, EWSContext::construct<uint64_t>(
