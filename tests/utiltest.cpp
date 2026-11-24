@@ -755,7 +755,7 @@ static int t_time()
 
 	assert(rop_util_unix_to_nttime(INT_MAX) > 0);
 
-	if (sizeof(time_t) >= sizeof(int64_t)) {
+	if constexpr (sizeof(time_t) >= sizeof(int64_t)) {
 		/* this libc supports 64-bit time */
 		auto r = rop_util_unix_to_nttime(SYSTEMTIME_MAX / 10000000 - TIME_FIXUP_CONSTANT_INT);
 		assert(r < SYSTEMTIME_MAX);
@@ -770,10 +770,11 @@ static int t_time()
 	}
 	if (negative_time_possible()) {
 		assert(rop_util_unix_to_nttime(-1) > 0);
-		assert(rop_util_unix_to_nttime(-TIME_FIXUP_CONSTANT_INT) == 0);
 		assert(rop_util_unix_to_nttime(INT32_MIN) > 0);
-		if (sizeof(time_t) >= sizeof(int64_t))
+		if constexpr (sizeof(time_t) >= sizeof(int64_t)) {
+			assert(rop_util_unix_to_nttime(-TIME_FIXUP_CONSTANT_INT) == 0);
 			assert(rop_util_unix_to_nttime(INT64_MIN) > SYSTEMTIME_MAX);
+		}
 
 		assert(rop_util_nttime_to_unix((TIME_FIXUP_CONSTANT_INT * 10000000) - 1) < 0);
 		assert(rop_util_nttime_to_unix(0) <= INT32_MIN);
