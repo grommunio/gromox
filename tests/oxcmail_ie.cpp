@@ -3345,9 +3345,6 @@ static int meeting_prefixes()
 		{"", "canceled", "Canceled: "},
 		{nullptr, "newtime", "New Time Proposed: "},
 		{"de", "nosuchkey", ""},
-		{"de-AT", "forward", "WG: "},
-		{"it", "forward", "I: "},
-		{"xx", "forward", "FW: "},
 	};
 	for (const auto &c : cases) {
 		auto p = meeting_subject_prefix(c.loc, c.key);

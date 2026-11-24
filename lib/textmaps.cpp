@@ -336,9 +336,11 @@ static const std::string *prefix_lookup(const char *locale, const char *key)
  * @key:	accepted, tentative, declined, newtime, canceled or forward
  *
  * Returns the subject prefix of a meeting response or cancellation that
- * MS-OXOCAL v22.1 §2.2.7.2 and §2.2.8.2 call localized, or of a forward,
- * including the trailing space. Missing languages and keys fall back to
- * English.
+ * MS-OXOCAL v22.1 §2.2.7.2 and §2.2.8.2 call localized.
+ *
+ * Re must not be translated because it is a magic string at this
+ * point (RFC 5322 §3.6.5 p. 28), the same can be said about Fwd, and
+ * no server or client knows what to make of e.g. AW:/WG:.
  */
 const char *meeting_subject_prefix(const char *locale, const char *key) try
 {
@@ -348,7 +350,7 @@ const char *meeting_subject_prefix(const char *locale, const char *key) try
 	static constexpr std::pair<const char *, const char *> builtin[] = {
 		{"accepted", "Accepted: "}, {"tentative", "Tentative: "},
 		{"declined", "Declined: "}, {"newtime", "New Time Proposed: "},
-		{"canceled", "Canceled: "}, {"forward", "FW: "},
+		{"canceled", "Canceled: "}, {"forward", "Fwd: "},
 	};
 	for (const auto &[k, v] : builtin)
 		if (strcmp(k, key) == 0)
