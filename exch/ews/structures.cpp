@@ -1361,6 +1361,7 @@ bool sMessageEntryId::isPrivate() const
  * Must be sorted alphabetically by name.
  */
 decltype(sFolderSpec::distNameInfo) sFolderSpec::distNameInfo = {{
+    {"archive", PRIVATE_FID_ARCHIVE, true},
     {"calendar", PRIVATE_FID_CALENDAR, true},
     {"conflicts", PRIVATE_FID_CONFLICTS, true},
     {"contacts", PRIVATE_FID_CONTACTS, true},
