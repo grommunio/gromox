@@ -7160,11 +7160,11 @@ void EWSContext::toContent(const std::string &dir, tCalendarItem &item,
 		if (!lookup_tz_get_tzdef(ezone.c_str()))
 			ezone = szone;
 		if (!isAllDay && ezone != szone) {
-			auto utc = [](time_t t, bool calc, int64_t off, const std::string &z) {
+			auto utc = [](time_t t, bool calc, time_t off, const std::string &z) -> time_t {
 				int64_t b;
 				auto tz = lookup_tz_get_tzdef(z.c_str());
 				if (!calc)
-					return t + static_cast<time_t>(off) * 60;
+					return t + off * 60;
 				return tz && tz_to_offset(*tz, t, b) ? t + b * 60 : t;
 			};
 			duration = utc(localEndTime, calcEndOffset, endOffset, ezone) -
