@@ -159,6 +159,7 @@ struct db_base {
 
 	std::mutex sqlite_lock;
 	std::vector<db_handle> mx_sqlite, mx_sqlite_eph;
+	bool m_fts = false; /* main handles get FTS change tracking */
 };
 
 class db_base_rd_ptr {
