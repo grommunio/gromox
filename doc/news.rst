@@ -3,241 +3,56 @@ Schedule
 It's ready when it's ready.
 
 
-Development 3.13.16
-===================
-
-Behavior changes:
-
-* delivery: ``exmdb_local.cfg:lda_twostep_ruleproc`` now defaults to 1, so
-  server-side rules of delivered mail are run by the TwoStep processor. Set it
-  to 0 to return to the old processor. exmdb_local(4gx) lists the remaining
-  differences.
-* delivery: ``exmdb_local.cfg:lda_mrautoproc`` now defaults to 1, so meeting
-  requests, responses and cancellations are entered into calendars on
-  delivery. It only works together with ``lda_twostep_ruleproc=1``. Set
-  ``lda_mrautoproc=0`` to turn it off.
+Gromox 3.14 (2026-11-24)
+========================
 
 Enhancements:
 
-* mbck: new check that reports stored PR_SOURCE_KEY/PR_PARENT_SOURCE_KEY rows
-  and, with ``-p``, deletes them.
-* ruleproc: the TwoStep processor now reports failed rules with deferred error
-  messages and disables rules whose target folder is gone or whose forward has
-  too many recipients.
-* ruleproc: the TwoStep processor now writes deferred action messages, so
-  Outlook client-only rules work.
-* ruleproc: the TwoStep processor now supports OP_REPLY and OP_OOF_REPLY
-  (reply templates, Out of Office assistant rules).
-* ruleproc: the TwoStep processor now supports OP_DELEGATE, so delegates
-  receive meeting messages.
-* ruleproc: meeting autoprocessing now marks a cancelled occurrence of a
-  recurring meeting as cancelled in attendee calendars, not only in resource
-  calendars.
-* ruleproc: Out of Office reply rules with ST_KEEP_OOF_HIST now answer each
-  sender only once per Out of Office period in the TwoStep processor. A
-  change of the Out of Office settings starts a new period.
-* ruleproc: the TwoStep processor now supports OP_BOUNCE. The sender gets a
-  non-delivery report and the message is not kept.
-* ruleproc: forwards flagged FWD_AS_SMS_ALERT are now sent by the TwoStep
-  processor as a short text mail with sender, subject and the start of the
-  body, instead of a copy of the whole message. Mobile numbers cannot be
-  reached and get a deferred error message.
-* ruleproc: redirects (OP_FORWARD with FWD_PRESERVE_SENDER) of the TwoStep
-  processor now carry ``X-MS-Exchange-Organization-AutoForwarded: true``.
-* oxcmail: ``X-MS-Exchange-Organization-AutoForwarded: true`` now sets
-  PR_AUTO_FORWARDED on import, so rule conditions on automatic forwards can
-  match.
-* EWS: GetInboxRules now returns the Inbox rules and UpdateInboxRules is
-  implemented, so Outlook for Mac and eM Client can manage server rules.
-* ruleproc: forward rules now send a new "FW: " message from the mailbox
-  owner that quotes the original, in the language of the mailbox, like
-  Exchange does. Redirects, forwards as attachment, meeting messages and
-  S/MIME messages still go out unchanged.
-* ruleproc: forwards as attachment are now wrapped like in Exchange, with the
-  "FW: " subject of the mailbox and the original message kept byte for byte.
-* ruleproc: forwards now list the mailboxes they passed through in
-  X-MS-Exchange-Inbox-Rules-Loop, so chains of forwarding mailboxes work and
-  loops still end, also together with Exchange.
-* EWS: the quoted header of replies and forwards now follows the mailbox
-  culture and is placed inside the body of the original HTML.
-* oxcmail: long address lists, Subject, References, In-Reply-To, passthrough
-  headers and encoded attachment file names are now folded instead of being
-  emitted as one line of any length.
-* lib: property lists, row sets, attachment lists and NSPI rows now double
-  their capacity when they grow. Growing by a fixed 100 slots made building
-  large sets quadratic, in time everywhere and in memory for nsp and zcore.
-
-Changes:
-
-* exmdb_local: Out-of-office replies without a stored subject now use
-  Exchange's "Automatic reply: " prefix, or "Automatische Antwort: " for
-  German mailboxes, unless gromox.cfg:``autoreply_subject_prefix`` is set.
-* EWS: SetUserOofSettings now clears the Out of Office subjects stored by
-  grommunio-web, so replies are titled like in Exchange, e.g.
-  "Automatic reply: <subject>". Before, a subject once set in grommunio-web
-  stayed in use after the OOF settings were changed in Outlook or eM Client.
-* ruleproc: meeting autoprocessing now writes the subject prefixes of its
-  responses and of cancelled calendar items in the language of the mailbox,
-  e.g. "Angenommen: " and "Abgesagt: " for German mailboxes.
-* EWS: UpdateInboxRules now removes leading and trailing ``*`` from the
-  strings of the Contains*Strings conditions and exceptions. eM Client wraps
-  each of these strings in asterisks, which a substring match takes
-  literally, so its server rules never matched.
+* The default LDAP connection parameters can now be placed in MariaDB
+  (grommunio.default_orgparam), it is no longer necessary to have a local
+  ldap_adaptor.cfg file for it.
+* Newly created folders inherit their parent ACL.
+* gromox-mbop exaddrxlat/zaddrxlat no longer requirs the `-m` parameter.
+* gromox-mbck checks PR_SOURCE_KEY and, in `-p` mode, repairs them.
+* e2g can launch Exchange export operations in parallel.
+* EWS: Support for inbox rule operations
+* oxdisco: Implement part of the autodiscover.svc endpoint,
+  (just) the GetUserSettings operation.
 
 Fixes:
 
-* zcore: ICS content export of a folder no longer works with the Visible right
-  alone; ReadAny or Owner is required as for tables.
-* emsmdb: read state changes imported by a folder owner without the ReadAny
-  right were dropped for messages of other users.
-* emsmdb: hierarchy ICS deletes stopped at a folder that had vanished and
-  silently skipped the remaining folders.
-* emsmdb: an ICS delete batch containing a key of another replica was
-  rejected as a whole; the key is now skipped and the rest processed.
-* emsmdb: a message ID carrying another replica's ID (e.g. derived from a key
-  of another mailbox) addressed the local message with the same counter; such
-  IDs are now reported as nonexistent.
-* zcore: message copies between stores were given a change key with the GUID
-  of the source store.
-* exmdb: a replica ID without a replguidmap entry was reported as found, with
-  the GUID left unset.
-* emsmdb, zcore: PR_PARENT_SOURCE_KEY of an embedded message was 22 zero bytes
-  instead of absent.
-* emsmdb: RopCopyProperties reported ecNotFound for the wrong properties when
-  the request also named read-only ones.
-* emsmdb: ropFastTransferSourceCopyMessages stream requests with SendEntryId
-  flag erroneously lacked PR_SOURCE_KEY in the output.
-* emsmdb/exmdb: client-supplied PR_SOURCE_KEY values were persisted and served
-  as the ICS identity of messages (e.g. replies created through grommunio-sync
-  carried the key of the original mail), which made cached Outlook stop
-  synchronizing the folder with error 0x80040102 (ecNotSupported). Keys are now always derived from the
-  object ID and schema version 32 drops stored rows; affected objects are
-  downloaded once more by cached clients.
-* EWS: UpdateUserConfiguration kept the old change number of the
-  configuration message, so cached Outlook never picked up categories added
-  in eM Client or Outlook for Mac.
-* oxcmail: IPM.Sharing messages now carry a Content-Class header on export,
-  which eM Client needs to show a calendar sharing invitation.
-* oxcmail: long values of stored transport headers such as
-  X-Sharing-Remote-Uid are no longer turned into encoded-words on export.
-* EWS: GetUserConfiguration returned the UserConfiguration element in the
-  types namespace and its folder id without a namespace. Clients built on
-  the EWS Managed API such as eM Client rejected the response and could not
-  sync their categories.
-* EWS: meeting responses, attendee and recipient changes, sent meeting
-  updates and SendItem left the change number of the item alone, so cached
-  Outlook and other syncing clients missed these changes.
-* EWS: CreateAttachment and DeleteAttachment could undo changes made to the
-  item during the previous 30 seconds, like the sequence number of a sent
-  meeting update or a save by another client.
-* EWS: AcceptItem, TentativelyAcceptItem, DeclineItem, SuppressReadReceipt
-  and CancelCalendarItem now refuse private items of others for users who
-  are not allowed to see private items.
-* EWS: the subject prefix of meeting responses, e.g. "Accepted: ", is now in
-  the language of the MailboxCulture header of the request, or else of the
-  user, like Exchange does. A German mailbox answers with "Angenommen: ".
-* EWS: the "Canceled: " prefix of meeting cancellations now follows the same
-  language as the prefix of meeting responses.
-* EWS: GetItem now returns the attendees of a meeting when the shape asks for
-  them without calendar:IsMeeting.
-* imap: The greeting on implicit TLS connections advertised a truncated
-  capability list.
-* EWS: meeting updates sent by UpdateItem now carry PidLidChangeHighlight
-  and are marked as full or informational updates instead of as a new
-  request.
-* EWS: changing the attendees of a meeting with UpdateItem no longer drops
-  the responses of the attendees that stay, unless the start, end or
-  recurrence changed too.
-* ruleproc: an unparsable extended rule no longer keeps all other rules of the
-  folder from running in the TwoStep processor.
-* ruleproc: extended rules on named properties now match in the TwoStep
-  processor.
-* ruleproc: OP_TAG in the TwoStep processor no longer sets the modification
-  time of the message to 1601 and now produces a valid change key.
-* ruleproc: a failing rule no longer stops the remaining rules and the
-  new-mail notification in the TwoStep processor.
-* ruleproc: OP_FORWARD in the TwoStep processor no longer loops between
-  mailboxes.
-* ruleproc: gromox.cfg is now read from the config_file_path of the hosting
-  program instead of always /etc/gromox.
-* email_lib: embedded message/rfc822 parts are no longer serialized empty, so
-  rules that forward as attachment send the original message again.
-* ruleproc: with meeting autoprocessing, meeting messages that a delegate rule
-  hands to the delegates only now still update the principal's calendar, and
-  the delegates' copies are flagged as processed.
-* ruleproc: meeting autoprocessing now records a response that a delegate sent
-  on behalf of an attendee for that attendee, instead of looking for the
-  delegate among the attendees.
-* EWS: a delegate answering its copy of a meeting request now responds on
-  behalf of the principal and updates the principal's calendar instead of its
-  own.
-* ruleproc: rules without a condition no longer apply to every message in
-  the TwoStep processor and are skipped, as in the old processor.
-* ruleproc: meeting autoprocessing no longer undoes what rules changed on a
-  meeting message, e.g. the importance or categories set by a rule.
-* delivery: the Arrival-Date of bounce reports showed the message size
-  instead of the date.
-* ruleproc: tentative responses of meeting autoprocessing now carry the
-  subject prefix "Tentative: " instead of "Maybe: ".
-* ruleproc: Out of Office rules now still run in the TwoStep processor after
-  a rule that stops processing or deletes the message.
-* oxcmail: importing X-Message-Flag stored the subject as the flag text
-  (PidLidFlagRequest) instead of the to-do title, so rule conditions on a
-  particular flag never matched.
-* ruleproc: the conditions "not sent to me", "sent only to me" and "where my
-  name is in the Cc box" now match in the TwoStep processor.
-* ruleproc: "sender contains these words" conditions now match local senders
-  by their e-mail address and ignore case in the TwoStep processor.
-* ruleproc: the TwoStep processor now runs at most
-  ``exmdb_provider.cfg:max_ext_rule_number`` extended rules per folder, as the
-  old processor does.
-* ruleproc: the TwoStep processor now treats rules flagged
-  ST_ONLY_WHEN_OOF_EX, as Exchange 2007 writes them, as Out of Office rules.
-* ruleproc: with meeting autoprocessing, a meeting update that keeps the
-  start, end and recurrence, such as one that removes an attendee, no longer
-  resets the responses of an attendee who had already answered, nor the
-  attendee's reminders.
-* EWS: accepting a meeting request for one occurrence of a series now updates
-  that occurrence in the attendee's calendar and returns it, instead of
-  writing nothing.
-* ruleproc: meeting autoprocessing now enters an update for one occurrence of
-  a series into the attendee's series as an exception. Before, attendee
-  calendars kept the old time until a client acted, and clients that rely on
-  the server, such as Apple Calendar, never showed the update.
-* ruleproc: when meeting autoprocessing marks a cancelled series in an
-  attendee calendar, it now cancels the exceptions of the series too. Before,
-  a moved occurrence stayed active under its old subject.
-* exmdb: rule batches can no longer exceed max_rule_number, and renaming a
-  rule takes effect.
-* zcore: rule updates rejected for exceeding max_rule_number are now
-  reported as failures.
-* EWS: MimeContent now includes the stored transport headers, such as
-  Received, Authentication-Results and DKIM-Signature, so Apple Mail and
-  Outlook for Mac show them in the message source.
-* ruleproc: messages with a null envelope sender, such as bounces, are no
-  longer forwarded. A forward target that bounced made the bounce loop.
-* ruleproc: rule replies no longer answer list, bulk and auto-submitted mail
-  and now carry Auto-Submitted themselves.
-* ruleproc: after a rule moves a message into another mailbox, later rule
-  actions and meeting processing no longer act on that other mailbox.
-* ruleproc: the TwoStep processor now honours
-  ``exmdb_provider.cfg:enable_dam=0`` and no longer writes deferred action
-  messages that pile up unseen.
-* ruleproc: extended move, copy and reply rules that point into another
-  mailbox are now disabled instead of acting on an unrelated local object.
-* ruleproc: declines for ``decline_recurring`` are now only sent to senders
-  with free/busy rights on the calendar.
-* ruleproc: extended rule conditions comparing values of different types no
-  longer crash delivery, and conditions on multivalue properties such as
-  Keywords now match.
-* ruleproc: a sender is now only recorded in the Out of Office history when a
-  reply was actually sent.
-* ruleproc: meeting autoprocessing no longer replaces the organizer's meeting
-  with an attendee copy when an attendee forwards a request or cancellation
-  to the organizer.
-* ruleproc: responses to recurring meetings now carry PidLidTimeZoneStruct.
-* oxcmail: Content-Disposition no longer ends in a separator and an empty
-  line when there is no modification time.
+* Synchronization (ICS) robustness, stricter policing of data in PR_SOURCE_KEY,
+  PR_PARENT_SOURCE_KEY.
+* TNEF decoding is now limited to 7 levels of attachments.
+* Stop generating RFC2047-style attachment filenames, stick to RFC2231 only.
+  Affects Outlook<=2016, but benefits Proxmox PMG.
+* php_mapi/zcore: `mapi_openproperty(PR_CONTENTS_SYNCHRONIZER)`
+  now checks for read permission.
+* midb: send \Seen to exmdb only when the read flag changes.
+* Improved data handling/retention for the MAPI↔iCal conversions.
+* Improved appointment/meeting/task/timezone handling in ruleproc and EWS.
+
+Behavioral changes:
+
+* Rule processing is now using the "Twostep" implementation exclusively.
+  Missing handling for remaining rule types was added, and Onestep has been
+  removed.
+* The meeting request autoprocessor is now enabled by default.
+  (gromox.cfg:lda_mrautoproc=1)
+* A fresh deferred send implementation that runs directly from the Information
+  Store. Gromox no longer uses PHP scripts for itself, and the timer(8gx)
+  daemon has been deleted.
+* istore: Unrecognized permission bits in folder ACEs are now silently ignored.
+* Freebusy now withholds subject and location of private appointments,
+  and withholds the details of private exceptions in a public series.
+* EWS: Require read or free/busy rights for FindItem,
+  withhold the details of private items from non-owners,
+  refuse changes to private items by non-owners, and
+  show private items only to delegates allowed to see them.
+* php_mapi's `mapi_openentry` function can now be called with addressbook
+  entryids, mimicing what MSMAPI allows.
+* EX addresses that are unresolvable are replaced with IMCEA addresses
+  during MAPI-to-INET conversion.
 
 
 Gromox 3.13 (2026-10-28)
