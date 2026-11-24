@@ -410,7 +410,7 @@ install-exec-hook:
 
 install-data-local:
 	${MKDIR_P} ${DESTDIR}${mandir}/man8 ${DESTDIR}${pkgdatadir}/http/php
-	cp -av ${srcdir}/data/*_bounce ${srcdir}/data/*.txt ${srcdir}/data/*.ldif ${srcdir}/data/*.sample ${srcdir}/data/gdbinit ${srcdir}/data/sqliterc ${DESTDIR}${pkgdatadir}/
+	cp -av ${srcdir}/data/bounces ${srcdir}/data/*.txt ${srcdir}/data/*.ldif ${srcdir}/data/*.sample ${srcdir}/data/gdbinit ${srcdir}/data/sqliterc ${DESTDIR}${pkgdatadir}/
 
 uninstall-hook:
 	chmod -R u+w ${DESTDIR}${pkgdatadir}/
