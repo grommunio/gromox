@@ -1706,7 +1706,11 @@ const char* EWSContext::effectiveUser(const sFolderSpec& folder) const
 void EWSContext::enableEventStream(int timeout)
 {
 	m_state = S_STREAM_NOTIFY;
-	auto expire = tp_now() + std::chrono::minutes(timeout);
+	/*
+	 * Exchange ends every stream after about two minutes regardless of the
+	 * ConnectionTimeout the client asked for (Outlook then reconnects).
+	 */
+	auto expire = tp_now() + std::min<std::chrono::seconds>(std::chrono::minutes(timeout), std::chrono::seconds(120));
 	if (m_notify)
 		mlog(LV_DEBUG, "EWSContext::m_notify already populated, programming error");
 	m_notify = std::make_unique<NotificationContext>(expire);
@@ -2104,27 +2108,95 @@ std::pair<std::list<sNotificationEvent>, bool> EWSContext::getEvents(const tSubs
 	auto mgr = m_plugin.get_submgr(subscriptionId.tsub_rawkey, subscriptionId.timeout);
 	if (mgr == nullptr)
 		throw EWSError::InvalidSubscription(E3202);
-	std::lock_guard evguard(mgr->lock);
-	if (mgr->username != m_auth_info.username)
-		throw EWSError::AccessDenied(E3203);
-	if (mgr->overflow)
-		/*
-		 * Backlog was previously dropped in EWSPlugin::event() because
-		 * the client could not keep up. Fault the subscription to make
-		 * the caller (streaming notify() / pull GetEvents) report it
-		 * in ErrorSubscriptionIds.
-		 */
-		throw EWSError::InvalidSubscription(E3454);
-	std::pair<std::list<sNotificationEvent>, bool> result{{}, mgr->events.size() > 50};
-	auto &evt = mgr->events;
-	if (result.second) {
-		auto it = evt.begin();
-		std::advance(it, 50);
-		result.first.splice(result.first.end(), evt, evt.begin(), it);
-	} else {
-		result.first.splice(result.first.end(), evt);
+	std::pair<std::list<sNotificationEvent>, bool> result;
+	std::string dir;
+	GUID storeGuid{};
+	{
+		std::lock_guard evguard(mgr->lock);
+		if (mgr->username != m_auth_info.username)
+			throw EWSError::AccessDenied(E3203);
+		if (mgr->overflow)
+			/*
+			 * Backlog was previously dropped in EWSPlugin::event() because
+			 * the client could not keep up. Fault the subscription to make
+			 * the caller (streaming notify() / pull GetEvents) report it
+			 * in ErrorSubscriptionIds.
+			 */
+			throw EWSError::InvalidSubscription(E3454);
+		result.second = mgr->events.size() > 50;
+		auto &evt = mgr->events;
+		if (result.second) {
+			auto it = evt.begin();
+			std::advance(it, 50);
+			result.first.splice(result.first.end(), evt, evt.begin(), it);
+		} else {
+			result.first.splice(result.first.end(), evt);
+		}
+		if (!mgr->inner_subs.empty())
+			dir = mgr->inner_subs.front().first;
+		storeGuid = mgr->mailboxInfo.mailboxGuid;
 	}
+	/*
+	 * Microsoft servers send the change key along with every item and
+	 * folder id in a notification, and Outlook for Mac appears to rely
+	 * on it. The event callback runs on an exmdb thread and cannot query
+	 * the store, so the change keys are looked up here, outside of the
+	 * subscription lock. Failures just leave the id without change key.
+	 */
+	addEventChangeKeys(dir, storeGuid, result.first);
 	return result;
+}
+
+void EWSContext::addEventChangeKeys(const std::string &dir, const GUID &storeGuid,
+    std::list<sNotificationEvent> &events) const
+{
+	/*
+	 * Exchange puts a tiny 4-byte counter into event ChangeKeys (folders
+	 * "AQAAAA==", new messages "CQAAAA=="), not the 22-byte key it serves
+	 * elsewhere. Mirror that.
+	 */
+	(void)dir; (void)storeGuid;
+	auto small = [](uint32_t v) {
+		std::string raw(4, '\0');
+		for (unsigned i = 0; i < 4; ++i)
+			raw[i] = static_cast<char>((v >> (8 * i)) & 0xff);
+		return sBase64Binary(std::move(raw));
+	};
+	auto folderKey = [&](uint64_t) -> std::optional<sBase64Binary> { return small(1); };
+	auto messageKey = [&](uint64_t) -> std::optional<sBase64Binary> { return small(9); };
+	auto fixFolder = [&](tFolderId &id) {
+		if (id.Id.size() != 46 || id.ChangeKey.has_value())
+			return;
+		id.ChangeKey = folderKey(sFolderEntryId(id.Id.data(), id.Id.size()).folderId());
+	};
+	for (auto &ev : events) {
+		std::visit([&](auto &e) {
+			using T = std::decay_t<decltype(e)>;
+			if constexpr (std::is_base_of_v<tBaseObjectChangedEvent, T> &&
+			    !std::is_same_v<T, aDeletedEvent>) {
+				if (auto fid = std::get_if<tFolderId>(&e.objectId)) {
+					fixFolder(*fid);
+				} else if (auto iid = std::get_if<tItemId>(&e.objectId)) {
+					if (iid->Id.size() == 70 && !iid->ChangeKey.has_value())
+						iid->ChangeKey = messageKey(sMessageEntryId(iid->Id.data(), iid->Id.size()).messageId());
+				}
+				fixFolder(e.ParentFolderId);
+			}
+		}, ev);
+	}
+	/* Same order as Exchange: Created, NewMail, Modified, then the rest */
+	events.sort([](const sNotificationEvent &a, const sNotificationEvent &b) {
+		auto rank = [](const sNotificationEvent &e) {
+			if (std::holds_alternative<aCreatedEvent>(e))
+				return 0;
+			if (std::holds_alternative<aNewMailEvent>(e))
+				return 1;
+			if (std::holds_alternative<tModifiedEvent>(e))
+				return 2;
+			return 3;
+		};
+		return rank(a) < rank(b);
+	});
 }
 
 /**
@@ -6842,8 +6914,10 @@ bool EWSContext::streamEvents(const tSubscriptionId& subscriptionId) const
 {
 	if (!m_notify)
 		return false;
+	if (!m_plugin.linkSubscription(subscriptionId, *this))
+		return false;
 	m_notify->nct_subs.emplace_back(subscriptionId);
-	return m_plugin.linkSubscription(subscriptionId, *this);
+	return true;
 }
 
 /**

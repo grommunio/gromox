@@ -668,6 +668,44 @@ static std::string_view to_sv(const XMLPrinter &p)
 }
 
 /**
+ * Re-emit a serialized GetStreamingEvents envelope in the exact byte form
+ * Exchange uses on the stream: default-namespaced Envelope, "soap11" Header
+ * and Body, no XML declaration, " />" self-closing tags and a trailing LF.
+ * Outlook for Mac only acts on stream notifications that look like this.
+ */
+static std::string exchange_stream_form(const std::string &src, const SOAP::VersionInfo &ver)
+{
+	static constexpr char open_tag[] = "<m:GetStreamingEventsResponse";
+	static constexpr char close_tag[] = "</m:GetStreamingEventsResponse>";
+	auto b = src.find(open_tag);
+	auto e = src.rfind(close_tag);
+	if (b == src.npos || e == src.npos)
+		return src;
+	auto gt = src.find('>', b);
+	if (gt == src.npos || gt >= e)
+		return src;
+	std::string inner = src.substr(gt + 1, e - gt - 1);
+	for (size_t pos = 0; (pos = inner.find("/>", pos)) != inner.npos; pos += 3)
+		inner.insert(pos, " ");
+	std::string out;
+	out += "<Envelope xmlns=\"http://schemas.xmlsoap.org/soap/envelope/\">";
+	out += "<soap11:Header xmlns:soap11=\"http://schemas.xmlsoap.org/soap/envelope/\">";
+	out += fmt::format("<ServerVersionInfo xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" "
+	       "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" MajorVersion=\"{}\" "
+	       "MinorVersion=\"{}\" MajorBuildNumber=\"{}\" MinorBuildNumber=\"{}\" Version=\"{}\" "
+	       "xmlns=\"http://schemas.microsoft.com/exchange/services/2006/types\" />",
+	       ver.server[0], ver.server[1], ver.server[2], ver.server[3], ver.schema);
+	out += "</soap11:Header><soap11:Body xmlns:soap11=\"http://schemas.xmlsoap.org/soap/envelope/\">";
+	out += "<m:GetStreamingEventsResponse xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" "
+	       "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" "
+	       "xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" "
+	       "xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">";
+	out += inner;
+	out += "</m:GetStreamingEventsResponse></soap11:Body></Envelope>\n";
+	return out;
+}
+
+/**
  * @brief      NotificationContext state management
  *
  * Update the notification context, processing available events, and manage
@@ -698,7 +736,8 @@ int EWSContext::notify()
 		/* First call after initialization -> write context data */
 		m_response.doc.Print(&printer);
 		writeheader(m_ctx_id, m_code, 0, true);
-		writechunk(m_ctx_id, to_sv(printer), logResponse, loglevel);
+		writechunk(m_ctx_id, exchange_stream_form(std::string(to_sv(printer)),
+		           m_plugin.server_version()), logResponse, loglevel);
 		nctx.state = NS::S_WRITE;
 		return HPM_RETRIEVE_WRITE;
 	}
@@ -712,7 +751,10 @@ int EWSContext::notify()
 	auto flush = [&]() {
 		data.serialize(response);
 		envelope.doc.Print(&printer);
-		writechunk(m_ctx_id, to_sv(printer), logResponse, loglevel);
+		/* Like Exchange: a two-space chunk precedes every message after the first */
+		writechunk(m_ctx_id, "  ", false, loglevel);
+		writechunk(m_ctx_id, exchange_stream_form(std::string(to_sv(printer)),
+		           m_plugin.server_version()), logResponse, loglevel);
 		return HPM_RETRIEVE_WRITE;
 	};
 
@@ -732,12 +774,14 @@ int EWSContext::notify()
 		try {
 			auto[events, more] = getEvents(subscription);
 			moreAny = moreAny || more;
+			/* Like Exchange: no notification at all when there is nothing to tell */
+			if (events.empty())
+				continue;
 			tNotification& notification = msg.Notifications.emplace_back();
 			notification.SubscriptionId = subscription;
 			notification.events = std::move(events);
-			notification.MoreEvents = more;
-			if (notification.events.empty())
-				notification.events.emplace_back(aStatusEvent());
+			if (more)
+				notification.MoreEvents = true;
 		} catch (...) {
 			msg.ErrorSubscriptionIds.emplace_back(subscription);
 		}
@@ -759,7 +803,14 @@ int EWSContext::notify()
 	 * "goodbye" chunk. A client reading only this chunk still gets an
 	 * immediate, correct signal to resubscribe.
 	 */
-	msg.ConnectionStatus = nctx.state == NS::S_CLOSING ? Enum::Closed : Enum::OK;
+	/*
+	 * Like Exchange: a message that carries notifications has no
+	 * ConnectionStatus; it only appears on heartbeats and on the final message.
+	 */
+	if (nctx.state == NS::S_CLOSING)
+		msg.ConnectionStatus = Enum::Closed;
+	else if (msg.Notifications.empty() || !msg.ErrorSubscriptionIds.empty())
+		msg.ConnectionStatus = Enum::OK;
 	if (nctx.state == NS::S_SLEEP)
 		m_plugin.wakeContext(m_ctx_id, m_plugin.event_stream_interval);
 	return flush();
@@ -911,7 +962,9 @@ void EWSPlugin::event(const char* dir, BOOL, uint32_t ID, const DB_NOTIFY* notif
 			mgr->username.c_str(), max_pending_events);
 		return;
 	}
-	sTimePoint now(clock::now());
+	/* Exchange stamps events to the second; no fractional part */
+	sTimePoint now(std::chrono::time_point_cast<clock::duration>(
+		std::chrono::floor<std::chrono::seconds>(clock::now())));
 	auto mkFid = [&](uint64_t fid) {
 		return tFolderId(mkFolderEntryId(mgr->mailboxInfo,
 		       eid_t(1, fid)).serialize());
