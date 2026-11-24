@@ -672,7 +672,8 @@ pack_result tnef_pull::g_attr(TNEF_ATTRIBUTE *r)
 		}
 	}
 	TRY(pext->g_uint32(&len));
-	if (ext.m_offset + len > ext.m_data_size)
+	if (ext.m_offset > ext.m_data_size ||
+	    len > ext.m_data_size - ext.m_offset)
 		return pack_result::format;
 	uint32_t offset = ext.m_offset;
 	switch (r->attr_id) {
@@ -1135,18 +1136,23 @@ static bool rec_namedprop(propmap_t &map, uint16_t &last_propid, TNEF_PROPVAL *t
 }
 
 enum { X_ERROR = -1, X_RUNOFF, X_CONTINUE, };
+/* MS-OXTNEF embedded messages are not recursed further than this. */
+static constexpr unsigned int TNEF_MAX_EMBED_DEPTH = 8;
 
-static MESSAGE_CONTENT *tnef_deserialize_internal(const void *, uint32_t, BOOL, EXT_BUFFER_ALLOC, GET_PROPIDS, USERNAME_TO_ENTRYID);
+static MESSAGE_CONTENT *tnef_deserialize_internal(const void *, uint32_t, BOOL, EXT_BUFFER_ALLOC, GET_PROPIDS, USERNAME_TO_ENTRYID, unsigned int);
 
 static int rec_ptobj(EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids,
-    USERNAME_TO_ENTRYID u2e, ATTACHMENT_CONTENT *atc, TNEF_PROPVAL *tnef_pv)
+    USERNAME_TO_ENTRYID u2e, ATTACHMENT_CONTENT *atc, TNEF_PROPVAL *tnef_pv,
+    unsigned int depth)
 {
 	if (tnef_pv->proptype != PT_OBJECT)
 		return X_RUNOFF;
 	auto bv = static_cast<BINARY *>(tnef_pv->pvalue);
 	if (memcmp(bv->pb, &IID_IMessage, sizeof(IID_IMessage)) == 0) {
+		if (depth >= TNEF_MAX_EMBED_DEPTH)
+			return X_ERROR;
 		auto emb = tnef_deserialize_internal(bv->pb + 16, bv->cb - 16,
-		           TRUE, alloc, std::move(get_propids), u2e);
+		           TRUE, alloc, std::move(get_propids), u2e, depth + 1);
 		if (emb == nullptr)
 			return X_ERROR;
 		atc->set_embedded_internal(emb);
@@ -1172,7 +1178,8 @@ static bool is_meeting_response(const char *s)
 
 static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	uint32_t length, BOOL b_embedded, EXT_BUFFER_ALLOC alloc,
-	GET_PROPIDS get_propids, USERNAME_TO_ENTRYID username_to_entryid) try
+	GET_PROPIDS get_propids, USERNAME_TO_ENTRYID username_to_entryid,
+	unsigned int depth) try
 {
 	BOOL b_props;
 	BINARY tmp_bin;
@@ -1469,7 +1476,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 				if (!rec_namedprop(phash, last_propid, ptnef_propval))
 					return nullptr;
 				auto r = rec_ptobj(alloc, get_propids, username_to_entryid,
-				         pattachment, ptnef_propval);
+				         pattachment, ptnef_propval, depth);
 				if (r == X_CONTINUE)
 					continue;
 				if (r == X_ERROR ||
@@ -1590,7 +1597,7 @@ MESSAGE_CONTENT* tnef_deserialize(const void *pbuff,
 	USERNAME_TO_ENTRYID username_to_entryid)
 {
 	return tnef_deserialize_internal(pbuff, length, FALSE,
-	       alloc, std::move(get_propids), username_to_entryid);
+	       alloc, std::move(get_propids), username_to_entryid, 0);
 }
 
 pack_result tnef_push::p_propname(const PROPERTY_NAME &rr)

@@ -653,45 +653,45 @@ tproc_status http_parser::rdhead_no(http_context *pcontext, char *line,
     unsigned int line_length)
 {
 	auto &ctx = *pcontext;
-	auto ptoken = static_cast<char *>(memchr(line, ' ', line_length));
-	if (NULL == ptoken) {
+	auto first_space = static_cast<char *>(memchr(line, ' ', line_length));
+	if (first_space == nullptr) {
 		pcontext->log(LV_DEBUG, "D-2320: request line missing a URI");
 		return http_done(pcontext, http_status::bad_request_CL);
 	}
-	size_t tmp_len = ptoken - line;
-	if (tmp_len >= std::size(pcontext->request.method)) {
+	size_t method_len = first_space - line;
+	if (method_len >= std::size(pcontext->request.method)) {
 		pcontext->log(LV_DEBUG, "I-1922: request method error");
 		return http_done(pcontext, http_status::bad_request_CL);
 	}
 
-	memcpy(pcontext->request.method, line, tmp_len);
-	pcontext->request.method[tmp_len] = '\0';
+	memcpy(pcontext->request.method, line, method_len);
+	pcontext->request.method[method_len] = '\0';
 	pcontext->request.imethod = http_method_lookup(pcontext->request.method);
-	auto ptoken1 = static_cast<char *>(memchr(ptoken + 1, ' ', line_length - tmp_len - 1));
-	if (NULL == ptoken1) {
+	auto second_space = static_cast<char *>(memchr(&first_space[1], ' ', line_length - method_len - 1));
+	if (second_space == nullptr) {
 		pcontext->log(LV_DEBUG, "D-1923: request line without HTTP version");
 		return http_done(pcontext, http_status::bad_request_CL);
 	}
-	size_t tmp_len1 = ptoken1 - ptoken - 1;
-	tmp_len = line_length - (ptoken1 + 6 - line);
-	if (strncasecmp(&ptoken1[1], "HTTP/1.1", 8) == 0 &&
-	    (ptoken1[9] == '\r' || ptoken1[9] == '\n' || ptoken1[9] == '\0')) {
+	size_t path_len = second_space - &first_space[1];
+	size_t prot_len = line_length - (&second_space[6] - line);
+	if (strncasecmp(&second_space[1], "HTTP/1.1", 8) == 0 &&
+	    (second_space[9] == '\r' || second_space[9] == '\n' || second_space[9] == '\0')) {
 		pcontext->b_close = false;
-	} else if (strncasecmp(&ptoken1[1], "HTTP/1.0", 8) == 0 &&
-	    (ptoken1[9] == '\r' || ptoken1[9] == '\n' || ptoken1[9] == '\0')) {
+	} else if (strncasecmp(&second_space[1], "HTTP/1.0", 8) == 0 &&
+	    (second_space[9] == '\r' || second_space[9] == '\n' || second_space[9] == '\0')) {
 		pcontext->b_close = TRUE;
 	} else {
 		pcontext->log(LV_DEBUG, "I-1924: unrecognized HTTP protocol %.*s",
-			static_cast<int>(tmp_len), &ptoken1[1]);
+			static_cast<int>(prot_len), &second_space[1]);
 		return http_done(pcontext, http_status::bad_request_CL);
 	}
-	if (tmp_len1 == 0)
+	if (path_len == 0)
 		return http_done(pcontext, http_status::bad_request_CL);
-	if (tmp_len1 >= http_request::uri_limit)
+	if (path_len >= http_request::uri_limit)
 		return http_done(pcontext, http_status::uri_too_long_CL);
-	if (!mod_rewrite_process(ptoken + 1,
-	    tmp_len1, pcontext->request.f_request_uri)) {
-		pcontext->request.f_request_uri = std::string_view(&ptoken[1], tmp_len1);
+	if (!mod_rewrite_process(&first_space[1],
+	    path_len, pcontext->request.f_request_uri)) {
+		pcontext->request.f_request_uri = std::string_view(&first_space[1], path_len);
 	} else if (ctx.request.f_request_uri.size() == 0) {
 		ctx.log(LV_ERR, "mod_rewrite left a zero-length URI");
 		return http_done(pcontext, http_status::bad_request_CL);
@@ -700,8 +700,8 @@ tproc_status http_parser::rdhead_no(http_context *pcontext, char *line,
 		 * won't be exceeded anymore.
 		 */
 	}
-	memcpy(pcontext->request.version, ptoken1 + 6, tmp_len);
-	pcontext->request.version[tmp_len] = '\0';
+	memcpy(pcontext->request.version, &second_space[6], prot_len);
+	pcontext->request.version[prot_len] = '\0';
 	return tproc_status::runoff;
 }
 
@@ -717,9 +717,13 @@ tproc_status http_parser::rdhead_mt(http_context *pcontext, char *line,
 		pcontext->log(LV_DEBUG, "D-1925: request header has no colon");
 		return http_done(pcontext, http_status::bad_request_CL);
 	}
-
-	size_t tmp_len = ptoken - line;
 	char field_name[64];
+	size_t tmp_len = ptoken - line;
+	if (tmp_len > std::size(field_name) - 1) {
+		pcontext->log(LV_DEBUG, "%s: request header %.*s too long", __func__,
+			static_cast<int>(std::max(tmp_len, static_cast<size_t>(64))), line);
+		return http_done(pcontext, http_status::bad_request_CL);
+	}
 	memcpy(field_name, line, tmp_len);
 	field_name[tmp_len] = '\0';
 	HX_strrtrim(field_name);
@@ -1381,6 +1385,11 @@ tproc_status http_parser::rdhead_st(http_context *pcontext, ssize_t actual_read)
 		char *line = nullptr;
 		auto line_length = pcontext->stream_in.readline(&line);
 		if (0 != line_length) {
+			if (memchr(line, '\0', line_length) != nullptr) {
+				/* RFC 9110 §5.5 */
+				pcontext->log(LV_DEBUG, "NUL bytes in request\n");
+				return http_done(pcontext, http_status::bad_request_CL);
+			}
 			auto ret = *pcontext->request.method == '\0' ?
 			           rdhead_no(pcontext, line, line_length) :
 			           rdhead_mt(pcontext, line, line_length);

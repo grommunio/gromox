@@ -57,7 +57,8 @@ The source code repository and technical issue tracker can be found at
 `<https://github.com/grommunio/gromox>`_.
 
 For direct contact and supplying information about a security-related
-responsible disclosure, contact `dev@grommunio.com <dev@grommunio.com>`_.
+responsible disclosure, contact `jengelh@inai.de <jengelh@inai.de>`_ and
+`dev@grommunio.com <dev@grommunio.com>`_.
 
 
 Standards and protocols
