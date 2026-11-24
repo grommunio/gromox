@@ -748,6 +748,13 @@ static bool negative_time_possible()
 
 static int t_time()
 {
+/*
+ * The top end of what glibc will accept for calls like gmtime(),
+ * 2147485547-12-31T23:59:59Z (+1s)
+ */
+#define UNIXSECONDS_LIMIT 0xf0c2ab7c54a980LL
+
+/* 30827-31-12 23:59:59Z */
 #define SYSTEMTIME_MAX 0x7fff35f4f06c7fffLL
 
 	printf("It is now approximately %lld (mapitime_t)\n",
