@@ -277,8 +277,14 @@ void transporter_stop()
 
 static gromox::hook_result remote_delivery_hook(MESSAGE_CONTEXT *ctx)
 {
-	auto err = cu_send_vmail(ctx->vmail, g_outgoing_smtp_url.c_str(),
-	           ctx->ctrl.from, ctx->ctrl.rcpt);
+	ec_error_t err;
+	if (ctx->vmail != nullptr) {
+		err = cu_send_vmail(ctx->vmail, g_outgoing_smtp_url.c_str(),
+	              ctx->ctrl.from, ctx->ctrl.rcpt);
+	} else {
+		err = cu_send_mail(ctx->mail, g_outgoing_smtp_url.c_str(),
+	              ctx->ctrl.from, ctx->ctrl.rcpt);
+	}
 	if (err != ecSuccess)
 		mlog(LV_ERR, "E-2134: cu_send_mail: %s", mapi_strerror(err));
 	return hook_result::stop;
