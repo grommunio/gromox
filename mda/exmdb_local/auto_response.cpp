@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2025–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstring>
 #include <string>
-#include <utility>
 #include <strings.h>
+#include <utility>
 #include <libHX/string.h>
 #include <vmime/addressList.hpp>
 #include <vmime/dateTime.hpp>
@@ -132,25 +132,25 @@ void auto_response_reply(const char *user_home, const char *from,
 		subject_text = subject_buf.c_str();
 	}
 	auto vpctx = vmail_default_parsectx();
-	vmime::message vmsg;
 
-	auto hdr = vmsg.getHeader();
-	hdr->getField("MIME-Version")->setValue("1.0");
-	hdr->From()->setValue(from);
+	auto vmsg = vmime::make_shared<vmime::message>();
+	auto &hdr = *vmsg->getHeader();
+	hdr.getField("MIME-Version")->setValue("1.0");
+	hdr.From()->setValue(from);
 	{
 		vmime::addressList target_list;
 		vmime::mailbox target;
 		target.setEmail(rcpt);
 		target_list.appendAddress(vmime::make_shared<vmime::mailbox>(target));
-		hdr->To()->setValue(target_list);
+		hdr.To()->setValue(target_list);
 	}
-	hdr->getField("X-Auto-Response-Suppress")->setValue("All");
-	hdr->Date()->setValue(vmime::datetime::now());
-	hdr->Subject()->setValue(vmime::text(subject_text, vmime::charsets::UTF_8));
+	hdr.getField("X-Auto-Response-Suppress")->setValue("All");
+	hdr.Date()->setValue(vmime::datetime::now());
+	hdr.Subject()->setValue(vmime::text(subject_text, vmime::charsets::UTF_8));
 
 	auto cth = vmime::make_shared<vmime::stringContentHandler>(message_text);
 	auto enc = vmime::encoding::decide(cth, vmime::charsets::UTF_8, vmime::encoding::USAGE_TEXT);
-	vmsg.getBody()->setContents(std::move(cth),
+	vmsg->getBody()->setContents(std::move(cth),
 		vmime::mediaType(vmime::mediaTypes::TEXT, vmime::mediaTypes::TEXT_HTML),
 		vmime::charsets::UTF_8, std::move(enc));
 
@@ -159,11 +159,12 @@ void auto_response_reply(const char *user_home, const char *from,
 		return;
 	gx_strlcpy(ctx->ctrl.from, from, std::size(ctx->ctrl.from));
 	ctx->ctrl.rcpt.emplace_back(rcpt);
-	if (!vmail_to_mail(vmsg, ctx->mail)) {
+	if (!vmail_to_mail(*vmsg, ctx->mail)) {
 		mlog(LV_ERR, "%s: vmail_to_mail failed", __func__);
 		put_context(ctx);
 		return;
 	}
+	ctx->vmail = std::move(vmsg);
 	enqueue_context(ctx);
 	if (!exmdb_client->autoreply_tsupdate(user_home, rcpt))
 		/* can't do much now */;
