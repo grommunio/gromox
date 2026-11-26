@@ -3,6 +3,7 @@
 #
 # Generate a bunch of emails, as mbox format.
 
+use POSIX qw(strftime);
 use strict;
 use warnings;
 our @dict;
@@ -23,6 +24,16 @@ sub pick_word
 	return $dict[int(rand() * scalar(@dict))];
 }
 
+sub mkdate
+{
+	my @wkstr = qw(Sun Mon Tue Wed Thu Fri Sat);
+	my @mostr = qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec);
+	my @now   = gmtime(shift @_);
+
+	return $wkstr[$now[6]].", ".$now[3]." ".$mostr[$now[4]].
+	       strftime(" %Y %H:%M:%S +0000", @now);
+}
+
 @dict = &read_dict("/usr/share/hunspell/en_US.dic");
 chomp(@dict);
 if (scalar(@dict) == 0) {
@@ -35,10 +46,12 @@ my $count = shift @ARGV;
 if (!defined($count)) {
 	$count = 1;
 }
+my $now = time();
 for (my $i = 0; $i < $count; ++$i) {
-	print "From user\@example.com ", scalar(localtime()), "\n";
+	print "From user\@example.com ", scalar(localtime($now)), "\n";
 	print "From: <user\@example.com>\n";
 	print "To: <user\@example.com>\n";
+	print "Date: ", &mkdate($now - $count + $i), "\n";
 	my $word1 = &pick_word();
 	my $word2 = &pick_word();
 	my $word3 = &pick_word();
