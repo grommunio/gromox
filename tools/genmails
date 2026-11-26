@@ -6,7 +6,7 @@
 use POSIX qw(strftime);
 use strict;
 use warnings;
-our @dict;
+my $dict;
 
 sub read_dict
 {
@@ -16,12 +16,26 @@ sub read_dict
 		return;
 	}
 	<$fh>;
-	return <$fh>;
+	my @dict;
+	while (<$fh>) {
+		chomp;
+		my $pos = index($_, '/');
+		if ($pos >= 0) {
+			substr($_, $pos) = "";
+		}
+		if (length($_) > 0) {
+			push(@dict, $_);
+		}
+	}
+	if (scalar(@dict) == 0) {
+		@dict = ("bweebol");
+	}
+	return \@dict;
 }
 
 sub pick_word
 {
-	return $dict[int(rand() * scalar(@dict))];
+	return $dict->[int(rand() * scalar(@$dict))];
 }
 
 sub mkdate
@@ -34,14 +48,7 @@ sub mkdate
 	       strftime(" %Y %H:%M:%S +0000", @now);
 }
 
-@dict = &read_dict("/usr/share/hunspell/en_US.dic");
-chomp(@dict);
-if (scalar(@dict) == 0) {
-	@dict = ("bweebol");
-}
-foreach (@dict) {
-	s{/.*}{};
-}
+$dict = &read_dict("/usr/share/hunspell/en_US.dic");
 my $count = shift @ARGV;
 if (!defined($count)) {
 	$count = 1;
