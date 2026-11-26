@@ -55,5 +55,8 @@ for (my $i = 0; $i < $count; ++$i) {
 	my $word1 = &pick_word();
 	my $word2 = &pick_word();
 	my $word3 = &pick_word();
+	print "Message-ID: <g-$now-$$-$i\@example.com>\n";
+	print "Content-Type: text/plain; charset=utf-8\n";
+	print "MIME-Version: 1.0\n";
 	print "Subject: $i $word1 $word2\n\n$word2 $word3\n\n";
 }
