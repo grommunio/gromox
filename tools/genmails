@@ -5,6 +5,7 @@
 
 use strict;
 use warnings;
+our @dict;
 
 sub read_dict
 {
@@ -16,11 +17,19 @@ sub read_dict
 	<$fh>;
 	return <$fh>;
 }
-	
-my @dict = &read_dict("/usr/share/hunspell/en_US.dic");
+
+sub pick_word
+{
+	return $dict[int(rand() * scalar(@dict))];
+}
+
+@dict = &read_dict("/usr/share/hunspell/en_US.dic");
 chomp(@dict);
 if (scalar(@dict) == 0) {
 	@dict = ("bweebol");
+}
+foreach (@dict) {
+	s{/.*}{};
 }
 my $count = shift @ARGV;
 if (!defined($count)) {
@@ -30,11 +39,8 @@ for (my $i = 0; $i < $count; ++$i) {
 	print "From user\@example.com ", scalar(localtime()), "\n";
 	print "From: <user\@example.com>\n";
 	print "To: <user\@example.com>\n";
-	my $word1 = $dict[int(rand() * scalar(@dict))];
-	my $word2 = $dict[int(rand() * scalar(@dict))];
-	my $word3 = $dict[int(rand() * scalar(@dict))];
-	$word1 =~ s{/.*}{};
-	$word2 =~ s{/.*}{};
-	$word3 =~ s{/.*}{};
+	my $word1 = &pick_word();
+	my $word2 = &pick_word();
+	my $word3 = &pick_word();
 	print "Subject: $i $word1 $word2\n\n$word2 $word3\n\n";
 }
