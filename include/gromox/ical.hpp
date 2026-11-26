@@ -4,6 +4,7 @@
 #include <list>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 #include <gromox/common_types.hpp>
@@ -78,7 +79,8 @@ struct GX_EXPORT ical_component {
 
 struct GX_EXPORT ical : public ical_component {
 	ical() : ical_component("VCALENDAR") {}
-	bool load_from_str_move(char *in_buff);
+	bool load_from_str(std::string &&);
+	bool load_from_str(std::string_view sv) { return load_from_str(std::string(sv)); }
 	ec_error_t serialize(std::string &out) const;
 };
 

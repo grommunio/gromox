@@ -14,6 +14,7 @@
 #include <memory>
 #include <pthread.h>
 #include <string>
+#include <string_view>
 #include <unistd.h>
 #include <utility>
 #include <vector>
@@ -1924,15 +1925,10 @@ ec_error_t cu_message_to_ical(store_object &store, uint64_t message_id,
 	return ecServerOOM;
 }
 
-message_ptr cu_ical_to_message(store_object &store, const BINARY *pical_bin) try
+message_ptr cu_ical_to_message(store_object &store, std::string_view input) try
 {
 	ical ical;
-	auto pbuff = cu_alloc<char>(pical_bin->cb + 1);
-	if (pbuff == nullptr)
-		return nullptr;
-	memcpy(pbuff, pical_bin->pb, pical_bin->cb);
-	pbuff[pical_bin->cb] = '\0';
-	if (!ical.load_from_str_move(pbuff))
+	if (!ical.load_from_str(input))
 		return NULL;
 	common_util_set_dir(store.get_dir());
 
@@ -1947,11 +1943,11 @@ message_ptr cu_ical_to_message(store_object &store, const BINARY *pical_bin) try
 	return nullptr;
 }
 
-ec_error_t cu_ical_to_message2(store_object &store, char *ical_data,
+ec_error_t cu_ical_to_message2(store_object &store, std::string_view input,
     std::vector<message_ptr> &msgvec) try
 {
 	ical icobj;
-	if (!icobj.load_from_str_move(ical_data))
+	if (!icobj.load_from_str(input))
 		return ecError;
 	common_util_set_dir(store.get_dir());
 

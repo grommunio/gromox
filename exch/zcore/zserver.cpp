@@ -4972,7 +4972,7 @@ ec_error_t zs_icaltomessage(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != zs_objtype::message)
 		return ecNotSupported;
-	auto pmsgctnt = cu_ical_to_message(*pmessage->get_store(), pical_bin);
+	auto pmsgctnt = cu_ical_to_message(*pmessage->get_store(), *pical_bin);
 	if (pmsgctnt == nullptr)
 		return ecError;
 	return pmessage->write_message(*pmsgctnt);

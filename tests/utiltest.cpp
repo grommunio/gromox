@@ -905,7 +905,7 @@ static int t_floating_dt()
 		"END:VEVENT\r\n"
 		"END:VCALENDAR\r\n";
 	ical ic;
-	assert(ic.load_from_str_move(input));
+	assert(ic.load_from_str(std::string(input)));
 
 	char logfile[] = "/tmp/gromox-utiltest-XXXXXX";
 	auto fd = mkstemp(logfile);

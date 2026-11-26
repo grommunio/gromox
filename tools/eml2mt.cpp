@@ -317,7 +317,7 @@ static errno_t do_ical(const char *file, std::vector<message_ptr> &mv)
 		return errno;
 	}
 	ical ical;
-	if (!ical.load_from_str_move(slurp_data.get())) {
+	if (!ical.load_from_str(std::string_view(slurp_data.get(), slurp_len))) {
 		fprintf(stderr, "ical_parse %s unsuccessful\n", file);
 		return EIO;
 	}

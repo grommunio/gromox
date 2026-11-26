@@ -237,7 +237,7 @@ static int t_ical_dt()
 
 		ical ical;
 		printf("\n\n<input>:: \e[32m%s\e[0m\n", s);
-		if (!ical.load_from_str_move(input.data())) {
+		if (!ical.load_from_str(std::move(input))) {
 			fprintf(stderr, "ical_parse unsuccessful\n");
 			return EXIT_FAILURE;
 		}
@@ -303,7 +303,7 @@ static int t_rrule()
 
 	ical icalin;
 	auto input = head + "RRULE:FREQ=MONTHLY;BYDAY=2MO\n" + foot;
-	bool succ = icalin.load_from_str_move(input.data());
+	bool succ = icalin.load_from_str(std::move(input));
 	if (!succ)
 		return EXIT_FAILURE;
 	oxcical_converter cvt;
@@ -314,7 +314,7 @@ static int t_rrule()
 	assert(msg != nullptr);
 
 	input = head + "RRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=8\n" + foot;
-	succ = icalin.load_from_str_move(input.data());
+	succ = icalin.load_from_str(std::move(input));
 	if (!succ)
 		return EXIT_FAILURE;
 	msg = cvt.ical_to_mapi_single(icalin);
@@ -350,7 +350,7 @@ static int t_clip_one(const char *dtstart, const char *rrule,
 	input += "DTSTART"s + dtstart + "\nDURATION:PT1H\nRRULE:" + rrule +
 	         "\nEND:VEVENT\nEND:VCALENDAR\n";
 	ical icalin;
-	if (!icalin.load_from_str_move(input.data()))
+	if (!icalin.load_from_str(std::move(input)))
 		return EXIT_FAILURE;
 	oxcical_converter cvt;
 	cvt.alloc = zalloc;

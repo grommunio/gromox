@@ -2688,7 +2688,7 @@ std::unique_ptr<message_content, mc_delete> oxcmail_converter::inet_to_mapi(cons
 		} else {
 			utf8_filter(&pcontent[content_len+1]);
 			ical ical;
-			if (!ical.load_from_str_move(&pcontent[content_len+1])) {
+			if (!ical.load_from_str(std::string_view(&pcontent[content_len+1]))) {
 				mime_enum.pcalendar = nullptr;
 			} else {
 				oxcical_converter ical_cvt;

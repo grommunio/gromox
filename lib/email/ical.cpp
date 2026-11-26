@@ -14,6 +14,7 @@
 #include <new>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 #include <fmt/format.h>
 #include <libHX/ctype_helper.h>
@@ -169,64 +170,45 @@ static bool ical_retrieve_line_item(char *pline, LINE_ITEM *pitem)
 	return pitem->ptag != nullptr;
 }
 
-static char* ical_get_string_line(char *pbuff, size_t max_length)
+/**
+ * Unfold and grab next line.
+ * @buf: complete buffer, modified in-place
+ * @pos: starting point for line extraction
+ *
+ * Line folds are removed by compacting the line's bytes within @buf.
+ */
+static std::string_view ical_get_string_line(std::string &buf, size_t &pos)
 {
-	size_t i;
-	char *pnext;
-	bool b_searched = false;
+	auto start = pos, wr = pos, rd = pos, len = buf.size();
 
-	for (i=0; i<max_length; i++) {
-		if ('\r' == pbuff[i]) {
-			pbuff[i] = '\0';
-			if (!b_searched)
-				b_searched = true;
-			if (i + 1 < max_length && '\n' == pbuff[i + 1]) {
-				pnext = pbuff + i + 2;
-				if (' ' == *pnext || '\t' == *pnext) {
-					pnext ++;
-					size_t bytes = pbuff + max_length - pnext;
-					memmove(pbuff + i, pnext, bytes);
-					pbuff[i+bytes] = '\0';
-					max_length -= pnext - (pbuff + i);
-					continue;
-				}
-			} else {
-				pnext = pbuff + i + 1;
-				if (' ' == *pnext || '\t' == *pnext) {
-					pnext ++;
-					size_t bytes = pbuff + max_length - pnext;
-					memmove(pbuff + i, pnext, bytes);
-					pbuff[i+bytes] = '\0';
-					max_length -= pnext - (pbuff + i);
-					continue;
-				}
-			}
-			return pnext;
-		} else if ('\n' == pbuff[i]) {
-			pbuff[i] = '\0';
-			if (!b_searched)
-				b_searched = true;
-			pnext = pbuff + i + 1;
-			if (' ' == *pnext || '\t' == *pnext) {
-				pnext ++;
-				size_t bytes = pbuff + max_length - pnext;
-				memmove(pbuff + i, pnext, bytes);
-				pbuff[i+bytes] = '\0';
-				max_length -= pnext - (pbuff + i);
-				continue;
-			}
-			return pnext;
+	while (rd < len) {
+		auto c = buf[rd];
+		if (c != '\r' && c != '\n') {
+			buf[wr++] = buf[rd++];
+			continue;
 		}
+		auto next = rd + 1;
+		if (c == '\r' && next < len && buf[next] == '\n')
+			++next;
+		if (next < len && (buf[next] == ' ' || buf[next] == '\t')) {
+			/* folded line: drop terminator and one whitespace char */
+			rd = next + 1;
+			continue;
+		}
+		buf[wr] = '\0';
+		pos = next;
+		return {&buf[start], wr - start};
 	}
-	return NULL;
+	if (wr < len)
+		buf[wr] = '\0';
+	pos = buf.npos;
+	return {&buf[start], wr - start};
 }
 
-static bool empty_line(const char *pline)
-{	
-	for (; *pline != '\0'; ++pline)
-		if (*pline != ' ' && *pline != '\t')
-			return false;
-	return true;
+static bool empty_line(std::string_view line)
+{
+	return std::all_of(line.cbegin(), line.cend(),
+	       [](char c) { return c == ' ' || c == '\t'; });
 }
 
 static ical_param ical_retrieve_param(char *ptag)
@@ -346,30 +328,24 @@ static inline bool ical_std_keyword(const char *s)
 }
 
 static bool ical_retrieve_component(ical_component &comp,
-    char *in_buff, char **ppnext) try
+    std::string &buf, size_t &pos) try
 {
 	auto pcomponent = &comp;
-	char *pline;
-	char *pnext;
-	size_t length;
 	LINE_ITEM tmp_item;
 	
 	ical_clear_component(pcomponent);
-	if (in_buff == nullptr)
-		return false;
-	pline = in_buff;
-	length = strlen(in_buff);
-	do {
-		pnext = ical_get_string_line(pline, length - (pline - in_buff));
-		if (empty_line(pline))
+	while (pos != buf.npos) {
+		auto start = pos;
+		auto line = ical_get_string_line(buf, pos);
+		if (empty_line(line))
 			continue;
-		if (!ical_retrieve_line_item(pline, &tmp_item))
+		if (!ical_retrieve_line_item(&buf[start], &tmp_item))
 			break;
 		if (0 == strcasecmp(tmp_item.ptag, "BEGIN")) {
 			if (tmp_item.pvalue == nullptr)
 				break;
 			auto &pcomponent1 = pcomponent->append_comp(tmp_item.pvalue);
-			if (!ical_retrieve_component(pcomponent1, pnext, &pnext))
+			if (!ical_retrieve_component(pcomponent1, buf, pos))
 				break;
 			continue;
 		}
@@ -377,8 +353,6 @@ static bool ical_retrieve_component(ical_component &comp,
 			if (tmp_item.pvalue == nullptr ||
 			    strcasecmp(pcomponent->m_name.c_str(), tmp_item.pvalue) != 0)
 				break;
-			if (ppnext != nullptr)
-				*ppnext = pnext;
 			return true;
 		}
 		auto piline = &pcomponent->append_line(ical_retrieve_tag(tmp_item.ptag));
@@ -391,7 +365,7 @@ static bool ical_retrieve_component(ical_component &comp,
 		} else if (!ical_retrieve_value(piline, tmp_item.pvalue)) {
 			break;
 		}
-	} while ((pline = pnext) != NULL);
+	}
 	ical_clear_component(pcomponent);
 	return false;
 } catch (const std::bad_alloc &) {
@@ -399,34 +373,32 @@ static bool ical_retrieve_component(ical_component &comp,
 	return false;
 }
 
-bool ical::load_from_str_move(char *in_buff)
+bool ical::load_from_str(std::string &&buf)
 {
 	auto pical = this;
-	char *pline;
-	char *pnext;
-	size_t length;
+	size_t pos = 0, start;
+	std::string_view line;
 	LINE_ITEM tmp_item;
 	
 	ical_clear_component(pical);
-	pnext = in_buff;
-	length = strlen(in_buff);
+	/* The line parsers work on C strings. Ignore anything past a NUL. */
+	buf.resize(strnlen(buf.c_str(), buf.size()));
 	do {
-		pline = pnext;
-		pnext = ical_get_string_line(pline, length - (pline - in_buff));
-		if (NULL == pnext) {
+		start = pos;
+		line = ical_get_string_line(buf, pos);
+		if (pos == buf.npos) {
 			ical_clear_component(pical);
 			return false;
 		}
-	} while (empty_line(pline));
-	if (!ical_retrieve_line_item(pline, &tmp_item)) {
+	} while (empty_line(line));
+	if (!ical_retrieve_line_item(&buf[start], &tmp_item)) {
 		ical_clear_component(pical);
 		return false;
 	}
 	if (0 == strcasecmp(tmp_item.ptag, "BEGIN") &&
-		NULL != pnext && (NULL != tmp_item.pvalue &&
-		0 == strcasecmp(tmp_item.pvalue, "VCALENDAR"))) {
-		return ical_retrieve_component(*pical, pnext, nullptr);
-	}
+	    tmp_item.pvalue != nullptr &&
+	    strcasecmp(tmp_item.pvalue, "VCALENDAR") == 0)
+		return ical_retrieve_component(*pical, buf, pos);
 	ical_clear_component(pical);
 	return false;
 }

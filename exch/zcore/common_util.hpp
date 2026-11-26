@@ -114,8 +114,8 @@ extern ec_error_t cu_send_message(store_object &, message_object &, const char *
 extern ec_error_t cu_message_to_rfc822(store_object &, uint64_t inst_id, BINARY *eml);
 extern std::unique_ptr<message_content, gromox::mc_delete> cu_rfc822_to_message(store_object &, unsigned int mxf_flags, BINARY *eml);
 extern ec_error_t cu_message_to_ical(store_object &, uint64_t msg_id, BINARY *ical);
-extern std::unique_ptr<message_content, gromox::mc_delete> cu_ical_to_message(store_object &, const BINARY *ical);
-extern ec_error_t cu_ical_to_message2(store_object &, char *ical_data, std::vector<std::unique_ptr<message_content, gromox::mc_delete>> &);
+extern std::unique_ptr<message_content, gromox::mc_delete> cu_ical_to_message(store_object &, std::string_view);
+extern ec_error_t cu_ical_to_message2(store_object &, std::string_view, std::vector<std::unique_ptr<message_content, gromox::mc_delete>> &);
 extern ec_error_t cu_message_to_vcf(message_object &, BINARY *vcfout);
 extern ec_error_t cu_abentry_to_vcf(user_object &, bool is_group, BINARY *vcfout);
 extern std::unique_ptr<message_content, gromox::mc_delete> common_util_vcf_to_message(store_object &, const BINARY *vcf);

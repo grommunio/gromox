@@ -5,6 +5,8 @@
 #include <cassert>
 #include <cstdlib>
 #include <deque>
+#include <string>
+#include <utility>
 #include <libHX/string.h>
 #include <vmime/contentTypeField.hpp>
 #include <vmime/mailboxList.hpp>
@@ -600,7 +602,7 @@ static int ical_meeting_attendees()
 	};
 	std::string str = data;
 	ical ic;
-	assert(ic.load_from_str_move(str.data()));
+	assert(ic.load_from_str(std::move(str)));
 	auto msg = cvt.ical_to_mapi_single(ic);
 	assert(msg != nullptr);
 	auto rcpts = msg->children.prcpts;
@@ -626,7 +628,7 @@ static int ical_meeting_attendees()
 	/* no organizer: not a meeting, nothing changes */
 	str = plain;
 	ical ic2;
-	assert(ic2.load_from_str_move(str.data()));
+	assert(ic2.load_from_str(std::move(str)));
 	msg = cvt.ical_to_mapi_single(ic2);
 	assert(msg != nullptr);
 	if (msg->children.prcpts != nullptr && msg->children.prcpts->count != 0)
@@ -740,7 +742,7 @@ static int ical_export_2()
 static std::unique_ptr<message_content, mc_delete> ical_load(std::string &&str)
 {
 	ical ic;
-	if (!ic.load_from_str_move(str.data()))
+	if (!ic.load_from_str(std::move(str)))
 		return nullptr;
 	oxcical_converter cvt;
 	cvt.log_id = "-";
@@ -1679,7 +1681,7 @@ static int ical_response_class()
 			"ORGANIZER:mailto:org@example.com\r\n" + att +
 			"END:VEVENT\r\nEND:VCALENDAR\r\n";
 		ical ic;
-		assert(ic.load_from_str_move(data.data()));
+		assert(ic.load_from_str(std::move(data)));
 		auto msg = cvt.ical_to_mapi_single(ic);
 		assert(msg != nullptr);
 		auto cls = msg->proplist.get<const char>(PR_MESSAGE_CLASS);
@@ -1723,7 +1725,7 @@ static int ical_counter_export()
 			":mailto:a1@example.com\r\n"
 			"END:VEVENT\r\nEND:VCALENDAR\r\n";
 		ical ic;
-		assert(ic.load_from_str_move(data.data()));
+		assert(ic.load_from_str(std::move(data)));
 		auto msg = cvt.ical_to_mapi_single(ic);
 		assert(msg != nullptr);
 		ical out;
@@ -1774,7 +1776,7 @@ static int ical_reply_ical_identity()
 			(c.attendee_first ? att + org : org + att) +
 			"END:VEVENT\r\nEND:VCALENDAR\r\n";
 		ical ic;
-		assert(ic.load_from_str_move(data.data()));
+		assert(ic.load_from_str(std::move(data)));
 		auto msg = cvt.ical_to_mapi_single(ic);
 		assert(msg != nullptr);
 		auto cls  = msg->proplist.get<const char>(PR_MESSAGE_CLASS);
@@ -1906,7 +1908,7 @@ static std::unique_ptr<message_content, mc_delete> ical_import_str(const char *b
 	str += body;
 	str += "END:VEVENT\r\nEND:VCALENDAR\r\n";
 	ical ic;
-	if (!ic.load_from_str_move(str.data()))
+	if (!ic.load_from_str(std::move(str)))
 		return nullptr;
 	oxcical_converter cvt;
 	cvt.log_id = "-";
