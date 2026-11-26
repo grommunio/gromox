@@ -2,11 +2,17 @@
 # SPDX-License-Identifier: MIT
 #
 # Generate a bunch of emails, as mbox format.
+#
+#     genmails [-n #messages] [-l #linespermsg] [-w #wordsperline]
+#
+# Few words, many messages: genmails -n1000
+# Many words, few messages: genmails -l10 -w6
 
+use Getopt::Long;
 use POSIX qw(strftime);
 use strict;
 use warnings;
-my $dict;
+my($count, $lines, $wordsperline, $dict) = (1, 1, 2);
 
 sub read_dict
 {
@@ -48,11 +54,9 @@ sub mkdate
 	       strftime(" %Y %H:%M:%S +0000", @now);
 }
 
+&Getopt::Long::Configure(qw(bundling));
+&GetOptions("n=i" => \$count, "l=i" => \$lines, "w=i" => \$wordsperline);
 $dict = &read_dict("/usr/share/hunspell/en_US.dic");
-my $count = shift @ARGV;
-if (!defined($count)) {
-	$count = 1;
-}
 my $now = time();
 for (my $i = 0; $i < $count; ++$i) {
 	print "From user\@example.com ", scalar(localtime($now)), "\n";
@@ -65,5 +69,12 @@ for (my $i = 0; $i < $count; ++$i) {
 	print "Message-ID: <g-$now-$$-$i\@example.com>\n";
 	print "Content-Type: text/plain; charset=utf-8\n";
 	print "MIME-Version: 1.0\n";
-	print "Subject: $i $word1 $word2\n\n$word2 $word3\n\n";
+	print "Subject: $i $word1 $word2\n\n";
+	for (my $j = 0; $j < $lines; ++$j) {
+		for (my $k = 0; $k < $wordsperline; ++$k) {
+			print &pick_word(), " ";
+		}
+		print "\n";
+	}
+	print "\n";
 }
